@@ -1,7 +1,7 @@
 import struct
 from typing import TypeVar, Union, Type, Tuple, Any
 
-from utils.binary.types import *
+from lagrange.utils.binary.types import *
 
 P = TypeVar("P", bound="BasePacket")
 

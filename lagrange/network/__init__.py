@@ -1,6 +1,8 @@
 import asyncio
 from types import TracebackType
-from typing import Optional, Type, Union, Any
+from typing import Optional, Type, Union, Any, ContextManager
+
+from utils.binary import Packet
 
 
 class Connection:
@@ -18,7 +20,6 @@ class Connection:
 
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
-
 
     @property
     def host(self) -> str:
@@ -131,7 +132,7 @@ def connect(
     host: str, port: int, ssl: bool = False, timeout: Optional[float] = None
 ) -> ContextManager[Any, Any, Connection]:
     coro = _connect(host, port, ssl=ssl, timeout=timeout)
-    return ContextManager(coro)
+    return ContextManager(coro)  # FIXME: unknown class
 
 
 async def _connect(*args, **kwargs):

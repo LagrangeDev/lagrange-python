@@ -1,7 +1,7 @@
 import struct
 
-from client.wtlogin.TlvEncoder import TlvEncoder
-from utils.binary import Packet
+from lagrange.client.wtlogin.TlvEncoder import TlvEncoder
+from lagrange.utils.binary import Packet
 
 
 class TlvCodeEncoder(TlvEncoder):
@@ -20,7 +20,7 @@ class TlvCodeEncoder(TlvEncoder):
         ))
 
     @classmethod
-    def t18(cls) -> "Packet[()]":
+    def t18(cls) -> "Packet[()]":  # FIXME: already exists
         return cls._pack_tlv(0x18, struct.pack(">8I", 0, 0, 3, 4, 72, 2, 2, 0))
 
     @classmethod

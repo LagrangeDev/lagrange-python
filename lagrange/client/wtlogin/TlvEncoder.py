@@ -4,8 +4,8 @@ import random
 from hashlib import md5
 from typing import Union
 
-from utils.binary import Packet
-from utils.crypto.tea import qqtea_encrypt
+from lagrange.utils.binary import Packet
+from lagrange.utils.crypto.tea import qqtea_encrypt
 
 
 class TlvEncoder:
