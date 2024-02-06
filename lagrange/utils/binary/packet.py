@@ -15,7 +15,7 @@ class Packet(BasePacket):
         >>> packet.start().int8().uint16().bytes(4).execute()
         (1, 2, b'3\x00\x00\x00')
 
-    .. _PEP646:
+    . _PEP646:
         https://www.python.org/dev/peps/pep-0646/
 
     """
