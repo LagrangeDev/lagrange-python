@@ -23,7 +23,9 @@ class Builder:
         self._buffer += struct.pack(f">{struct_fmt}", *args)
         return self
 
-    def pack(self) -> bytearray:
+    def pack(self, typ: int = 0) -> bytearray:
+        if typ:
+            return bytearray(struct.pack(">HH", typ, len(self))) + self._buffer
         return self._buffer
 
     def write_bool(self, v: bool) -> Self:
