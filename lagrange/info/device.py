@@ -3,9 +3,11 @@ from dataclasses import dataclass
 from hashlib import md5
 from typing import Union
 
+from .serialize import JsonSerialization
 
-@dataclass()
-class DeviceInfo:
+
+@dataclass
+class DeviceInfo(JsonSerialization):
     guid: str
     device_name: str
     system_kernel: str

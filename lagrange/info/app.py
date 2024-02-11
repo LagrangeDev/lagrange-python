@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 
+from .serialize import JsonSerialization
 
-@dataclass(frozen=True)
-class AppInfo:
+
+@dataclass
+class AppInfo(JsonSerialization):
     os: str
     kernel: str
     vendor_os: str
