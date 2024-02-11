@@ -23,7 +23,7 @@ class QrCodeTlvBuilder(Builder):
         ).pack(0x16)
 
     @classmethod
-    def t18(cls) -> bytes:
+    def t1b(cls) -> bytes:
         return cls().write_struct("8I", 0, 0, 3, 4, 72, 2, 2, 0).pack(0x18)
 
     @classmethod

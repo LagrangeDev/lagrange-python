@@ -2,6 +2,8 @@ import hashlib
 import random
 import time
 
+from info.app import AppInfo
+from info.device import DeviceInfo
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from .builder import Builder
 
@@ -31,6 +33,26 @@ class CommonTlvBuilder(Builder):
             .write_u16(unknown)
             .write_u16(0)
         ).pack(0x18)
+
+    @classmethod
+    def t100(
+            cls,
+            sso_version: int,
+            app_id: int,
+            sub_app_id: int,
+            app_client_version: int,
+            sigmap: int,
+            _db_buf_ver: int = 0
+    ) -> bytes:
+        return (
+            cls()
+            .write_u16(_db_buf_ver)
+            .write_u32(sso_version)
+            .write_u32(app_id)
+            .write_u32(sub_app_id)
+            .write_u32(app_client_version)
+            .write_u32(sigmap)
+        ).pack(0x100)
 
     @classmethod
     def t106(
@@ -75,19 +97,48 @@ class CommonTlvBuilder(Builder):
         ).pack(0x106)
 
     @classmethod
-    def t142(cls, apk_id: str, _version: int = 0) -> bytes:
+    def t107(
+            cls,
+            pic_type: int = 1,
+            cap_type: int = 0x0d,
+            pic_size: int = 0,
+            ret_type: int = 1,
+    ) -> bytes:
         return (
             cls()
-            .write_u16(_version)
-            .write_string(apk_id[:32])
-        ).pack(0x142)
+            .write_u16(pic_type)
+            .write_u8(cap_type)
+            .write_u16(pic_size)
+            .write_u8(ret_type)
+        ).pack(0x107)
 
     @classmethod
-    def t145(cls, guid: bytes) -> bytes:
+    def t116(cls, sub_sigmap: int) -> bytes:
         return (
             cls()
-            .write_bytes(guid)
-        ).pack(0x145)
+            .write_u8(0)
+            .write_u32(12058620)  # unknown?
+            .write_u32(sub_sigmap)
+            .write_u8(0)
+        ).pack(0x116)
+
+    @classmethod
+    def t124(cls) -> bytes:
+        return cls().write_bytes(bytes(12)).pack(0x124)
+
+    @classmethod
+    def t128(cls, app_info_os: str, device_guid: str) -> bytes:
+        return (
+            cls()
+            .write_u16(0)
+            .write_u8(0)
+            .write_u8(1)
+            .write_u8(0)
+            .write_u32(0)
+            .write_string(app_info_os)
+            .write_string(device_guid)
+            .write_string("")
+        ).pack(0x128)
 
     @classmethod
     def t141(
@@ -106,6 +157,59 @@ class CommonTlvBuilder(Builder):
         ).pack(0x141)
 
     @classmethod
+    def t142(cls, apk_id: str, _version: int = 0) -> bytes:
+        return (
+            cls()
+            .write_u16(_version)
+            .write_string(apk_id[:32])
+        ).pack(0x142)
+
+    @classmethod
+    def t144(cls, tgtgt_key: bytes, app_info: AppInfo, device: DeviceInfo) -> bytes:
+        return (
+            cls(tgtgt_key)
+            .write_u16(4)
+            .write_bytes(cls.t16e(device.device_name))
+            .write_bytes(cls.t147(app_info.app_id, app_info.pt_version, app_info.package_name))
+            .write_bytes(cls.t128(app_info.os, device.guid))
+            .write_bytes(cls.t124())
+        ).pack(0x144)
+
+    @classmethod
+    def t145(cls, guid: bytes) -> bytes:
+        return (
+            cls()
+            .write_bytes(guid)
+        ).pack(0x145)
+
+    @classmethod
+    def t147(cls, app_id: int, pt_version: str, package_name: str) -> bytes:
+        return (
+            cls()
+            .write_u32(app_id)
+            .write_string(pt_version)
+            .write_string(package_name)
+        ).pack(0x147)
+
+    @classmethod
+    def t166(cls, image_type: bytes) -> bytes:
+        return (
+            cls().write_byte(image_type[0])
+        ).pack(0x166)
+
+    @classmethod
+    def t16a(cls, no_pic_sig: bytes) -> bytes:
+        return (
+            cls().write_bytes(no_pic_sig)
+        ).pack(0x16a)
+
+    @classmethod
+    def t16e(cls, device_name: str) -> bytes:
+        return (
+            cls().write_bytes(device_name.encode())
+        ).pack(0x16e)
+
+    @classmethod
     def t177(cls, sdk_version: str, build_time: int = 0) -> bytes:
         return (
             cls()
@@ -121,58 +225,10 @@ class CommonTlvBuilder(Builder):
         ).pack(0x191)
 
     @classmethod
-    def t100(
-            cls,
-            sso_version: int,
-            app_id: int,
-            sub_app_id: int,
-            app_client_version: int,
-            sigmap: int,
-            _db_buf_ver: int = 0
-    ) -> bytes:
-        return (
-            cls()
-            .write_u16(_db_buf_ver)
-            .write_u32(sso_version)
-            .write_u32(app_id)
-            .write_u32(sub_app_id)
-            .write_u32(app_client_version)
-            .write_u32(sigmap)
-        ).pack(0x100)
-
-    @classmethod
-    def t107(
-            cls,
-            pic_type: int = 1,
-            cap_type: int = 0x0d,
-            pic_size: int = 0,
-            ret_type: int = 1,
-    ) -> bytes:
-        return (
-            cls()
-            .write_u16(pic_type)
-            .write_u8(cap_type)
-            .write_u16(pic_size)
-            .write_u8(ret_type)
-        ).pack(0x107)
-
-    @classmethod
     def t318(cls, tgt_qr: bytes = bytes(0)) -> bytes:
         return (
             cls().write_bytes(tgt_qr)
         ).pack(0x318)
-
-    @classmethod
-    def t16a(cls, no_pic_sig: bytes) -> bytes:
-        return (
-            cls().write_bytes(no_pic_sig)
-        ).pack(0x16a)
-
-    @classmethod
-    def t166(cls, image_type: bytes) -> bytes:
-        return (
-            cls().write_byte(image_type[0])
-        ).pack(0x166)
 
     @classmethod
     def t521(cls, product_type: int = 0x13, product_desc: str = "basicim") -> bytes:

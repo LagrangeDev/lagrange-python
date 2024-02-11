@@ -1,12 +1,15 @@
 import struct
 from typing import Self, NewType, Union
 
+from lagrange.utils.crypto.tea import qqtea_encrypt
+
 BYTES_LIKE = NewType("BYTES_LIKE", Union[bytes, bytearray, memoryview])
 
 
 class Builder:
-    def __init__(self):
+    def __init__(self, encrypt_key: bytes = None):
         self._buffer = bytearray()
+        self._encrypt_key = encrypt_key
 
     def __iadd__(self, other):
         if isinstance(other, (bytes, bytearray, memoryview)):
@@ -19,14 +22,24 @@ class Builder:
     def __len__(self) -> int:
         return len(self._buffer)
 
+    @property
+    def buffer(self) -> bytearray:
+        return self._buffer
+
+    @property
+    def data(self) -> bytes:
+        if self._encrypt_key:
+            return qqtea_encrypt(self._buffer, self._encrypt_key)
+        return self.buffer
+
     def _pack(self, struct_fmt: str, *args) -> Self:
         self._buffer += struct.pack(f">{struct_fmt}", *args)
         return self
 
-    def pack(self, typ: int = 0) -> bytearray:
+    def pack(self, typ: int = 0) -> bytes:
         if typ:
-            return bytearray(struct.pack(">HH", typ, len(self))) + self._buffer
-        return self._buffer
+            return struct.pack(">HH", typ, len(self)) + self.data
+        return self.data
 
     def write_bool(self, v: bool) -> Self:
         return self._pack("?", v)
