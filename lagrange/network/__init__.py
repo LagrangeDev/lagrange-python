@@ -2,7 +2,7 @@ import asyncio
 from types import TracebackType
 from typing import Optional, Type, Union, Any, ContextManager
 
-from utils.binary import Packet
+from lagrange.utils.binary import Packet
 
 
 class Connection:
@@ -50,7 +50,7 @@ class Connection:
         return self._writer is None
 
     async def __aenter__(self):
-        await self._connect()
+        await self.connect()
         return self
 
     async def __aexit__(
@@ -62,7 +62,7 @@ class Connection:
         await self.close()
         return
 
-    async def _connect(self):
+    async def connect(self):
         try:
             self._reader, self._writer = await asyncio.wait_for(
                 asyncio.open_connection(self._host, self._port, ssl=self._ssl),
@@ -84,7 +84,7 @@ class Connection:
 
     async def reconnect(self) -> None:
         await self.close()
-        await self._connect()
+        await self.connect()
 
     async def read_bytes(self, num_bytes: int):
         try:
@@ -137,5 +137,5 @@ def connect(
 
 async def _connect(*args, **kwargs):
     conn = Connection(*args, **kwargs)
-    await conn._connect()
+    await conn.connect()
     return conn
