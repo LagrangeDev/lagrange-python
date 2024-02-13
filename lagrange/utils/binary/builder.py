@@ -1,5 +1,6 @@
 import struct
-from typing import Self, NewType, Union
+from typing import NewType, Union
+from typing_extensions import Self
 
 from lagrange.utils.crypto.tea import qqtea_encrypt
 

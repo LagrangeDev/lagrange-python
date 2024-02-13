@@ -1,2 +1,2 @@
-from base import *
-from packet import *
+from .base import *
+from .packet import *
