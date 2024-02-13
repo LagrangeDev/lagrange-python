@@ -2,10 +2,9 @@ import hashlib
 import random
 import time
 
-from info.app import AppInfo
-from info.device import DeviceInfo
+from lagrange.info import AppInfo, DeviceInfo
 from lagrange.utils.crypto.tea import qqtea_encrypt
-from .builder import Builder
+from lagrange.utils.binary.builder import Builder
 
 
 class CommonTlvBuilder(Builder):
@@ -168,18 +167,18 @@ class CommonTlvBuilder(Builder):
     def t144(cls, tgtgt_key: bytes, app_info: AppInfo, device: DeviceInfo) -> bytes:
         return (
             cls(tgtgt_key)
-            .write_u16(4)
-            .write_bytes(cls.t16e(device.device_name))
-            .write_bytes(cls.t147(app_info.app_id, app_info.pt_version, app_info.package_name))
-            .write_bytes(cls.t128(app_info.os, device.guid))
-            .write_bytes(cls.t124())
+            .write_tlv(
+                cls.t16e(device.device_name),
+                cls.t147(app_info.app_id, app_info.pt_version, app_info.package_name),
+                cls.t128(app_info.os, device.guid),
+                cls.t124()
+            )
         ).pack(0x144)
 
     @classmethod
     def t145(cls, guid: bytes) -> bytes:
         return (
-            cls()
-            .write_bytes(guid)
+            cls().write_bytes(guid)
         ).pack(0x145)
 
     @classmethod

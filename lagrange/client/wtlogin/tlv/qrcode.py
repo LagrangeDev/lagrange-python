@@ -1,4 +1,4 @@
-from client.wtlogin.tlv.builder import Builder
+from lagrange.utils.binary.builder import Builder
 
 
 class QrCodeTlvBuilder(Builder):

@@ -88,3 +88,9 @@ class Builder:
 
     def write_double(self, v: float) -> Self:
         return self._pack("d", v)
+
+    def write_tlv(self, *tlvs: bytes) -> Self:
+        self.write_u16(len(tlvs))
+        for v in tlvs:
+            self.write_bytes(v)
+        return self
