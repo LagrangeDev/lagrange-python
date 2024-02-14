@@ -1,6 +1,6 @@
 import struct
 from typing import NewType, Union
-from typing_extensions import Self
+from typing_extensions import Self, Optional
 
 from lagrange.utils.crypto.tea import qqtea_encrypt
 
@@ -37,9 +37,9 @@ class Builder:
         self._buffer += struct.pack(f">{struct_fmt}", *args)
         return self
 
-    def pack(self, typ: int = 0) -> bytes:
-        if typ:
-            return struct.pack(">HH", typ, len(self)) + self.data
+    def pack(self, typ: Optional[int] = None) -> bytes:
+        if typ is not None:
+            return struct.pack(">HH", typ, len(self.data)) + self.data
         return self.data
 
     def write_bool(self, v: bool) -> Self:

@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from .serialize import JsonSerialization
+from .serialize import JsonSerializer
 
 
 @dataclass
-class AppInfo(JsonSerialization):
+class AppInfo(JsonSerializer):
     os: str
     kernel: str
     vendor_os: str
