@@ -29,7 +29,7 @@ class ECDHSecp:
     id = 0x07
     _p192 = ec.SECP192R1()
 
-    svr_public_key = ec.EllipticCurvePublicKey.from_encoded_point(
+    svr_public_key = ec.EllipticCurvePublicKey.from_encoded_point(  # FIXME: Invalid EC Key
         _p192,
         bytes.fromhex(
             "04"

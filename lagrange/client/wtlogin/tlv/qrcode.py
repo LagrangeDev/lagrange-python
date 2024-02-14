@@ -1,5 +1,5 @@
 from lagrange.utils.binary.builder import Builder
-
+from lagrange.utils.binary.protobuf import proto_encode
 
 class QrCodeTlvBuilder(Builder):
     @classmethod
@@ -47,3 +47,13 @@ class QrCodeTlvBuilder(Builder):
     @classmethod
     def t66(cls, pt_os_version: int) -> bytes:
         return cls().write_u32(pt_os_version).pack(0x66)
+
+    @classmethod
+    def td1(cls, app_os: str, device_name: str) -> bytes:
+        return cls().write_bytes(proto_encode({
+            1: {
+                1: app_os,
+                2: device_name
+            },
+            4: {6: 1}
+        })).pack(0xd1)

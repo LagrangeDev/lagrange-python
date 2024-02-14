@@ -7,6 +7,7 @@ from lagrange.info.device import DeviceInfo
 async def main():
     client = BaseClient(114514, app_list['linux'], DeviceInfo.generate(114514))
     client.connect()
+    await client.fetch_qrcode()
     await client.wait_closed()
 
 
