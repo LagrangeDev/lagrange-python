@@ -6,7 +6,7 @@ from lagrange.utils.binary.reader import Reader
 
 Proto: TypeAlias = Dict[int, "ProtoEncodable"]
 LengthDelimited: TypeAlias = Union[str, "Proto", bytes]
-ProtoEncodable: TypeAlias = Union[int, float, LengthDelimited, List["ProtoEncodable"], Dict[int, "ProtoEncodable"]]
+ProtoEncodable: TypeAlias = Union[int, float, bool, LengthDelimited, List["ProtoEncodable"], Dict[int, "ProtoEncodable"]]
 
 
 class ProtoBuilder(Builder):
@@ -63,6 +63,8 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
 
     if isinstance(value, int):
         wire_type = 0
+    elif isinstance(value, bool):
+        wire_type = 0
     elif isinstance(value, float):
         wire_type = 1
     elif isinstance(value, str) or isinstance(value, bytes) or isinstance(value, dict):
@@ -74,6 +76,9 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
     builder.write_varint(head)
 
     if wire_type == 0:
+        if isinstance(value, bool):
+            value = 1 if value else 0
+
         if value > 0:
             builder.write_varint(value)
         else:
