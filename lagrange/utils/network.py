@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from typing import Optional
 
 
@@ -101,4 +102,5 @@ class Connection:
 
     async def on_error(self) -> bool:
         """use sys.exc_info() to catch exceptions"""
+        traceback.print_exc()
         return True

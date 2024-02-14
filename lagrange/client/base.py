@@ -14,13 +14,13 @@ class ClientNetwork(Connection):
             host, port = self.default_upstream
         super().__init__(host, port)
 
-    def on_connected(self):
+    async def on_connected(self):
         print("connected")
 
-    def on_disconnect(self):
+    async def on_disconnect(self):
         print("disconnected")
 
-    def on_message(self, msg_len: int):
+    async def on_message(self, msg_len: int):
         print(self.reader.read(msg_len))
 
 
