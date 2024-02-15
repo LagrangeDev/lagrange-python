@@ -31,7 +31,7 @@ class ClientNetwork(Connection):
         print("disconnected")
 
     async def on_message(self, msg_len: int):
-        print(self.reader.read(msg_len), 11)
+        print(await self.reader.read(msg_len), 11)
 
 
 class BaseClient:

@@ -1,11 +1,37 @@
 import os
 import time
 
+from typing_extensions import Literal, Self
+
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
-from lagrange.utils.binary.builder import Builder
+from lagrange.utils.binary.builder import Builder, BYTES_LIKE
 from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.utils.crypto.ecdh import ecdh
 from lagrange.utils.crypto.tea import qqtea_encrypt
+
+
+LENGTH_PREFIX = Literal["none", "u8", "u16", "u32", "u64"]
+
+
+class PacketBuilder(Builder):
+    def write_bytes(self, v: BYTES_LIKE, prefix: LENGTH_PREFIX = "none") -> Self:
+        if prefix == "none":
+            pass
+        elif prefix == "u8":
+            self.write_u8(len(v) + 1)
+        elif prefix == "u16":
+            self.write_u16(len(v) + 2)
+        elif prefix == "u32":
+            self.write_u32(len(v) + 4)
+        elif prefix == "u64":
+            self.write_u64(len(v) + 8)
+        else:
+            raise ArithmeticError("Invaild prefix")
+        self._buffer += v
+        return self
+
+    def write_string(self, s: str, prefix: LENGTH_PREFIX = "none") -> Self:
+        return self.write_bytes(s.encode(), prefix)
 
 
 def build_code2d_packet(
@@ -25,7 +51,7 @@ def build_code2d_packet(
         device_info,
         sig_info,
         (
-            Builder()
+            PacketBuilder()
             .write_u8(0)
             .write_u16(len(body) + 53)
             .write_u32(app_info.app_id)
@@ -58,7 +84,7 @@ def build_login_packet(
     enc_body = qqtea_encrypt(body, ecdh["secp192k1"].share_key)
 
     frame_body = (
-        Builder()
+        PacketBuilder()
         .write_u16(8001)
         .write_u16(2066 if cmd == "wtlogin.login" else 2064)
         .write_u16(0)
@@ -81,7 +107,7 @@ def build_login_packet(
     ).pack()
 
     frame = (
-        Builder()
+        PacketBuilder()
         .write_u8(2)
         .write_u16(len(frame_body) + 3)  # + 2 + 1
         .write_bytes(frame_body)
@@ -114,36 +140,36 @@ def build_uni_packet(
     })
 
     sso_header = (
-        Builder()
+        PacketBuilder()
         .write_u32(seq)
         .write_u32(app_info.sub_app_id)
         .write_u32(2052)  # locale id
         .write_bytes(bytes.fromhex("020000000000000000000000"))
-        .write_bytes(sig_info.tgt, "u32", True)
-        .write_string(cmd, "u32", True)
-        .write_bytes(b"", "u32", True)
-        .write_string(device_info.guid, "u32", True)
-        .write_bytes(b"", "u32", True)
-        .write_bytes(app_info.current_version, "u16", True)
-        .write_bytes(head, "u32", True)
+        .write_bytes(sig_info.tgt, "u32")
+        .write_string(cmd, "u32")
+        .write_bytes(b"", "u32")
+        .write_string(device_info.guid, "u32")
+        .write_bytes(b"", "u32")
+        .write_string(app_info.current_version, "u16")
+        .write_bytes(head)
     ).pack()
 
     sso_packet = (
-        Builder()
-        .write_bytes(sso_header, "u32", True)
-        .write_bytes(body, "u32", True)
+        PacketBuilder()
+        .write_bytes(sso_header, "u32")
+        .write_bytes(body, "u32")
     ).pack()
 
     encrypted = qqtea_encrypt(sso_packet, sig_info.d2_key)
 
     service = (
-        Builder()
+        PacketBuilder()
         .write_u32(12)
         .write_u8(2 if sig_info.d2 else 1)
-        .write_bytes(sig_info.d2, "u8", True)
+        .write_bytes(sig_info.d2, "u32")
         .write_u8(0)
         .write_string(str(uin))
         .write_bytes(encrypted)
     ).pack()
 
-    return Builder().write_bytes(service, "u32", True).pack()
+    return PacketBuilder().write_bytes(service, "u32").pack()
