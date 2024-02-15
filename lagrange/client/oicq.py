@@ -168,7 +168,7 @@ def build_uni_packet(
         .write_u8(2 if sig_info.d2 else 1)
         .write_bytes(sig_info.d2, "u32")
         .write_u8(0)
-        .write_string(str(uin))
+        .write_string(str(uin), "u32")
         .write_bytes(encrypted)
     ).pack()
 
