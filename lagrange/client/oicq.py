@@ -2,10 +2,18 @@ import os
 import time
 
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
-from lagrange.utils.binary.builder import Builder
+from lagrange.utils.binary.builder import Builder, BYTES_LIKE, Self
 from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.utils.crypto.ecdh import ecdh
 from lagrange.utils.crypto.tea import qqtea_encrypt
+
+
+class PacketBuilder(Builder):
+    def write_bytes(self, v: BYTES_LIKE, with_length=False) -> Self:
+        if with_length:
+            self.write_u32(len(v))
+        self._buffer += v
+        return self
 
 
 def build_code2d_packet(
@@ -25,7 +33,7 @@ def build_code2d_packet(
         device_info,
         sig_info,
         (
-            Builder()
+            PacketBuilder()
             .write_u8(0)
             .write_u16(len(body) + 53)
             .write_u32(app_info.app_id)
@@ -58,7 +66,7 @@ def build_login_packet(
     enc_body = qqtea_encrypt(body, ecdh["secp192k1"].share_key)
 
     frame_body = (
-        Builder()
+        PacketBuilder()
         .write_u16(8001)
         .write_u16(2066 if cmd == "wtlogin.login" else 2064)
         .write_u16(0)
@@ -74,13 +82,14 @@ def build_login_packet(
         .write_u8(1)
         .write_bytes(bytes(16))
         .write_u16(0x102)
-        .write_bytes(ecdh["secp192k1"].public_key, True)
+        .write_u16(len(ecdh["secp192k1"].public_key))
+        .write_bytes(ecdh["secp192k1"].public_key)
         .write_bytes(enc_body)
         .write_u8(3)
     ).pack()
 
     frame = (
-        Builder()
+        PacketBuilder()
         .write_u8(2)
         .write_u16(len(frame_body) + 3)  # + 2 + 1
         .write_bytes(frame_body)
@@ -113,7 +122,7 @@ def build_uni_packet(
     })
 
     sso_header = (
-        Builder()
+        PacketBuilder()
         .write_u32(seq)
         .write_u32(app_info.sub_app_id)
         .write_u32(2052)  # locale id
@@ -122,13 +131,14 @@ def build_uni_packet(
         .write_string(cmd)
         .write_bytes(b"", True)
         .write_string(device_info.guid)
+        .write_bytes(b"", True)
         .write_u16(len(app_info.current_version) + 2)
         .write_bytes(app_info.current_version.encode())
         .write_bytes(head)
     ).pack()
 
     sso_packet = (
-        Builder()
+        PacketBuilder()
         .write_bytes(sso_header, True)
         .write_bytes(body, True)
     ).pack()
@@ -136,7 +146,7 @@ def build_uni_packet(
     encrypted = qqtea_encrypt(sso_packet, sig_info.d2_key)
 
     service = (
-        Builder()
+        PacketBuilder()
         .write_u32(12)
         .write_u8(2 if sig_info.d2 else 1)
         .write_bytes(sig_info.d2, True)
@@ -145,4 +155,4 @@ def build_uni_packet(
         .write_bytes(encrypted)
     ).pack()
 
-    return Builder().write_bytes(service, True).pack()
+    return PacketBuilder().write_bytes(service, True).pack()

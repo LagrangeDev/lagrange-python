@@ -76,11 +76,14 @@ class Connection:
     async def _read_loop(self):
         try:
             while not self.closed:
-                length = int.from_bytes(await self.reader.readexactly(4) or b"\x00", byteorder="big")
+                length = int.from_bytes(await self.reader.readexactly(4), byteorder="big")
                 if length:
                     await self.on_message(length)
                 else:
                     await self.close()
+        except asyncio.CancelledError:
+            await self.on_error()
+            await self.stop()
         except:
             if not await self.on_error():
                 raise
