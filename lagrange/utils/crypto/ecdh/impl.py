@@ -21,7 +21,7 @@ class ECDHPrime:
 
 class ECDHSecp:
     def __init__(self):
-        self._provider = ECDHProvider(CURVE["secp192k1"])
+        self._provider = ECDHProvider(CURVE["secp192k1"])  # FIXME: Incorrect public key
         self._public_key = self._provider.pack_public(True)
         self._share_key = self._provider.key_exchange(ECDH_PRIME_PUBLIC, True)
 
@@ -32,3 +32,11 @@ class ECDHSecp:
     @property
     def share_key(self) -> bytes:
         return self._share_key
+
+
+ecdh = {
+    "secp192k1": ECDHSecp(),
+    "prime256v1": ECDHPrime()
+}
+
+__all__ = ["ecdh"]

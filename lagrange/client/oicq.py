@@ -4,7 +4,7 @@ import time
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
 from lagrange.utils.binary.builder import Builder
 from lagrange.utils.binary.protobuf import proto_encode
-from lagrange.utils.crypto.ecdh import ECDHSecp
+from lagrange.utils.crypto.ecdh import ecdh
 from lagrange.utils.crypto.tea import qqtea_encrypt
 
 
@@ -55,7 +55,7 @@ def build_login_packet(
         sig_info: SigInfo,
         body: bytes
 ) -> bytes:
-    enc_body = qqtea_encrypt(body, ECDHSecp.share_key)
+    enc_body = qqtea_encrypt(body, ecdh["secp192k1"].share_key)
 
     frame_body = (
         Builder()
@@ -74,7 +74,7 @@ def build_login_packet(
         .write_u8(1)
         .write_bytes(bytes(16))
         .write_u16(0x102)
-        .write_bytes(ECDHSecp.client_public_key, True)
+        .write_bytes(ecdh["secp192k1"].client_public_key, True)
         .write_bytes(enc_body)
         .write_u8(3)
     ).pack()
