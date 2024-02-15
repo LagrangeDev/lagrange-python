@@ -74,7 +74,7 @@ def build_login_packet(
         .write_u8(1)
         .write_bytes(bytes(16))
         .write_u16(0x102)
-        .write_bytes(ecdh["secp192k1"].client_public_key, True)
+        .write_bytes(ecdh["secp192k1"].public_key, True)
         .write_bytes(enc_body)
         .write_u8(3)
     ).pack()

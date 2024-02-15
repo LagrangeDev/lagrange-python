@@ -21,9 +21,9 @@ class ECDHProvider:
         if length != self._curve.size * 2 + 1 and length != self._curve.size + 1:
             raise AssertionError("Length of public key does not match")
 
-        x = pub[1:self._curve.size + 1] + bytes(1)
+        x = bytes(1) + pub[1:self._curve.size + 1]
         if pub[0] == 0x04:  # uncompressed
-            y = pub[self._curve.size:self._curve.size * 2 + 1] + bytes(1)
+            y = bytes(1) + pub[self._curve.size + 1:self._curve.size * 2 + 1]
             return EllipticPoint(int.from_bytes(x, "big"), int.from_bytes(y, "big"))
 
         px = int.from_bytes(x, "big")
@@ -32,7 +32,7 @@ class ECDHProvider:
         right = (x_3 + ax + self._curve.B) % self._curve.P
 
         tmp = (self._curve.P + 1) >> 2
-        py = pow(right, tmp) % self._curve.P
+        py = pow(right, tmp, self._curve.P)
 
         if py % 2 == 0:
             tmp = self._curve.P
@@ -69,7 +69,7 @@ class ECDHProvider:
         while result < 1 or result >= self._curve.N:
             buffer = bytearray(random.Random().randbytes(self._curve.size + 1))
             buffer[self._curve.size] = 0
-            result = int.from_bytes(buffer)
+            result = int.from_bytes(buffer, "little")
 
         return result
 
@@ -79,7 +79,7 @@ class ECDHProvider:
         if sec < 0:
             self._create_shared(-sec, -pub)
 
-        if self._curve.check_on(pub):
+        if not self._curve.check_on(pub):
             raise AssertionError("Incorrect public key")
 
         pr = EllipticPoint(0, 0)
@@ -91,7 +91,7 @@ class ECDHProvider:
             pa = _point_add(self._curve, pa, pa)
             sec >>= 1
 
-        if self._curve.check_on(pr):
+        if not self._curve.check_on(pr):
             raise AssertionError("Incorrect result assertion")
         return pr
 
@@ -136,4 +136,4 @@ def _mod_inverse(a: int, p: int) -> int:
     if g != 1:
         raise AssertionError("Inverse does not exist.")
 
-    return pow(a, p - 2) % p
+    return pow(a, p - 2, p)
