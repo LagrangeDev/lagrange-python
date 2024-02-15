@@ -7,7 +7,6 @@ authors = [
     {name="wyapx"},
 ]
 dependencies = [
-    "cryptography>=39.0.2",
     "typing-extensions"
 ]
 requires-python = ">=3.8"
