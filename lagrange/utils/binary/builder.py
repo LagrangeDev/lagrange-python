@@ -1,10 +1,11 @@
 import struct
-from typing import NewType, Union
+from typing import NewType, Union, Literal
 from typing_extensions import Self, Optional
 
 from lagrange.utils.crypto.tea import qqtea_encrypt
 
 BYTES_LIKE = NewType("BYTES_LIKE", Union[bytes, bytearray, memoryview])
+LENGTH_PREFIX = Literal["none", "u8", "u16", "u32", "u64"]
 
 
 class Builder:
@@ -48,14 +49,22 @@ class Builder:
     def write_byte(self, v: int) -> Self:
         return self._pack("c", v)
 
-    def write_bytes(self, v: BYTES_LIKE, with_length=False) -> Self:
-        if with_length:
-            self.write_u16(len(v))
-        self._buffer += v
-        return self
+    def write_bytes(self, v: BYTES_LIKE, prefix: LENGTH_PREFIX = "none", with_length: bool = False) -> Self:
+        if prefix == "none":
+            return self
+        elif prefix == "u8":
+            return self.write_u8(len(v) + 1 if with_length else len(v))
+        elif prefix == "u16":
+            return self.write_u16(len(v) + 2 if with_length else len(v))
+        elif prefix == "u32":
+            return self.write_u32(len(v) + 4 if with_length else len(v))
+        elif prefix == "u64":
+            return self.write_u32(len(v) + 8 if with_length else len(v))
+        else:
+            raise ArithmeticError("Invaild prefix")
 
-    def write_string(self, s: str) -> Self:
-        return self.write_bytes(s.encode(), True)
+    def write_string(self, s: str, prefix: LENGTH_PREFIX = "none", with_length: bool = False) -> Self:
+        return self.write_bytes(s.encode(), prefix, with_length)
 
     def write_struct(self, struct_fmt: str, *args) -> Self:
         return self._pack(struct_fmt, *args)
