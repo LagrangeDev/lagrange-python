@@ -1,9 +1,14 @@
 import asyncio
+import struct
+from io import BytesIO
 from typing import Optional
 
 from lagrange.utils.binary.builder import Builder
 from lagrange.utils.network import Connection
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
+from utils.crypto import ecdh
+from utils.crypto.tea import qqtea_decrypt
+from .sso import parse_sso_frame
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 from .oicq import build_code2d_packet
 
@@ -11,11 +16,12 @@ from .oicq import build_code2d_packet
 class ClientNetwork(Connection):
     default_upstream = ("msfwifi.3g.qq.com", 8080)
 
-    def __init__(self, host: str = "", port: int = 0):
+    def __init__(self, sig_info: SigInfo, host: str = "", port: int = 0):
         if not (host and port):
             host, port = self.default_upstream
         super().__init__(host, port)
         self.conn_event = asyncio.Event()
+        self._sig = sig_info
 
     async def write(self, buf: bytes):
         await self.conn_event.wait()
@@ -31,7 +37,32 @@ class ClientNetwork(Connection):
         print("disconnected")
 
     async def on_message(self, msg_len: int):
-        print(await self.reader.read(msg_len), 11)
+        raw = BytesIO(await self.reader.readexactly(msg_len))
+        raw.read(4)
+        flag, _, uin_len = struct.unpack("!BBI", raw.read(6))
+        uin = raw.read(uin_len - 4).decode()
+
+        if flag == 0:  # no encrypted
+            dec = raw.read()
+        elif flag == 1:  # enc with d2key
+            dec = qqtea_decrypt(raw.read(), self._sig.d2_key)
+        elif flag == 2:  # enc with \x00*16
+            dec = qqtea_decrypt(raw.read(), bytes(16))
+        else:
+            raise TypeError(f"invalid encrypt flag: {flag}")
+        print(uin, parse_sso_frame(dec))
+
+        return
+        print(msg_len)
+        raw = await self.reader.readexactly(msg_len)
+        print(raw, "raw", len(raw) == msg_len)
+        in_len, ver, cmd, seq, uin, flag, retrytimes = struct.unpack_from("!HHHHIBH", raw)
+        print(in_len, ver, cmd, seq, uin, flag, retrytimes)
+        dio = BytesIO(qqtea_decrypt(raw[16:], ecdh.ecdh["secp192k1"].share_key))
+        print(dio.read(54))
+        ret_code, qrsig = struct.unpack(">BH", dio.read(3))
+        print(ret_code, qrsig)
+        print(dio.read())
 
 
 class BaseClient:
@@ -51,7 +82,7 @@ class BaseClient:
         self._sig = sig_info
         self._app_info = app_info
         self._device_info = device_info
-        self._network = ClientNetwork()
+        self._network = ClientNetwork(sig_info)
         self._loop_task: Optional[asyncio.Task] = None
 
         self._online = False

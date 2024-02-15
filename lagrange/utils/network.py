@@ -76,7 +76,7 @@ class Connection:
     async def _read_loop(self):
         try:
             while not self.closed:
-                length = int.from_bytes(await self.reader.readexactly(4), byteorder="big")
+                length = int.from_bytes(await self.reader.readexactly(4), byteorder="big") - 4
                 if length:
                     await self.on_message(length)
                 else:

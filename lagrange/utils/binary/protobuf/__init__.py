@@ -79,7 +79,7 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         if isinstance(value, bool):
             value = 1 if value else 0
 
-        if value > 0:
+        if value >= 0:
             builder.write_varint(value)
         else:
             raise NotImplemented
