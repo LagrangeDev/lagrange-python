@@ -1,37 +1,11 @@
 import os
 import time
 
-from typing_extensions import Literal, Self
-
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
-from lagrange.utils.binary.builder import Builder, BYTES_LIKE
 from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.utils.crypto.ecdh import ecdh
 from lagrange.utils.crypto.tea import qqtea_encrypt
-
-
-LENGTH_PREFIX = Literal["none", "u8", "u16", "u32", "u64"]
-
-
-class PacketBuilder(Builder):
-    def write_bytes(self, v: BYTES_LIKE, prefix: LENGTH_PREFIX = "none") -> Self:
-        if prefix == "none":
-            pass
-        elif prefix == "u8":
-            self.write_u8(len(v) + 1)
-        elif prefix == "u16":
-            self.write_u16(len(v) + 2)
-        elif prefix == "u32":
-            self.write_u32(len(v) + 4)
-        elif prefix == "u64":
-            self.write_u64(len(v) + 8)
-        else:
-            raise ArithmeticError("Invaild prefix")
-        self._buffer += v
-        return self
-
-    def write_string(self, s: str, prefix: LENGTH_PREFIX = "none") -> Self:
-        return self.write_bytes(s.encode(), prefix)
+from .packet import PacketBuilder
 
 
 def build_code2d_packet(
@@ -165,7 +139,7 @@ def build_uni_packet(
     service = (
         PacketBuilder()
         .write_u32(12)
-        .write_u8(2 if sig_info.d2 else 1)
+        .write_u8(1 if sig_info.d2 else 2)
         .write_bytes(sig_info.d2, "u32")
         .write_u8(0)
         .write_string(str(uin), "u32")

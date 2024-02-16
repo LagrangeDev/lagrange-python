@@ -1,17 +1,12 @@
 import asyncio
-import struct
-from io import BytesIO
 from typing import Optional
 
-from lagrange.utils.binary.builder import Builder
 from lagrange.utils.network import Connection
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
-from utils.crypto import ecdh
-from utils.crypto.tea import qqtea_decrypt
-from .sso import parse_sso_frame
+from .sso import parse_sso_frame, parse_sso_header
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 from .oicq import build_code2d_packet
-
+from .packet import PacketBuilder
 
 class ClientNetwork(Connection):
     default_upstream = ("msfwifi.3g.qq.com", 8080)
@@ -37,32 +32,24 @@ class ClientNetwork(Connection):
         print("disconnected")
 
     async def on_message(self, msg_len: int):
-        raw = BytesIO(await self.reader.readexactly(msg_len))
-        raw.read(4)
-        flag, _, uin_len = struct.unpack("!BBI", raw.read(6))
-        uin = raw.read(uin_len - 4).decode()
-
-        if flag == 0:  # no encrypted
-            dec = raw.read()
-        elif flag == 1:  # enc with d2key
-            dec = qqtea_decrypt(raw.read(), self._sig.d2_key)
-        elif flag == 2:  # enc with \x00*16
-            dec = qqtea_decrypt(raw.read(), bytes(16))
-        else:
-            raise TypeError(f"invalid encrypt flag: {flag}")
-        print(uin, parse_sso_frame(dec))
-
-        return
-        print(msg_len)
         raw = await self.reader.readexactly(msg_len)
-        print(raw, "raw", len(raw) == msg_len)
-        in_len, ver, cmd, seq, uin, flag, retrytimes = struct.unpack_from("!HHHHIBH", raw)
-        print(in_len, ver, cmd, seq, uin, flag, retrytimes)
-        dio = BytesIO(qqtea_decrypt(raw[16:], ecdh.ecdh["secp192k1"].share_key))
-        print(dio.read(54))
-        ret_code, qrsig = struct.unpack(">BH", dio.read(3))
-        print(ret_code, qrsig)
-        print(dio.read())
+        _enc_flag, uin, sso_body = parse_sso_header(raw, self._sig.d2_key)
+        print(f"uin={uin} in sso header")
+
+        print(parse_sso_frame(sso_body), "in sso body")
+
+
+        # return
+        # print(msg_len)
+        # raw = await self.reader.readexactly(msg_len)
+        # print(raw, "raw", len(raw) == msg_len)
+        # in_len, ver, cmd, seq, uin, flag, retrytimes = struct.unpack_from("!HHHHIBH", raw)
+        # print(in_len, ver, cmd, seq, uin, flag, retrytimes)
+        # dio = BytesIO(qqtea_decrypt(raw[16:], ecdh.ecdh["secp192k1"].share_key))
+        # print(dio.read(54))
+        # ret_code, qrsig = struct.unpack(">BH", dio.read(3))
+        # print(ret_code, qrsig)
+        # print(dio.read())
 
 
 class BaseClient:
@@ -128,7 +115,7 @@ class BaseClient:
     async def fetch_qrcode(self):
         tlv = QrCodeTlvBuilder()
         body = (
-            Builder()
+            PacketBuilder()
             .write_u16(0)
             .write_u64(0)
             .write_u8(0)

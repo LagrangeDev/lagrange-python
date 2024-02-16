@@ -3,11 +3,11 @@ import random
 import time
 
 from lagrange.info import AppInfo, DeviceInfo
+from lagrange.client.packet import PacketBuilder
 from lagrange.utils.crypto.tea import qqtea_encrypt
-from lagrange.utils.binary.builder import Builder
 
 
-class CommonTlvBuilder(Builder):
+class CommonTlvBuilder(PacketBuilder):
     @classmethod
     def _rand_u32(cls) -> int:
         return random.randint(0x0, 0xffffffff)
@@ -92,7 +92,7 @@ class CommonTlvBuilder(Builder):
 
         return cls().write_bytes(
             qqtea_encrypt(body, key),
-            with_length=True
+            "u32"
         ).pack(0x106)
 
     @classmethod
@@ -150,9 +150,9 @@ class CommonTlvBuilder(Builder):
         return (
             cls()
             .write_u16(_version)
-            .write_bytes(sim_info, with_length=True)
+            .write_bytes(sim_info, "u32")
             .write_u16(network_type)
-            .write_bytes(apn, with_length=True)
+            .write_bytes(apn, "u32")
         ).pack(0x141)
 
     @classmethod

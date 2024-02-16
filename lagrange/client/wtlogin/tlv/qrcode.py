@@ -1,7 +1,8 @@
-from lagrange.utils.binary.builder import Builder
 from lagrange.utils.binary.protobuf import proto_encode
+from lagrange.client.packet import PacketBuilder
 
-class QrCodeTlvBuilder(Builder):
+
+class QrCodeTlvBuilder(PacketBuilder):
     @classmethod
     def t11(cls, unusual_sign: bytes) -> bytes:
         return (
