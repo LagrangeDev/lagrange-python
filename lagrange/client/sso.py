@@ -29,18 +29,22 @@ def parse_sso_header(raw: bytes, d2_key: bytes) -> Tuple[int, str, bytes]:
     return flag, uin, dec
 
 
+def parse_oicq_body(raw: bytes, key: bytes, d2_key: bytes) -> bytes:
+    flag, enc_type = struct.unpack("!B12xHx", raw[:16])
+    print(flag, enc_type)
+    print(raw.hex())
+    return raw[16:]
+
+
 def parse_sso_frame(
-        buffer: bytes
+        buffer: bytes,
+        is_body_encrypted=True
 ) -> Union[
-    Tuple[int, int, str, str, bytes, bytes],
+    Tuple[int, int, Tuple[str, bytes, bytes]],
     Tuple[int, int, str]
 ]:
     buf = BytesIO(buffer)
     head_len, seq, ret_code = struct.unpack("!Iii", buf.read(12))
-
-    buf_len = len(buffer) - 8
-    if head_len != buf_len:
-        print(f"WARN: length of buffer does not match({head_len} vs {buf_len})")
 
     extra = parse_lv(buf).decode()
     if ret_code != 0:
@@ -49,7 +53,7 @@ def parse_sso_frame(
     session_id = parse_lv(buf)
     compress_type = struct.unpack('>I', buf.read(4))[0]
 
-    data = parse_lv(buf)
+    data = buf.read()
     if data:
         if compress_type == 0:
             pass
@@ -60,6 +64,6 @@ def parse_sso_frame(
         else:
             raise TypeError(f"Unsupported compress type {compress_type}")
 
-    #print(head_len, seq, ret_code, extra, compress_type, data, buf.read())
+    data = parse_oicq_body(data, None, None)
 
-    return seq, ret_code, extra, command_name, session_id, data
+    return seq, ret_code, (command_name, session_id, data)

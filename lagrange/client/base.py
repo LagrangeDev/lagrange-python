@@ -1,8 +1,12 @@
 import asyncio
+import struct
+from io import BytesIO
 from typing import Optional
 
 from lagrange.utils.network import Connection
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
+from lagrange.utils.crypto.tea import qqtea_decrypt
+from lagrange.utils.crypto.ecdh import ecdh
 from .sso import parse_sso_frame, parse_sso_header
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 from .oicq import build_code2d_packet
@@ -37,20 +41,20 @@ class ClientNetwork(Connection):
         _enc_flag, uin, sso_body = parse_sso_header(raw, self._sig.d2_key)
         print(f"uin={uin} in sso header")
 
-        print(parse_sso_frame(sso_body), "in sso body")
+        seq, ret_code, extra = parse_sso_frame(sso_body)
+        if ret_code == 0:
+            command_name, session_id, data = extra
+        else:
+            raise TypeError(ret_code, extra)
 
+        data = qqtea_decrypt(data[16:], ecdh["secp192k1"].share_key)
 
-        # return
-        # print(msg_len)
-        # raw = await self.reader.readexactly(msg_len)
-        # print(raw, "raw", len(raw) == msg_len)
-        # in_len, ver, cmd, seq, uin, flag, retrytimes = struct.unpack_from("!HHHHIBH", raw)
-        # print(in_len, ver, cmd, seq, uin, flag, retrytimes)
-        # dio = BytesIO(qqtea_decrypt(raw[16:], ecdh.ecdh["secp192k1"].share_key))
-        # print(dio.read(54))
-        # ret_code, qrsig = struct.unpack(">BH", dio.read(3))
-        # print(ret_code, qrsig)
-        # print(dio.read())
+        dio = BytesIO(data)
+        print(dio.read(54))
+        ret_code, qrsig = struct.unpack(">BH", dio.read(3))
+        dio.read(2)
+        print(ret_code, qrsig)
+        print(dio.read())
 
 
 class BaseClient:
