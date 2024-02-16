@@ -4,7 +4,6 @@ import hashlib
 from io import BytesIO
 from abc import ABC
 from dataclasses import dataclass, asdict
-from types import NoneType
 
 from typing_extensions import Self, List
 
@@ -76,8 +75,6 @@ class BinarySerializer(BaseSerializer):
                 iv = v.encode()
             elif isinstance(v, (bytes, bytearray)):
                 iv = bytes(v)
-            elif isinstance(v, NoneType):
-                iv = None
             else:
                 raise NotImplementedError
 

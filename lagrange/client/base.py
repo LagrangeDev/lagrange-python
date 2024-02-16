@@ -8,6 +8,7 @@ from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 from .oicq import build_code2d_packet
 from .packet import PacketBuilder
 
+
 class ClientNetwork(Connection):
     default_upstream = ("msfwifi.3g.qq.com", 8080)
 
@@ -122,14 +123,14 @@ class BaseClient:
             .write_tlv(
                 tlv.t16(
                     self.app_info.app_id,
-                    self.app_info.app_id_qrcode,
-                    self.device_info.guid.encode(),
+                    self.app_info.sub_app_id,
+                    bytes.fromhex(self.device_info.guid),
                     self.app_info.pt_version,
                     self.app_info.package_name
                 ),
                 tlv.t1b(),
                 tlv.t1d(self.app_info.misc_bitmap),
-                tlv.t33(self.device_info.guid.encode()),
+                tlv.t33(bytes.fromhex(self.device_info.guid)),
                 tlv.t35(self.app_info.pt_os_version),
                 tlv.t66(self.app_info.pt_os_version),
                 tlv.td1(self.app_info.os, self.device_info.device_name)

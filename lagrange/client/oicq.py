@@ -60,7 +60,7 @@ def build_login_packet(
     frame_body = (
         PacketBuilder()
         .write_u16(8001)
-        .write_u16(2066 if cmd == "wtlogin.login" else 2064)
+        .write_u16(2064 if cmd == "wtlogin.login" else 2066)
         .write_u16(0)
         .write_u32(uin)
         .write_u8(3)
@@ -125,7 +125,7 @@ def build_uni_packet(
         .write_string(device_info.guid, "u32")
         .write_bytes(b"", "u32")
         .write_string(app_info.current_version, "u16")
-        .write_bytes(head)
+        .write_bytes(head, "u32")
     ).pack()
 
     sso_packet = (
@@ -139,7 +139,7 @@ def build_uni_packet(
     service = (
         PacketBuilder()
         .write_u32(12)
-        .write_u8(1 if sig_info.d2 else 2)
+        .write_u8(2 if len(sig_info.d2) == 0 else 1)
         .write_bytes(sig_info.d2, "u32")
         .write_u8(0)
         .write_string(str(uin), "u32")

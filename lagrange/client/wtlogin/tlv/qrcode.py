@@ -11,21 +11,21 @@ class QrCodeTlvBuilder(PacketBuilder):
         ).pack(0x11)
 
     @classmethod
-    def t16(cls, sub_appid: int, appid_qrcode: int, guid: bytes, pt_version: str, package_name: str) -> bytes:
+    def t16(cls, appid: int, sub_appid: int, guid: bytes, pt_version: str, package_name: str) -> bytes:
         return (
             cls()
             .write_u32(0)
+            .write_u32(appid)
             .write_u32(sub_appid)
-            .write_u32(appid_qrcode)
             .write_bytes(guid)
-            .write_string(package_name)
-            .write_string(pt_version)
-            .write_string(package_name)
+            .write_string(package_name, "u16", False)
+            .write_string(pt_version, "u16", False)
+            .write_string(package_name, "u16", False)
         ).pack(0x16)
 
     @classmethod
     def t1b(cls) -> bytes:
-        return cls().write_struct("8I", 0, 0, 3, 4, 72, 2, 2, 0).pack(0x18)
+        return cls().write_struct("7IH", 0, 0, 3, 4, 72, 2, 2, 0).pack(0x1B)
 
     @classmethod
     def t1d(cls, misc_bitmap: int) -> bytes:

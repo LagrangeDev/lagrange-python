@@ -3,7 +3,7 @@ import zlib
 from io import BytesIO
 from typing import Tuple, Union
 
-from utils.crypto.tea import qqtea_decrypt
+from lagrange.utils.crypto.tea import qqtea_decrypt
 
 
 def parse_lv(buffer: BytesIO):  # u32 len only
