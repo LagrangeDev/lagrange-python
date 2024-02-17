@@ -41,6 +41,8 @@ class BaseClient:
         try:
             return self._sig.sequence
         finally:
+            if self._sig.sequence >= 0x8000:
+                self._sig.sequence = 0
             self._sig.sequence += 1
 
     def connect(self) -> None:
