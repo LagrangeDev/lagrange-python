@@ -2,7 +2,7 @@ import math
 import hashlib
 import random
 
-from lagrange.utils.crypto.ecdh import *
+from .curve import EllipticCurve, EllipticPoint
 
 
 class ECDHProvider:
