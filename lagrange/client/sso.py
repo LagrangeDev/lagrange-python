@@ -3,6 +3,7 @@ import zlib
 from io import BytesIO
 from typing import Tuple, Union
 
+from lagrange.utils.binary.reader import Reader
 from lagrange.utils.crypto.tea import qqtea_decrypt
 
 
@@ -29,31 +30,22 @@ def parse_sso_header(raw: bytes, d2_key: bytes) -> Tuple[int, str, bytes]:
     return flag, uin, dec
 
 
-def parse_oicq_body(raw: bytes, key: bytes, d2_key: bytes) -> bytes:
-    flag, enc_type = struct.unpack("!B12xHx", raw[:16])
-    print(flag, enc_type)
-    print(raw.hex())
-    return raw[16:]
-
-
 def parse_sso_frame(
-        buffer: bytes,
-        is_body_encrypted=True
+        buffer: bytes
 ) -> Union[
-    Tuple[int, int, Tuple[str, bytes, bytes]],
-    Tuple[int, int, str]
+    Tuple[int, int, str, bytes, bytes],
+    Tuple[int, int]
 ]:
-    buf = BytesIO(buffer)
-    head_len, seq, ret_code = struct.unpack("!Iii", buf.read(12))
-
-    extra = parse_lv(buf).decode()
+    reader = Reader(buffer)
+    head_len, seq, ret_code, session_id = reader.read_struct("!I3i")
     if ret_code != 0:
-        return seq, ret_code, extra
-    command_name = parse_lv(buf).decode()
-    session_id = parse_lv(buf)
-    compress_type = struct.unpack('>I', buf.read(4))[0]
+        return seq, ret_code
+    cmd = reader.read_string_with_length("u32")
+    reader.read_string_with_length("u32")
+    compress_type = reader.read_u32()
+    reader.read_bytes_with_length("u32", False)
 
-    data = buf.read()
+    data = reader.read_bytes_with_length("u32", False)
     if data:
         if compress_type == 0:
             pass
@@ -64,6 +56,4 @@ def parse_sso_frame(
         else:
             raise TypeError(f"Unsupported compress type {compress_type}")
 
-    data = parse_oicq_body(data, None, None)
-
-    return seq, ret_code, (command_name, session_id, data)
+    return seq, ret_code, cmd, session_id, data
