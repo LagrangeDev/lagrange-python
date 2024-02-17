@@ -7,7 +7,7 @@ from lagrange.info.sig import SigInfo
 
 async def main():
     uin = 0
-    client = BaseClient(uin, app_list['linux'], DeviceInfo.generate(uin), SigInfo.new(114514))
+    client = BaseClient(uin, app_list['linux'], DeviceInfo.generate(uin), SigInfo.new(8848))
     client.connect()
     png, _link = await client.fetch_qrcode()
     print("save to qrcode.png")

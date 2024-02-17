@@ -179,7 +179,6 @@ class BaseClient:
         app_id = reader.read_u32()
         ret_code = QrCodeResult(reader.read_u8())
 
-        print(cmd, app_id, ret_code.name)
         if ret_code == 0:
             reader.read_bytes(12)
             t = reader.read_tlv()
@@ -198,7 +197,7 @@ class BaseClient:
             ret_code = await self.get_qrcode_result()
             if not ret_code.waitable:
                 if not ret_code.success:
-                    raise AssertionError(ret_code.value)
+                    raise AssertionError(ret_code.name)
                 else:
                     break
 
