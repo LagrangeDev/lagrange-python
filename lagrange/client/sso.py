@@ -1,7 +1,7 @@
 import struct
 import zlib
 from io import BytesIO
-from typing import Tuple, Union
+from typing import Tuple, Optional
 
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.crypto.tea import qqtea_decrypt
@@ -32,20 +32,18 @@ def parse_sso_header(raw: bytes, d2_key: bytes) -> Tuple[int, str, bytes]:
 
 def parse_sso_frame(
         buffer: bytes
-) -> Union[
-    Tuple[int, int, str, bytes, bytes],
-    Tuple[int, int]
-]:
+) -> Tuple[int, int, Optional[Tuple[str, bytes, bytes]]]:
     reader = Reader(buffer)
     head_len, seq, ret_code, session_id = reader.read_struct("!I3i")
     if ret_code != 0:
-        return seq, ret_code
+        return seq, ret_code, None
     cmd = reader.read_string_with_length("u32")
     reader.read_string_with_length("u32")
     compress_type = reader.read_u32()
     reader.read_bytes_with_length("u32", False)
 
     data = reader.read_bytes_with_length("u32", False)
+    print(cmd, compress_type, data)
     if data:
         if compress_type == 0:
             pass
@@ -56,4 +54,4 @@ def parse_sso_frame(
         else:
             raise TypeError(f"Unsupported compress type {compress_type}")
 
-    return seq, ret_code, cmd, session_id, data
+    return seq, ret_code, (cmd, session_id, data)

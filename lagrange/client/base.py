@@ -47,6 +47,7 @@ class ClientNetwork(Connection):
         else:
             raise TypeError(ret_code, extra)
 
+        print(data.hex())
         data = qqtea_decrypt(data[16:], ecdh["secp192k1"].share_key)
 
         dio = BytesIO(data)
