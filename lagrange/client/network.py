@@ -60,10 +60,10 @@ class ClientNetwork(Connection):
 
     async def on_message(self, msg_len: int):
         raw = await self.reader.readexactly(msg_len)
-        _enc_flag, uin, sso_body = parse_sso_header(raw, self._sig.d2_key)
-        print(f"uin={uin} in sso header")
+        enc_flag, uin, sso_body = parse_sso_header(raw, self._sig.d2_key)
+        print(f"uin={uin}, enc={enc_flag} in sso header")
 
-        packet = parse_sso_frame(sso_body)
+        packet = parse_sso_frame(sso_body, enc_flag == 2)
         if packet.ret_code != 0:
             raise AssertionError(packet.ret_code)
 
@@ -71,14 +71,3 @@ class ClientNetwork(Connection):
             print(f"unknown packet seq: {packet.seq}, ignore")
         else:
             self._wait_fut_map[packet.seq].set_result(packet)
-
-        # data = packet.data
-        # print(data.hex())
-        # data = qqtea_decrypt(data[16:], ecdh["secp192k1"].share_key)
-        #
-        # dio = BytesIO(data)
-        # print(dio.read(54))
-        # ret_code, qrsig = struct.unpack(">BH", dio.read(3))
-        # dio.read(2)
-        # print(ret_code, qrsig)
-        # print(dio.read())

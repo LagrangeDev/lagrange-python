@@ -2,15 +2,14 @@ import asyncio
 from typing import Optional, Tuple, Union, overload
 from typing_extensions import Literal
 
+from lagrange.utils.binary.reader import Reader
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
+from .wtlogin.oicq import build_code2d_packet, build_uni_packet, build_login_packet, decode_login_response
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
+from .wtlogin.enum import QrCodeResult
 from .sso import SSOPacket
-from .oicq import build_code2d_packet, build_uni_packet
 from .packet import PacketBuilder
 from .network import ClientNetwork
-from ..utils.binary.reader import Reader
-from ..utils.crypto.ecdh import ecdh
-from ..utils.crypto.tea import qqtea_decrypt
 
 
 class BaseClient:
@@ -32,6 +31,9 @@ class BaseClient:
         self._device_info = device_info
         self._network = ClientNetwork(sig_info)
         self._loop_task: Optional[asyncio.Task] = None
+
+        self._t106 = bytes()
+        self._t16a = bytes()
 
         self._online = False
 
@@ -132,7 +134,7 @@ class BaseClient:
 
         response = await self.send_uni_packet("wtlogin.trans_emp", packet)
 
-        decrypted = Reader(qqtea_decrypt(response.data[16:-1], ecdh["secp192k1"].share_key))
+        decrypted = Reader(response.data)
         decrypted.read_bytes(54)
         ret_code = decrypted.read_u8()
         qrsig = decrypted.read_bytes_with_length("u16", False)
@@ -143,3 +145,92 @@ class BaseClient:
             return tlvs[0x17], Reader(tlvs[209]).read_bytes_with_length("u16").decode()
 
         return ret_code
+
+    async def get_qrcode_result(self) -> QrCodeResult:
+        if not self._sig.qrsig:
+            raise AssertionError("No QrSig found, execute fetch_qrcode first")
+
+        body = (
+            PacketBuilder()
+            .write_bytes(self._sig.qrsig, "u16", False)
+            .write_u64(0)
+            .write_u32(0)
+            .write_u8(0)
+            .write_u8(0x03)
+        ).pack()
+
+        response = await self.send_uni_packet(
+            "wtlogin.trans_emp",
+            build_code2d_packet(
+                self.uin,
+                0x12,
+                self.app_info,
+                body
+            )
+        )
+
+        reader = Reader(response.data)
+        # length = reader.read_u32()
+        reader.read_bytes(8)  # 4 + 4
+        cmd = reader.read_u16()
+        reader.read_bytes(40)
+        app_id = reader.read_u32()
+        ret_code = QrCodeResult(reader.read_u8())
+
+        print(cmd, app_id, ret_code.name)
+        if ret_code == 0:
+            reader.read_bytes(12)
+            t = reader.read_tlv()
+            self._t106 = t[0x18]
+            self._t16a = t[0x19]
+            self._sig.tgtgt = t[0x1e]
+
+        return ret_code
+
+    async def qrcode_login(self, refresh_interval=5):
+        if not self._sig.qrsig:
+            raise AssertionError("No QrSig found, fetch qrcode first")
+
+        while not self._network.closed:
+            await asyncio.sleep(refresh_interval)
+            ret_code = await self.get_qrcode_result()
+            if not ret_code.waitable:
+                if not ret_code.success:
+                    raise AssertionError(ret_code.value)
+                else:
+                    break
+
+        tlv = CommonTlvBuilder()
+        app = self.app_info
+        device = self.device_info
+        body = (
+            PacketBuilder()
+            .write_u16(0x09)
+            .write_tlv(
+                PacketBuilder().write_bytes(self._t106).pack(0x106),
+                tlv.t144(self._sig.tgtgt, app, device),
+                tlv.t116(app.sub_sigmap),
+                tlv.t142(app.package_name),
+                tlv.t145(bytes.fromhex(device.guid)),
+                tlv.t18(
+                    app.app_id,
+                    app.app_client_version,
+                    self.uin
+                ),
+                tlv.t141(b"Unknown"),
+                tlv.t177(app.wtlogin_sdk),
+                tlv.t191(),
+                tlv.t100(5, app.app_id, app.sub_app_id, app.app_client_version, app.main_sigmap),
+                tlv.t107(),
+                tlv.t318(),
+                PacketBuilder().write_bytes(self._t16a).pack(0x16a),
+                tlv.t166(5),
+                tlv.t521(),
+            )
+        ).pack()
+
+        response = await self.send_uni_packet(
+            "wtlogin.login",
+            build_login_packet(self.uin, "wtlogin.login", app, body)
+        )
+        print(decode_login_response(response.data, self._sig))

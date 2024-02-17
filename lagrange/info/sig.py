@@ -17,6 +17,7 @@ class SigInfo(BinarySerializer):
     cookies: str
     unusual_sig: bytes
     temp_pwd: bytes
+    uid: str
 
     @classmethod
     def new(cls, seq: int) -> "SigInfo":
@@ -31,5 +32,6 @@ class SigInfo(BinarySerializer):
             key_sig=bytes(),
             cookies="",
             unusual_sig=bytes(),
-            temp_pwd=bytes()
+            temp_pwd=bytes(),
+            uid=""
         )

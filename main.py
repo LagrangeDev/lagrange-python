@@ -9,7 +9,11 @@ async def main():
     uin = 0
     client = BaseClient(uin, app_list['linux'], DeviceInfo.generate(uin), SigInfo.new(114514))
     client.connect()
-    print(await client.fetch_qrcode())
+    png, _link = await client.fetch_qrcode()
+    print("save to qrcode.png")
+    with open("qrcode.png", "wb") as f:
+        f.write(png)
+    await client.qrcode_login(3)
     await client.wait_closed()
 
 

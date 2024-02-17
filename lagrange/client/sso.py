@@ -6,6 +6,7 @@ from typing import Tuple
 
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.crypto.tea import qqtea_decrypt
+from lagrange.utils.crypto.ecdh import ecdh
 
 
 @dataclass
@@ -41,7 +42,8 @@ def parse_sso_header(raw: bytes, d2_key: bytes) -> Tuple[int, str, bytes]:
 
 
 def parse_sso_frame(
-        buffer: bytes
+        buffer: bytes,
+        is_oicq_body=False
 ) -> SSOPacket:
     reader = Reader(buffer)
     head_len, seq, ret_code, session_id = reader.read_struct("!I3i")
@@ -65,6 +67,9 @@ def parse_sso_frame(
         else:
             raise TypeError(f"Unsupported compress type {compress_type}")
 
+    if is_oicq_body:
+        data = parse_oicq_body(data)
+
     return SSOPacket(
         seq=seq,
         ret_code=ret_code,
@@ -72,3 +77,18 @@ def parse_sso_frame(
         cmd=cmd,
         data=data
     )
+
+
+def parse_oicq_body(
+        buffer: bytes
+) -> bytes:
+    flag, enc_type = struct.unpack("!B12xHx", buffer[:16])
+
+    if flag != 2:
+        raise ValueError(f"Invalid OICQ response flag. Expected 2, got {flag}.")
+
+    body = buffer[16:-1]
+    if enc_type == 0:
+        return qqtea_decrypt(body, ecdh["secp192k1"].share_key)
+    else:
+        raise ValueError(f"Unknown encrypt type: {enc_type}")

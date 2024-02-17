@@ -46,7 +46,7 @@ class Builder:
         return self._pack("?", v)
 
     def write_byte(self, v: int) -> Self:
-        return self._pack("c", v)
+        return self._pack("b", v)
 
     def write_bytes(self, v: BYTES_LIKE, with_length=False) -> Self:
         if with_length:

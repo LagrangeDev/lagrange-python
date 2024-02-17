@@ -126,7 +126,7 @@ class CommonTlvBuilder(PacketBuilder):
         return cls().write_bytes(bytes(12)).pack(0x124)
 
     @classmethod
-    def t128(cls, app_info_os: str, device_guid: str) -> bytes:
+    def t128(cls, app_info_os: str, device_guid: bytes) -> bytes:
         return (
             cls()
             .write_u16(0)
@@ -135,7 +135,7 @@ class CommonTlvBuilder(PacketBuilder):
             .write_u8(0)
             .write_u32(0)
             .write_string(app_info_os)
-            .write_string(device_guid)
+            .write_bytes(device_guid, "u32")
             .write_string("")
         ).pack(0x128)
 
@@ -170,7 +170,7 @@ class CommonTlvBuilder(PacketBuilder):
             .write_tlv(
                 cls.t16e(device.device_name),
                 cls.t147(app_info.app_id, app_info.pt_version, app_info.package_name),
-                cls.t128(app_info.os, device.guid),
+                cls.t128(app_info.os, bytes.fromhex(device.guid)),
                 cls.t124()
             )
         ).pack(0x144)
@@ -191,9 +191,9 @@ class CommonTlvBuilder(PacketBuilder):
         ).pack(0x147)
 
     @classmethod
-    def t166(cls, image_type: bytes) -> bytes:
+    def t166(cls, image_type: int) -> bytes:
         return (
-            cls().write_byte(image_type[0])
+            cls().write_byte(image_type)
         ).pack(0x166)
 
     @classmethod

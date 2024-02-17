@@ -1,11 +1,13 @@
+import hashlib
 import os
 import time
 
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
-from lagrange.utils.binary.protobuf import proto_encode
+from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.utils.crypto.ecdh import ecdh
-from lagrange.utils.crypto.tea import qqtea_encrypt
-from .packet import PacketBuilder
+from lagrange.utils.crypto.tea import qqtea_encrypt, qqtea_decrypt
+from lagrange.client.packet import PacketBuilder
+from lagrange.utils.binary.reader import Reader
 
 
 def build_code2d_packet(
@@ -106,7 +108,7 @@ def build_uni_packet(
         .write_bytes(sig_info.tgt, "u32")
         .write_string(cmd, "u32")
         .write_bytes(b"", "u32")
-        .write_string(device_info.guid, "u32")
+        .write_bytes(bytes.fromhex(device_info.guid), "u32")
         .write_bytes(b"", "u32")
         .write_string(app_info.current_version, "u16")
         .write_bytes(head, "u32")
@@ -131,3 +133,35 @@ def build_uni_packet(
     ).pack()
 
     return PacketBuilder().write_bytes(service, "u32").pack()
+
+
+def decode_login_response(buf: bytes, sig: SigInfo):
+    reader = Reader(buf)
+    reader.read_bytes(2)
+    typ = reader.read_u8()
+    tlv = reader.read_tlv()
+
+    if typ == 0:
+        reader = Reader(qqtea_decrypt(tlv[0x119], sig.tgtgt))
+        tlv = reader.read_tlv()
+        sig.tgt = tlv.get(0x10a) or sig.tgt
+        sig.d2 = tlv.get(0x143) or sig.d2
+        sig.d2_key = tlv.get(0x305) or sig.d2_key
+        sig.tgtgt = hashlib.md5(sig.d2_key).digest()
+        sig.temp_pwd = tlv[0x106]
+        print(proto_decode(tlv[0x543]))
+        print("info:", tlv[0x11a])
+    elif 0x146 in tlv:
+        err_buf = Reader(tlv[0x146])
+        err_buf.read_bytes(4)
+        title = err_buf.read_string(err_buf.read_u16())
+        content = err_buf.read_string(err_buf.read_u16())
+        print(f"[{title}]: {content}")
+    elif 0x149 in tlv:
+        err_buf = Reader(tlv[0x149])
+        err_buf.read_bytes(2)
+        title = err_buf.read_string(err_buf.read_u16())
+        content = err_buf.read_string(err_buf.read_u16())
+        print(f"[{title}]: {content}")
+    else:
+        print("Unknown login status")
