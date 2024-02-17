@@ -61,7 +61,7 @@ class CommonTlvBuilder(PacketBuilder):
             uin: int,
             salt: int,
             password_md5: bytes,
-            guid: bytes,
+            guid: str,
             tgtgt_key: bytes,
             ip: bytes = bytes(4),
             save_password: bool = True,
@@ -70,7 +70,7 @@ class CommonTlvBuilder(PacketBuilder):
 
         body = (
             cls().write_struct(
-                ">HIIIIIQ",
+                "HIIIIQ",
                 4,  # tgtgt version
                 cls._rand_u32(),
                 0,  # sso_version, depreciated
@@ -84,8 +84,9 @@ class CommonTlvBuilder(PacketBuilder):
             .write_bytes(password_md5)
             .write_bytes(tgtgt_key)
             .write_u32(0)
-            .write_bool(bool(guid))
-            .write_u32(1)
+            .write_bool(True)
+            .write_bytes(bytes.fromhex(guid))
+            .write_u32(0)
             .write_u32(1)
             .write_string(str(uin))
         ).pack()

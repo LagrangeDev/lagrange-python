@@ -17,3 +17,12 @@ class QrCodeResult(IntEnum):
     @property
     def success(self) -> bool:
         return self == self.confirmed
+
+
+class LoginErrorCode(IntEnum):
+    token_expired = 140022015
+    unusual_verify = 140022011
+    login_failure = 140022013
+    new_device_verify = 140022010
+    captcha_verify = 140022008
+    success = 0

@@ -28,7 +28,7 @@ class BaseECDH:
         return self._share_key
 
     def exchange(self, new_key: bytes):
-        self._share_key = self._provider.key_exchange(new_key, self._compress_key)
+        return self._provider.key_exchange(new_key, self._compress_key)
 
 
 class ECDHPrime(BaseECDH):  # exchange key

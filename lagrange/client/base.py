@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 from typing import Optional, Tuple, Union, overload
 from typing_extensions import Literal
 
@@ -6,10 +7,12 @@ from lagrange.utils.binary.reader import Reader
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from .wtlogin.oicq import build_code2d_packet, build_uni_packet, build_login_packet, decode_login_response
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
+from .wtlogin.exchange import build_key_exchange_request, parse_key_exchange_response
 from .wtlogin.enum import QrCodeResult
 from .sso import SSOPacket
 from .packet import PacketBuilder
 from .network import ClientNetwork
+from .ntlogin import build_ntlogin_request, parse_ntlogin_response
 
 
 class BaseClient:
@@ -187,6 +190,41 @@ class BaseClient:
             self._sig.tgtgt = t[0x1e]
 
         return ret_code
+
+    async def _key_exchange(self):
+        packet = await self.send_uni_packet(
+            "trpc.login.ecdh.EcdhService.SsoKeyExchange",
+            build_key_exchange_request(
+                self.uin,
+                self.device_info.guid
+            )
+        )
+        parse_key_exchange_response(packet.data, self._sig)
+
+    async def password_login(self, password: str):
+        cr = CommonTlvBuilder().t106(
+            self.app_info.app_id,
+            self.app_info.app_client_version,
+            self.uin,
+            0,
+            hashlib.md5(password.encode()).digest(),
+            self.device_info.guid,
+            self._sig.tgtgt
+        )[4:]
+        packet = await self.send_uni_packet(
+            "trpc.login.ecdh.EcdhService.SsoNTLoginPasswordLogin",
+            build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, cr)
+        )
+
+        parse_ntlogin_response(packet.data, self._sig)
+
+    async def token_login(self, token: bytes):
+        packet = await self.send_uni_packet(
+            "trpc.login.ecdh.EcdhService.SsoNTLoginEasyLogin",
+            build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, token)
+        )
+
+        parse_ntlogin_response(packet.data, self._sig)
 
     async def qrcode_login(self, refresh_interval=5):
         if not self._sig.qrsig:

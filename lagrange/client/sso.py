@@ -54,7 +54,7 @@ def parse_sso_frame(
     cmd = reader.read_string_with_length("u32")
     reader.read_string_with_length("u32")
     compress_type = reader.read_u32()
-    reader.read_bytes_with_length("u32", False)
+    reader.read_bytes_with_length("u32", False)  # extra
 
     data = reader.read_bytes_with_length("u32", False)
     if data:
@@ -67,7 +67,7 @@ def parse_sso_frame(
         else:
             raise TypeError(f"Unsupported compress type {compress_type}")
 
-    if is_oicq_body:
+    if is_oicq_body and cmd.find("wtlogin") == 0:
         data = parse_oicq_body(data)
 
     return SSOPacket(

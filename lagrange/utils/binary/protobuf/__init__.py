@@ -93,7 +93,7 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         raise AssertionError
 
 
-def proto_decode(data: bytes) -> Proto:
+def proto_decode(data: bytes, single_layer=False) -> Proto:
     reader = ProtoReader(data)
     proto = {}
 
@@ -107,7 +107,10 @@ def proto_decode(data: bytes) -> Proto:
         elif wire_type == 2:
             value = reader.read_length_delimited()
             try:  # serialize nested
-                proto[tag] = proto_decode(value)
+                if not single_layer:
+                    proto[tag] = proto_decode(value)
+                else:
+                    proto[tag] = value
             except:
                 proto[tag] = value
         else:

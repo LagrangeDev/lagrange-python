@@ -52,7 +52,7 @@ class ECDHProvider:
         y = self._public.y.to_bytes(self._curve.size, "big")
         result = bytearray(1) + x + y
         result[0] = 0x04
-        return result
+        return bytes(result)
 
     def _pack_shared(self, shared: EllipticPoint, hashed: bool) -> bytes:
         x = shared.x.to_bytes(self._curve.size, "big")
