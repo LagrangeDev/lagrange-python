@@ -1,10 +1,20 @@
 import struct
 import zlib
 from io import BytesIO
-from typing import Tuple, Optional
+from dataclasses import dataclass, field
+from typing import Tuple
 
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.crypto.tea import qqtea_decrypt
+
+
+@dataclass
+class SSOPacket:
+    seq: int
+    ret_code: int
+    session_id: int
+    cmd: str = field(default="")
+    data: bytes = field(default=b"")
 
 
 def parse_lv(buffer: BytesIO):  # u32 len only
@@ -32,18 +42,19 @@ def parse_sso_header(raw: bytes, d2_key: bytes) -> Tuple[int, str, bytes]:
 
 def parse_sso_frame(
         buffer: bytes
-) -> Tuple[int, int, Optional[Tuple[str, bytes, bytes]]]:
+) -> SSOPacket:
     reader = Reader(buffer)
     head_len, seq, ret_code, session_id = reader.read_struct("!I3i")
+
     if ret_code != 0:
-        return seq, ret_code, None
+        return SSOPacket(seq=seq, ret_code=ret_code, session_id=session_id)
+
     cmd = reader.read_string_with_length("u32")
     reader.read_string_with_length("u32")
     compress_type = reader.read_u32()
     reader.read_bytes_with_length("u32", False)
 
     data = reader.read_bytes_with_length("u32", False)
-    print(cmd, compress_type, data)
     if data:
         if compress_type == 0:
             pass
@@ -54,4 +65,10 @@ def parse_sso_frame(
         else:
             raise TypeError(f"Unsupported compress type {compress_type}")
 
-    return seq, ret_code, (cmd, session_id, data)
+    return SSOPacket(
+        seq=seq,
+        ret_code=ret_code,
+        session_id=session_id,
+        cmd=cmd,
+        data=data
+    )

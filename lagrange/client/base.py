@@ -1,61 +1,11 @@
 import asyncio
-import struct
-from io import BytesIO
 from typing import Optional
 
-from lagrange.utils.network import Connection
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
-from lagrange.utils.crypto.tea import qqtea_decrypt
-from lagrange.utils.crypto.ecdh import ecdh
-from .sso import parse_sso_frame, parse_sso_header
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 from .oicq import build_code2d_packet
 from .packet import PacketBuilder
-
-
-class ClientNetwork(Connection):
-    default_upstream = ("msfwifi.3g.qq.com", 8080)
-
-    def __init__(self, sig_info: SigInfo, host: str = "", port: int = 0):
-        if not (host and port):
-            host, port = self.default_upstream
-        super().__init__(host, port)
-        self.conn_event = asyncio.Event()
-        self._sig = sig_info
-
-    async def write(self, buf: bytes):
-        await self.conn_event.wait()
-        self.writer.write(buf)
-        await self.writer.drain()
-
-    async def on_connected(self):
-        self.conn_event.set()
-        print("connected")
-
-    async def on_disconnect(self):
-        self.conn_event.clear()
-        print("disconnected")
-
-    async def on_message(self, msg_len: int):
-        raw = await self.reader.readexactly(msg_len)
-        _enc_flag, uin, sso_body = parse_sso_header(raw, self._sig.d2_key)
-        print(f"uin={uin} in sso header")
-
-        seq, ret_code, extra = parse_sso_frame(sso_body)
-        if ret_code == 0:
-            command_name, session_id, data = extra
-        else:
-            raise TypeError(ret_code, extra)
-
-        print(data.hex())
-        data = qqtea_decrypt(data[16:], ecdh["secp192k1"].share_key)
-
-        dio = BytesIO(data)
-        print(dio.read(54))
-        ret_code, qrsig = struct.unpack(">BH", dio.read(3))
-        dio.read(2)
-        print(ret_code, qrsig)
-        print(dio.read())
+from .network import ClientNetwork
 
 
 class BaseClient:
@@ -142,9 +92,10 @@ class BaseClient:
             ).write_u8(3)
         ).pack()
 
+        seq = self.get_seq()
         packet = build_code2d_packet(
             self.uin,
-            self.get_seq(),
+            seq,
             0x31,
             self.app_info,
             self.device_info,
@@ -152,6 +103,6 @@ class BaseClient:
             body
         )
 
-        await self._network.write(packet)
+        await self._network.send(packet, seq)
 
         print("done")
