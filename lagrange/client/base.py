@@ -1,11 +1,14 @@
 import asyncio
-from typing import Optional
+from typing import Optional, Tuple, Union
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 from .oicq import build_code2d_packet
 from .packet import PacketBuilder
 from .network import ClientNetwork
+from ..utils.binary.reader import Reader
+from ..utils.crypto.ecdh import ecdh
+from ..utils.crypto.tea import qqtea_decrypt
 
 
 class BaseClient:
@@ -68,7 +71,7 @@ class BaseClient:
     def online(self) -> bool:
         return self._online
 
-    async def fetch_qrcode(self):
+    async def fetch_qrcode(self) -> Union[int, Tuple[bytes, str]]:
         tlv = QrCodeTlvBuilder()
         body = (
             PacketBuilder()
@@ -103,6 +106,15 @@ class BaseClient:
             body
         )
 
-        await self._network.send(packet, seq)
+        response = await self._network.send(packet, seq)
+        decrypted = Reader(qqtea_decrypt(response.data[16:-1], ecdh["secp192k1"].share_key))
+        decrypted.read_bytes(54)
+        ret_code = decrypted.read_u8()
+        qrsig = decrypted.read_bytes_with_length("u16", False)
+        tlvs = decrypted.read_tlv()
 
-        print("done")
+        if not ret_code and tlvs[0x17]:
+            self._sig.qrsig = qrsig
+            return tlvs[0x17], Reader(tlvs[209]).read_bytes_with_length("u16").decode()
+
+        return ret_code
