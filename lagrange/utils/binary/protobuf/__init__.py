@@ -18,10 +18,10 @@ class ProtoBuilder(Builder):
             while v > 127:
                 buffer[length] = (v & 127) | 128
                 v >>= 7
-                v += 1
+                length += 1
 
             buffer[length] = v
-            self.write_bytes(buffer)
+            self.write_bytes(buffer[:length+1])
         else:
             self.write_u8(v)
 
