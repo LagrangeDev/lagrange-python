@@ -10,20 +10,15 @@ from .packet import PacketBuilder
 
 def build_code2d_packet(
         uin: int,
-        seq: int,
         cmd_id: int,
         app_info: AppInfo,
-        device_info: DeviceInfo,
-        sig_info: SigInfo,
         body: bytes
 ) -> bytes:
+    """need build_uni_packet function to wrapper"""
     return build_login_packet(
         uin,
-        seq,
         "wtlogin.trans_emp",
         app_info,
-        device_info,
-        sig_info,
         (
             PacketBuilder()
             .write_u8(0)
@@ -48,11 +43,8 @@ def build_code2d_packet(
 
 def build_login_packet(
         uin: int,
-        seq: int,
         cmd: str,
         app_info: AppInfo,
-        device_info: DeviceInfo,
-        sig_info: SigInfo,
         body: bytes
 ) -> bytes:
     enc_body = qqtea_encrypt(body, ecdh["secp192k1"].share_key)
@@ -87,15 +79,7 @@ def build_login_packet(
         .write_bytes(frame_body)
     ).pack()
 
-    return build_uni_packet(
-        uin,
-        seq,
-        cmd,
-        app_info,
-        device_info,
-        sig_info,
-        frame
-    )
+    return frame
 
 
 def build_uni_packet(

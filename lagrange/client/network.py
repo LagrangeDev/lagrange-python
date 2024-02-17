@@ -2,13 +2,10 @@
 ClientNetwork Implement
 """
 import asyncio
-import struct
-from io import BytesIO
-from typing import Optional, Dict
+from typing import Optional, Dict, overload
+from typing_extensions import Literal
 
 from lagrange.info import SigInfo
-from lagrange.utils.crypto.ecdh import ecdh
-from lagrange.utils.crypto.tea import qqtea_decrypt
 from lagrange.utils.network import Connection
 
 from .sso import parse_sso_header, parse_sso_frame, SSOPacket
@@ -31,7 +28,15 @@ class ClientNetwork(Connection):
         self.writer.write(buf)
         await self.writer.drain()
 
-    async def send(self, buf: bytes, wait_seq=-1, timeout=5) -> Optional[SSOPacket]:
+    @overload
+    async def send(self, buf: bytes, wait_seq: Literal["-1"] = -1, timeout=5) -> None:
+        ...
+
+    @overload
+    async def send(self, buf: bytes, wait_seq=-1, timeout=5) -> SSOPacket:
+        ...
+
+    async def send(self, buf: bytes, wait_seq=-1, timeout=5):
         await self.write(buf)
         if wait_seq != -1:
             fut: asyncio.Future[SSOPacket] = asyncio.Future()

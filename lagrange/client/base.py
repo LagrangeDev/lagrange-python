@@ -1,9 +1,11 @@
 import asyncio
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, overload
+from typing_extensions import Literal
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
-from .oicq import build_code2d_packet
+from .sso import SSOPacket
+from .oicq import build_code2d_packet, build_uni_packet
 from .packet import PacketBuilder
 from .network import ClientNetwork
 from ..utils.binary.reader import Reader
@@ -71,6 +73,32 @@ class BaseClient:
     def online(self) -> bool:
         return self._online
 
+    @overload
+    async def send_uni_packet(self, cmd: str, buf: bytes, send_only=False) -> SSOPacket:
+        ...
+
+    @overload
+    async def send_uni_packet(self, cmd: str, buf: bytes, send_only: Literal[False]) -> SSOPacket:
+        ...
+
+    @overload
+    async def send_uni_packet(self, cmd: str, buf: bytes, send_only: Literal[True]) -> None:
+        ...
+
+    async def send_uni_packet(self, cmd, buf, send_only=False):
+        seq = self.get_seq()
+        packet = build_uni_packet(
+            uin=self.uin,
+            seq=seq,
+            cmd=cmd,
+            app_info=self.app_info,
+            device_info=self.device_info,
+            sig_info=self._sig,
+            body=buf
+        )
+
+        return await self._network.send(packet, wait_seq=-1 if send_only else seq)
+
     async def fetch_qrcode(self) -> Union[int, Tuple[bytes, str]]:
         tlv = QrCodeTlvBuilder()
         body = (
@@ -95,18 +123,15 @@ class BaseClient:
             ).write_u8(3)
         ).pack()
 
-        seq = self.get_seq()
         packet = build_code2d_packet(
             self.uin,
-            seq,
             0x31,
-            self.app_info,
-            self.device_info,
-            self._sig,
+            self._app_info,
             body
         )
 
-        response = await self._network.send(packet, seq)
+        response = await self.send_uni_packet("wtlogin.trans_emp", packet)
+
         decrypted = Reader(qqtea_decrypt(response.data[16:-1], ecdh["secp192k1"].share_key))
         decrypted.read_bytes(54)
         ret_code = decrypted.read_u8()
