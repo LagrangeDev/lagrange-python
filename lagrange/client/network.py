@@ -62,13 +62,18 @@ class ClientNetwork(Connection):
         if packet.ret_code != 0:
             raise AssertionError(packet.ret_code)
 
-        data = packet.data
-        print(data.hex())
-        data = qqtea_decrypt(data[16:], ecdh["secp192k1"].share_key)
+        if packet.seq not in self._wait_fut_map:
+            print(f"unknown packet seq: {packet.seq}, ignore")
+        else:
+            self._wait_fut_map[packet.seq].set_result(packet)
 
-        dio = BytesIO(data)
-        print(dio.read(54))
-        ret_code, qrsig = struct.unpack(">BH", dio.read(3))
-        dio.read(2)
-        print(ret_code, qrsig)
-        print(dio.read())
+        # data = packet.data
+        # print(data.hex())
+        # data = qqtea_decrypt(data[16:], ecdh["secp192k1"].share_key)
+        #
+        # dio = BytesIO(data)
+        # print(dio.read(54))
+        # ret_code, qrsig = struct.unpack(">BH", dio.read(3))
+        # dio.read(2)
+        # print(ret_code, qrsig)
+        # print(dio.read())
