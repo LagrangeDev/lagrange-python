@@ -2,7 +2,6 @@ from typing import Optional
 
 from .httpcat import HttpCat
 
-UPSTREAM_URL = "https://sign.libfekit.so/api/sign"
 SIGN_PKG_LIST = [
     "trpc.o3.ecdh_access.EcdhAccess.SsoEstablishShareKey",
     "trpc.o3.ecdh_access.EcdhAccess.SsoSecureAccess",
@@ -50,22 +49,25 @@ def _pack_params(d: dict) -> str:
     return r[:-1]
 
 
-async def get_sign(cmd: str, seq: int, buf: bytes) -> Optional[dict]:
-    if cmd not in SIGN_PKG_LIST:
-        return
+def sign_provider(upstream_url: str):
+    async def get_sign(cmd: str, seq: int, buf: bytes) -> Optional[dict]:
+        if cmd not in SIGN_PKG_LIST:
+            return
 
-    params = {
-        "cmd": cmd,
-        "seq": seq,
-        "src": buf.hex()
-    }
+        params = {
+            "cmd": cmd,
+            "seq": seq,
+            "src": buf.hex()
+        }
 
-    ret = await HttpCat.request(
-        "get",
-        UPSTREAM_URL + _pack_params(params)
-    )
-    print(f"signed for ({seq})[{cmd}]")
-    if ret.code != 200:
-        raise ConnectionError(ret.code, ret.body)
+        ret = await HttpCat.request(
+            "get",
+            upstream_url + _pack_params(params)
+        )
+        print(f"signed for ({seq})[{cmd}]")
+        if ret.code != 200:
+            raise ConnectionError(ret.code, ret.body)
 
-    return ret.json()["value"]
+        return ret.json()["value"]
+
+    return get_sign
