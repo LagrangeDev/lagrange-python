@@ -2,13 +2,13 @@
 ClientNetwork Implement
 """
 import asyncio
-from typing import Optional, Dict, overload
+from typing import Dict, overload
 from typing_extensions import Literal
 
 from lagrange.info import SigInfo
 from lagrange.utils.network import Connection
 
-from .sso import parse_sso_header, parse_sso_frame, SSOPacket
+from .wtlogin.sso import parse_sso_header, parse_sso_frame, SSOPacket
 
 
 class ClientNetwork(Connection):

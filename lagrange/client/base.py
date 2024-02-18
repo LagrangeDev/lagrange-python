@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import time
 from typing import Optional, Tuple, Union, overload
 from typing_extensions import Literal
 
@@ -9,7 +10,8 @@ from .wtlogin.oicq import build_code2d_packet, build_uni_packet, build_login_pac
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 from .wtlogin.exchange import build_key_exchange_request, parse_key_exchange_response
 from .wtlogin.enum import QrCodeResult
-from .sso import SSOPacket
+from .wtlogin.sso import SSOPacket
+from .wtlogin.status_service import build_register_request, build_sso_heartbeat_request, parse_register_response
 from .packet import PacketBuilder
 from .network import ClientNetwork
 from .ntlogin import build_ntlogin_request, parse_ntlogin_response
@@ -273,3 +275,20 @@ class BaseClient:
             build_login_packet(self.uin, "wtlogin.login", app, body)
         )
         print(decode_login_response(response.data, self._sig))
+
+    async def register(self):
+        response = await self.send_uni_packet(
+            "trpc.qq_new_tech.status_svc.StatusService.Register",
+            build_register_request(self.app_info, self.device_info)
+        )
+        return parse_register_response(response.data)
+
+    async def sso_heartbeat(self, calc_latency=False) -> float:
+        start_time = time.time()
+        await self.send_uni_packet(
+            "trpc.qq_new_tech.status_svc.StatusService.SsoHeartBeat",
+            build_sso_heartbeat_request()
+        )
+        if calc_latency:
+            return time.time() - start_time
+        return 0
