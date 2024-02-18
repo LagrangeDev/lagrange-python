@@ -134,25 +134,21 @@ class CommonTlvBuilder(PacketBuilder):
             .write_u8(1)
             .write_u8(0)
             .write_u32(0)
-            .write_string(app_info_os)
-            .write_bytes(device_guid, "u32")
-            .write_string("")
+            .write_string(app_info_os, "u16", False)
+            .write_bytes(device_guid, "u16", False)
+            .write_string("", "u16", False)
         ).pack(0x128)
 
     @classmethod
     def t141(
             cls,
             sim_info: bytes,
-            network_type: int = 0,
             apn: bytes = bytes(0),
-            _version: int = 0
     ) -> bytes:
         return (
             cls()
-            .write_u16(_version)
-            .write_bytes(sim_info, "u32")
-            .write_u16(network_type)
-            .write_bytes(apn, "u32")
+            .write_bytes(sim_info, "u32", False)
+            .write_bytes(apn, "u32", False)
         ).pack(0x141)
 
     @classmethod
@@ -160,7 +156,7 @@ class CommonTlvBuilder(PacketBuilder):
         return (
             cls()
             .write_u16(_version)
-            .write_string(apk_id[:32])
+            .write_string(apk_id[:32], "u16", False)
         ).pack(0x142)
 
     @classmethod
@@ -186,8 +182,8 @@ class CommonTlvBuilder(PacketBuilder):
         return (
             cls()
             .write_u32(app_id)
-            .write_string(pt_version)
-            .write_string(package_name)
+            .write_string(pt_version, "u16", False)
+            .write_string(package_name, "u16", False)
         ).pack(0x147)
 
     @classmethod
@@ -213,7 +209,7 @@ class CommonTlvBuilder(PacketBuilder):
         return (
             cls()
             .write_struct("BI", 1, build_time)
-            .write_string(sdk_version)
+            .write_string(sdk_version, "u16", False)
         ).pack(0x177)
 
     @classmethod
@@ -234,5 +230,5 @@ class CommonTlvBuilder(PacketBuilder):
         return (
             cls()
             .write_u32(product_type)
-            .write_string(product_desc)
+            .write_string(product_desc, "u16", False)
         ).pack(0x521)

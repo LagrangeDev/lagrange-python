@@ -81,6 +81,10 @@ class BaseClient:
     def uin(self) -> int:
         return self._uin
 
+    @uin.setter
+    def uin(self, value: int):
+        self._uin = value
+
     @property
     def online(self) -> bool:
         return self._online
@@ -192,7 +196,9 @@ class BaseClient:
         ret_code = QrCodeResult(reader.read_u8())
 
         if ret_code == 0:
-            reader.read_bytes(12)
+            reader.read_bytes(4)
+            self.uin = reader.read_u32()
+            reader.read_bytes(4)
             t = reader.read_tlv()
             self._t106 = t[0x18]
             self._t16a = t[0x19]
@@ -262,14 +268,14 @@ class BaseClient:
                 tlv.t142(app.package_name),
                 tlv.t145(bytes.fromhex(device.guid)),
                 tlv.t18(
-                    app.app_id,
+                    0,
                     app.app_client_version,
                     self.uin
                 ),
                 tlv.t141(b"Unknown"),
                 tlv.t177(app.wtlogin_sdk),
                 tlv.t191(),
-                tlv.t100(5, app.app_id, app.sub_app_id, app.app_client_version, app.main_sigmap),
+                tlv.t100(5, app.app_id, app.sub_app_id, 8001, app.main_sigmap),
                 tlv.t107(),
                 tlv.t318(),
                 PacketBuilder().write_bytes(self._t16a).pack(0x16a),
