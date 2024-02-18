@@ -102,9 +102,9 @@ def build_uni_packet(
     }
     if sign:
         head[24] = {
-            1: sign["sign"],
-            2: sign["token"],
-            3: sign["extra"]
+            1: bytes.fromhex(sign["sign"]),
+            2: bytes.fromhex(sign["token"]),
+            3: bytes.fromhex(sign["extra"])
         }
 
     sso_header = (
