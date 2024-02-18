@@ -1,4 +1,5 @@
 import asyncio
+from lagrange.utils.sign import get_sign
 from lagrange.client.base import BaseClient
 from lagrange.info.app import app_list
 from lagrange.info.device import DeviceInfo
@@ -7,12 +8,18 @@ from lagrange.info.sig import SigInfo
 
 async def main():
     uin = 0
-    pwd = "<PASSWORD>"
-    client = BaseClient(uin, app_list['linux'], DeviceInfo.generate(uin), SigInfo.new(8848))
+    pwd = "<PWD>"
+    client = BaseClient(
+        uin,
+        app_list['linux'],
+        DeviceInfo.generate(uin),
+        SigInfo.new(8848),
+        get_sign
+    )
     client.connect()
-    await client._key_exchange()
-    print(f"{round(await client.sso_heartbeat(True) * 1000, 2)}ms")
+    #print(f"{round(await client.sso_heartbeat(True) * 1000, 2)}ms")
     if uin:
+        await client._key_exchange()
         await client.password_login(pwd)
         it = input("ticket?->")
         ir = input("rand_str?->")

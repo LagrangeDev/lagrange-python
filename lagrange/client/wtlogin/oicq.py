@@ -88,16 +88,24 @@ def build_uni_packet(
         uin: int,
         seq: int,
         cmd: str,
+        sign: dict,
         app_info: AppInfo,
         device_info: DeviceInfo,
         sig_info: SigInfo,
         body: bytes
 ) -> bytes:
     trace = f"00-{os.urandom(16).hex()}-{os.urandom(8).hex()}-01"
-    head = proto_encode({
+
+    head = {
         15: trace,
         16: uin
-    })
+    }
+    if sign:
+        head[24] = {
+            1: sign["sign"],
+            2: sign["token"],
+            3: sign["extra"]
+        }
 
     sso_header = (
         PacketBuilder()
@@ -111,7 +119,7 @@ def build_uni_packet(
         .write_bytes(bytes.fromhex(device_info.guid), "u32")
         .write_bytes(b"", "u32")
         .write_string(app_info.current_version, "u16")
-        .write_bytes(head, "u32")
+        .write_bytes(proto_encode(head), "u32")
     ).pack()
 
     sso_packet = (

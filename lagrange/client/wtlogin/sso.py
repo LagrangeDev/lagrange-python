@@ -54,7 +54,7 @@ def parse_sso_frame(
     cmd = reader.read_string_with_length("u32")
     reader.read_string_with_length("u32")
     compress_type = reader.read_u32()
-    reader.read_bytes_with_length("u32", False)  # extra
+    extra = reader.read_bytes_with_length("u32", False)  # extra
 
     data = reader.read_bytes_with_length("u32", False)
     if data:

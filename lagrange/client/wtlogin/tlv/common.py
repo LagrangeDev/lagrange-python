@@ -59,14 +59,13 @@ class CommonTlvBuilder(PacketBuilder):
             app_id: int,
             app_client_version: int,
             uin: int,
-            salt: int,
             password_md5: bytes,
             guid: str,
             tgtgt_key: bytes,
             ip: bytes = bytes(4),
             save_password: bool = True,
     ) -> bytes:
-        key = hashlib.md5(password_md5 + bytes(4) + cls().write_u32(salt or uin).pack()).digest()
+        key = hashlib.md5(password_md5 + bytes(4) + cls().write_u32(uin).pack()).digest()
 
         body = (
             cls().write_struct(
@@ -76,9 +75,9 @@ class CommonTlvBuilder(PacketBuilder):
                 0,  # sso_version, depreciated
                 app_id,
                 app_client_version,
-                uin or salt,
+                uin,
             )
-            .write_u32(int(time.time()))
+            .write_u32(int(time.time()) & 0xffffffff)
             .write_bytes(ip)
             .write_bool(save_password)
             .write_bytes(password_md5)
@@ -88,7 +87,7 @@ class CommonTlvBuilder(PacketBuilder):
             .write_bytes(bytes.fromhex(guid))
             .write_u32(0)
             .write_u32(1)
-            .write_string(str(uin))
+            .write_string(str(uin), "u16", False)
         ).pack()
 
         return cls().write_bytes(

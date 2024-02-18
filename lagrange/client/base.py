@@ -1,9 +1,10 @@
 import asyncio
 import hashlib
 import time
-from typing import Optional, Tuple, Union, overload
+from typing import Optional, Tuple, Union, overload, Coroutine, Callable
 from typing_extensions import Literal
 
+from lagrange.utils.sign import get_sign
 from lagrange.utils.binary.reader import Reader
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from .wtlogin.oicq import build_code2d_packet, build_uni_packet, build_login_packet, decode_login_response
@@ -28,7 +29,8 @@ class BaseClient:
             uin: int,
             app_info: AppInfo,
             device_info: DeviceInfo,
-            sig_info: Optional[SigInfo] = None
+            sig_info: Optional[SigInfo] = None,
+            sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None
     ):
         self._uin = uin
         self._sig = sig_info
@@ -36,6 +38,7 @@ class BaseClient:
         self._device_info = device_info
         self._network = ClientNetwork(sig_info)
         self._loop_task: Optional[asyncio.Task] = None
+        self._sign_provider = sign_provider
 
         self._t106 = bytes()
         self._t16a = bytes()
@@ -96,10 +99,14 @@ class BaseClient:
 
     async def send_uni_packet(self, cmd, buf, send_only=False):
         seq = self.get_seq()
+        sign = None
+        if self._sign_provider:
+            sign = await self._sign_provider(cmd, seq, buf)
         packet = build_uni_packet(
             uin=self.uin,
             seq=seq,
             cmd=cmd,
+            sign=sign,
             app_info=self.app_info,
             device_info=self.device_info,
             sig_info=self._sig,
@@ -204,12 +211,13 @@ class BaseClient:
         parse_key_exchange_response(packet.data, self._sig)
 
     async def password_login(self, password: str):
+        md5_passwd = hashlib.md5(password.encode()).digest()
+
         cr = CommonTlvBuilder().t106(
             self.app_info.app_id,
             self.app_info.app_client_version,
             self.uin,
-            0,
-            hashlib.md5(password.encode()).digest(),
+            md5_passwd,
             self.device_info.guid,
             self._sig.tgtgt
         )[4:]
