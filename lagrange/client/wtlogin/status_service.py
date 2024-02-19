@@ -5,14 +5,14 @@ from lagrange.info import AppInfo, DeviceInfo
 # trpc.qq_new_tech.status_svc.StatusService.Register
 def build_register_request(app: AppInfo, device: DeviceInfo) -> bytes:
     return proto_encode({
-        1: device.guid,
+        1: device.guid.upper(),
         2: 0,
         3: app.current_version,
         4: 0,
         5: 2052,  # locale id
         6: {
             1: device.device_name,
-            2: device.kernel_version,
+            2: app.vendor_os.capitalize(),
             3: device.system_kernel,
             4: "",
             5: app.vendor_os

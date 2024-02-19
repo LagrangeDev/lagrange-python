@@ -86,6 +86,7 @@ def build_login_packet(
 
 def build_uni_packet(
         uin: int,
+        uid: str,
         seq: int,
         cmd: str,
         sign: dict,
@@ -98,7 +99,7 @@ def build_uni_packet(
 
     head = {
         15: trace,
-        16: uin
+        16: uid
     }
     if sign:
         head[24] = {

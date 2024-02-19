@@ -103,6 +103,7 @@ class BaseClient:
             sign = await self._sign_provider(cmd, seq, buf)
         packet = build_uni_packet(
             uin=self.uin,
+            uid=self._sig.uid,
             seq=seq,
             cmd=cmd,
             sign=sign,
