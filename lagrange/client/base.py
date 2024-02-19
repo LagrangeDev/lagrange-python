@@ -42,13 +42,16 @@ class BaseClient:
             "loop": None,
             "push_handle": None
         }
-        self._network = ClientNetwork(sig_info, self._server_push_queue, self.register)
+        self._network = ClientNetwork(sig_info, self._server_push_queue, self.register, self._disconnect_cb)
         self._sign_provider = sign_provider
 
         self._t106 = bytes()
         self._t16a = bytes()
 
-        self._online = False
+        self._online = asyncio.Event()
+
+    async def _disconnect_cb(self):
+        self._online.clear()
 
     def get_seq(self) -> int:
         try:
@@ -66,7 +69,7 @@ class BaseClient:
             raise RuntimeError("connect call twice")
 
     async def disconnect(self):
-        self._online = False
+        self._online.clear()
         await self._network.stop()
 
     async def stop(self):
@@ -103,7 +106,7 @@ class BaseClient:
         return self._uin
 
     @property
-    def online(self) -> bool:
+    def online(self) -> asyncio.Event:
         return self._online
 
     @overload
@@ -314,7 +317,7 @@ class BaseClient:
             build_register_request(self.app_info, self.device_info)
         )
         if parse_register_response(response.data):
-            self._online = True
+            self._online.set()
             logger.login.info("Register successful")
             return True
         logger.login.error("Register failure")

@@ -64,6 +64,13 @@ logging.basicConfig(
 )
 
 
+async def heartbeat_task(client: Client):
+    while True:
+        await client.online.wait()
+        await asyncio.sleep(120)
+        print(f"{round(await client.sso_heartbeat(True) * 1000, 2)}ms to server")
+
+
 async def main():
     uin = 0
     sign_url = ""
@@ -79,6 +86,7 @@ async def main():
             sign_provider(sign_url) if sign_url else None
         )
         client.connect()
+        asyncio.create_task(heartbeat_task(client))
         if not await client.register():
             await client.login()
         im.save_all()

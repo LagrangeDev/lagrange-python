@@ -20,6 +20,7 @@ class ClientNetwork(Connection):
             sig_info: SigInfo,
             push_store: asyncio.Queue[SSOPacket],
             reconnect_cb: Callable[[], Coroutine],
+            disconnect_cb: Callable[[], Coroutine],
             host: str = "",
             port: int = 0
     ):
@@ -30,6 +31,7 @@ class ClientNetwork(Connection):
         self.conn_event = asyncio.Event()
         self._push_store = push_store
         self._reconnect_cb = reconnect_cb
+        self._disconnect_cb = disconnect_cb
         self._wait_fut_map: Dict[int, asyncio.Future[SSOPacket]] = {}
         self._connected = False
         self._sig = sig_info
@@ -70,6 +72,7 @@ class ClientNetwork(Connection):
     async def on_disconnect(self):
         self.conn_event.clear()
         logger.network.warning("Connection lost")
+        t = asyncio.create_task(self._disconnect_cb(), name="disconnect_cb")
 
     async def on_error(self) -> bool:
         logger.network.exception("Connection got an unexpected error:")
