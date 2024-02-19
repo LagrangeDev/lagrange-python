@@ -62,8 +62,8 @@ class ClientNetwork(Connection):
         self.conn_event.set()
         host, port = self.writer.get_extra_info('peername')
         logger.network.info(f"Connected to {host}:{port}")
-        if self._connected:
-            t = asyncio.create_task(self._reconnect_cb())
+        if self._connected and not self._stop_flag:
+            t = asyncio.create_task(self._reconnect_cb(), name="reconnect_cb")
         else:
             self._connected = True
 
