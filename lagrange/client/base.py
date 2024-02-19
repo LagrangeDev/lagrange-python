@@ -315,7 +315,9 @@ class BaseClient:
         )
         if parse_register_response(response.data):
             self._online = True
+            logger.login.info("Register successful")
             return True
+        logger.login.error("Register failure")
         return False
 
     async def sso_heartbeat(self, calc_latency=False) -> float:
