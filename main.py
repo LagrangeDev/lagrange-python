@@ -79,7 +79,8 @@ async def main():
             sign_provider(sign_url) if sign_url else None
         )
         client.connect()
-        await client.login()
+        if not await client.register():
+            await client.login()
         im.save_all()
         await client.wait_closed()
 

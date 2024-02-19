@@ -33,7 +33,8 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
                     msg_chain.append({
                         "type": "at",
                         "text": msg[1].decode(),
-                        "uin": int.from_bytes(msg[3][7:11], "big"),
+                        "uin": int.from_bytes(msg[3][7:11], "big") if isinstance(msg[3], bytes)
+                        else unpack_proto_dict(msg, "12.4"),
                         "uid": msg[12][9].decode()
                     })
             else:  # Text
@@ -41,11 +42,17 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
                     "type": "text",
                     "text": msg[1].decode()
                 })
-        elif 8 in raw:  # gpic?
+        elif 2 in raw:  # q emoji
+            emo = raw[2]
+            msg_chain.append({
+                "type": "emoji",
+                "id": emo[1]
+            })
+        elif 8 in raw:  # gpic
             img = raw[8]
             msg_chain.append({
                 "type": "image",
-                "text": unpack_proto_dict(img, "34.9", b"").decode(),
+                "text": unpack_proto_dict(img, "34.9", "[图片]".encode()).decode(),
                 "url": "https://gchat.qpic.cn" + img[16].decode(),
                 "name": unpack_proto_dict(img, "2", b"undefined").decode(),
                 "is_emoji": bool(unpack_proto_dict(img, "34.1"))
@@ -69,6 +76,7 @@ def parse_grp_msg(pb: dict):
     grp_id = unpack_proto_dict(pb, "1.8.1")
     grp_name = unpack_proto_dict(pb, "1.8.7").decode()
     parsed_msg = parse_msg(pb[3][1][2])
+    print(parsed_msg)
 
     display_msg = ""
     for m in parsed_msg:
