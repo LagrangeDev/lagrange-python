@@ -157,8 +157,11 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         sig.d2_key = tlv.get(0x305) or sig.d2_key
         sig.tgtgt = hashlib.md5(sig.d2_key).digest()
         sig.temp_pwd = tlv[0x106]
-        print(proto_decode(tlv[0x543]))
+        sig.uid = proto_decode(tlv[0x543])[9][11][1].decode()  # noqa
+
         print("info:", tlv[0x11a])
+
+        return True
     elif 0x146 in tlv:
         err_buf = Reader(tlv[0x146])
         err_buf.read_bytes(4)
@@ -173,3 +176,5 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         print(f"[{title}]: {content}")
     else:
         print("Unknown login status")
+
+    return False

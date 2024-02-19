@@ -24,7 +24,7 @@ class JsonSerializer(BaseSerializer):
     @classmethod
     def load(cls, buffer: bytes) -> Self:
         return cls(
-            **json.loads(string)  # noqa
+            **json.loads(buffer)  # noqa
         )
 
     def dump(self) -> bytes:
@@ -76,7 +76,7 @@ class BinarySerializer(BaseSerializer):
             elif isinstance(v, (bytes, bytearray)):
                 iv = bytes(v)
             else:
-                raise NotImplementedError
+                continue
 
             tlv = (
                 Builder()

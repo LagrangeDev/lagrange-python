@@ -1,3 +1,5 @@
+import json
+
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.utils.crypto.aes import aes_gcm_encrypt, aes_gcm_decrypt
@@ -54,7 +56,6 @@ def parse_ntlogin_response(response: bytes, sig: SigInfo) -> bool:
         aes_gcm_decrypt(frame[3], sig.exchange_key)
     )
 
-    print(body)
     if 1 in body[2]:
         cr = body[2][1]
         sig.tgt = cr[4]
@@ -62,10 +63,11 @@ def parse_ntlogin_response(response: bytes, sig: SigInfo) -> bool:
         sig.d2_key = cr[6]
         sig.temp_pwd = cr[3]
         print("login successful")
+        return True
     else:
         ret = LoginErrorCode(body[1][4][1])
+        sig.cookies = body[1][5][1]
         if ret == LoginErrorCode.captcha_verify:
-            sig.cookies = body[1][5][1]
             verify_url: str = body[2][2][3].decode()
             aid = verify_url.split("&sid=")[1].split("&")[0]
             sig.captcha_info[2] = aid
@@ -77,3 +79,5 @@ def parse_ntlogin_response(response: bytes, sig: SigInfo) -> bool:
             print(f"[{title}]: {content}")
         else:
             print(ret.name)
+
+    return False

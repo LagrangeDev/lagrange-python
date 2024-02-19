@@ -61,11 +61,15 @@ class ClientNetwork(Connection):
     async def on_message(self, msg_len: int):
         raw = await self.reader.readexactly(msg_len)
         enc_flag, uin, sso_body = parse_sso_header(raw, self._sig.d2_key)
-        print(f"uin={uin}, enc={enc_flag} in sso header")
 
         packet = parse_sso_frame(sso_body, enc_flag == 2)
-        if packet.ret_code != 0:
-            raise AssertionError(packet.ret_code)
+        print(f"({packet.ret_code}){packet.seq}: {packet.cmd or packet.extra}")
+        if packet.ret_code != 0 and packet.seq in self._wait_fut_map:
+            self._wait_fut_map[packet.seq].set_exception(
+                AssertionError(packet.ret_code, packet.extra)
+            )
+        elif packet.ret_code != 0:
+            raise AssertionError(packet.ret_code, packet.extra)
 
         if packet.seq not in self._wait_fut_map:
             print(f"unknown packet seq: {packet.seq}, ignore")

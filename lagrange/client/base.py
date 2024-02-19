@@ -4,7 +4,6 @@ import time
 from typing import Optional, Tuple, Union, overload, Coroutine, Callable
 from typing_extensions import Literal
 
-from lagrange.utils.sign import get_sign
 from lagrange.utils.binary.reader import Reader
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from .wtlogin.oicq import build_code2d_packet, build_uni_packet, build_login_packet, decode_login_response
@@ -80,10 +79,6 @@ class BaseClient:
     @property
     def uin(self) -> int:
         return self._uin
-
-    @uin.setter
-    def uin(self, value: int):
-        self._uin = value
 
     @property
     def online(self) -> bool:
@@ -197,9 +192,10 @@ class BaseClient:
 
         if ret_code == 0:
             reader.read_bytes(4)
-            self.uin = reader.read_u32()
+            self._uin = reader.read_u32()
             reader.read_bytes(4)
             t = reader.read_tlv()
+            print(t)
             self._t106 = t[0x18]
             self._t16a = t[0x19]
             self._sig.tgtgt = t[0x1e]
@@ -216,7 +212,7 @@ class BaseClient:
         )
         parse_key_exchange_response(packet.data, self._sig)
 
-    async def password_login(self, password: str):
+    async def password_login(self, password: str) -> bool:
         md5_passwd = hashlib.md5(password.encode()).digest()
 
         cr = CommonTlvBuilder().t106(
@@ -232,17 +228,17 @@ class BaseClient:
             build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, cr)
         )
 
-        parse_ntlogin_response(packet.data, self._sig)
+        return parse_ntlogin_response(packet.data, self._sig)
 
-    async def token_login(self, token: bytes):
+    async def token_login(self, token: bytes) -> bool:
         packet = await self.send_uni_packet(
             "trpc.login.ecdh.EcdhService.SsoNTLoginEasyLogin",
             build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, token)
         )
 
-        parse_ntlogin_response(packet.data, self._sig)
+        return parse_ntlogin_response(packet.data, self._sig)
 
-    async def qrcode_login(self, refresh_interval=5):
+    async def qrcode_login(self, refresh_interval=5) -> bool:
         if not self._sig.qrsig:
             raise AssertionError("No QrSig found, fetch qrcode first")
 
@@ -288,14 +284,18 @@ class BaseClient:
             "wtlogin.login",
             build_login_packet(self.uin, "wtlogin.login", app, body)
         )
-        print(decode_login_response(response.data, self._sig))
 
-    async def register(self):
+        return decode_login_response(response.data, self._sig)
+
+    async def register(self) -> bool:
         response = await self.send_uni_packet(
             "trpc.qq_new_tech.status_svc.StatusService.Register",
             build_register_request(self.app_info, self.device_info)
         )
-        return parse_register_response(response.data)
+        if parse_register_response(response.data):
+            self._online = True
+            return True
+        return False
 
     async def sso_heartbeat(self, calc_latency=False) -> float:
         start_time = time.time()

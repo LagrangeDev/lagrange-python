@@ -13,7 +13,8 @@ from lagrange.utils.crypto.ecdh import ecdh
 class SSOPacket:
     seq: int
     ret_code: int
-    session_id: int
+    extra: str
+    session_id: bytes
     cmd: str = field(default="")
     data: bytes = field(default=b"")
 
@@ -46,15 +47,16 @@ def parse_sso_frame(
         is_oicq_body=False
 ) -> SSOPacket:
     reader = Reader(buffer)
-    head_len, seq, ret_code, session_id = reader.read_struct("!I3i")
+    head_len, seq, ret_code = reader.read_struct("!I2i")
+    extra = reader.read_string_with_length("u32")  # extra
+    cmd = reader.read_string_with_length("u32")
+    session_id = reader.read_bytes_with_length("u32")
 
     if ret_code != 0:
-        return SSOPacket(seq=seq, ret_code=ret_code, session_id=session_id)
+        return SSOPacket(seq=seq, ret_code=ret_code, session_id=session_id, extra=extra)
 
-    cmd = reader.read_string_with_length("u32")
-    reader.read_string_with_length("u32")
     compress_type = reader.read_u32()
-    extra = reader.read_bytes_with_length("u32", False)  # extra
+    reader.read_bytes_with_length("u32", False)
 
     data = reader.read_bytes_with_length("u32", False)
     if data:
@@ -74,6 +76,7 @@ def parse_sso_frame(
         seq=seq,
         ret_code=ret_code,
         session_id=session_id,
+        extra=extra,
         cmd=cmd,
         data=data
     )
