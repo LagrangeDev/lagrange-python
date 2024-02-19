@@ -2,7 +2,7 @@
 ClientNetwork Implement
 """
 import asyncio
-from typing import Dict, overload
+from typing import Dict, overload, Callable, Coroutine
 from typing_extensions import Literal
 
 from lagrange.info import SigInfo
@@ -15,14 +15,23 @@ from .wtlogin.sso import parse_sso_header, parse_sso_frame, SSOPacket
 class ClientNetwork(Connection):
     default_upstream = ("msfwifi.3g.qq.com", 8080)
 
-    def __init__(self, sig_info: SigInfo, push_store: asyncio.Queue[SSOPacket], host: str = "", port: int = 0):
+    def __init__(
+            self,
+            sig_info: SigInfo,
+            push_store: asyncio.Queue[SSOPacket],
+            reconnect_cb: Callable[[], Coroutine],
+            host: str = "",
+            port: int = 0
+    ):
         if not (host and port):
             host, port = self.default_upstream
         super().__init__(host, port)
 
-        self._push_store = push_store
-        self._wait_fut_map: Dict[int, asyncio.Future[SSOPacket]] = {}
         self.conn_event = asyncio.Event()
+        self._push_store = push_store
+        self._reconnect_cb = reconnect_cb
+        self._wait_fut_map: Dict[int, asyncio.Future[SSOPacket]] = {}
+        self._connected = False
         self._sig = sig_info
 
     async def write(self, buf: bytes):
@@ -53,6 +62,10 @@ class ClientNetwork(Connection):
         self.conn_event.set()
         host, port = self.writer.get_extra_info('peername')
         logger.network.info(f"Connected to {host}:{port}")
+        if self._connected:
+            t = asyncio.create_task(self._reconnect_cb())
+        else:
+            self._connected = True
 
     async def on_disconnect(self):
         self.conn_event.clear()

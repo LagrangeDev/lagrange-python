@@ -42,7 +42,7 @@ class BaseClient:
             "loop": None,
             "push_handle": None
         }
-        self._network = ClientNetwork(sig_info, self._server_push_queue)
+        self._network = ClientNetwork(sig_info, self._server_push_queue, self.register)
         self._sign_provider = sign_provider
 
         self._t106 = bytes()
