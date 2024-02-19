@@ -2,6 +2,9 @@ import time
 from typing import Optional
 
 from .httpcat import HttpCat
+from .log import logger
+
+_logger = logger.fork("sign_provider")
 
 SIGN_PKG_LIST = [
     "trpc.o3.ecdh_access.EcdhAccess.SsoEstablishShareKey",
@@ -66,7 +69,7 @@ def sign_provider(upstream_url: str):
             "get",
             upstream_url + _pack_params(params)
         )
-        print(f"signed for [{cmd}:{seq}]({round((time.time() - start_time) * 1000, 2)}ms)")
+        _logger.debug(f"signed for [{cmd}:{seq}]({round((time.time() - start_time) * 1000, 2)}ms)")
         if ret.code != 200:
             raise ConnectionError(ret.code, ret.body)
 

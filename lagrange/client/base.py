@@ -1,15 +1,16 @@
 import asyncio
 import hashlib
 import time
-from typing import Optional, Tuple, Union, overload, Coroutine, Callable
+from typing import Optional, Tuple, Union, overload, Coroutine, Callable, Dict
 from typing_extensions import Literal
 
+from lagrange.utils.log import logger
 from lagrange.utils.binary.reader import Reader
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from .wtlogin.oicq import build_code2d_packet, build_uni_packet, build_login_packet, decode_login_response
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 from .wtlogin.exchange import build_key_exchange_request, parse_key_exchange_response
-from .wtlogin.enum import QrCodeResult
+from .wtlogin.enum import QrCodeResult, LoginErrorCode
 from .wtlogin.sso import SSOPacket
 from .wtlogin.status_service import build_register_request, build_sso_heartbeat_request, parse_register_response
 from .packet import PacketBuilder
@@ -35,8 +36,13 @@ class BaseClient:
         self._sig = sig_info
         self._app_info = app_info
         self._device_info = device_info
-        self._network = ClientNetwork(sig_info)
-        self._loop_task: Optional[asyncio.Task] = None
+
+        self._server_push_queue: asyncio.Queue[SSOPacket] = asyncio.Queue()
+        self._tasks: Dict[str, Optional[asyncio.Task]] = {
+            "loop": None,
+            "push_handle": None
+        }
+        self._network = ClientNetwork(sig_info, self._server_push_queue)
         self._sign_provider = sign_provider
 
         self._t106 = bytes()
@@ -53,13 +59,29 @@ class BaseClient:
             self._sig.sequence += 1
 
     def connect(self) -> None:
-        if not self._loop_task:
-            self._loop_task = asyncio.create_task(self._network.loop())
+        if not self._tasks["loop"]:
+            self._tasks["loop"] = asyncio.create_task(self._network.loop())
+            self._tasks["push_handle"] = asyncio.create_task(self._push_handle_loop())
         else:
             raise RuntimeError("connect call twice")
 
-    async def stop(self):
+    async def disconnect(self):
+        self._online = False
         await self._network.stop()
+
+    async def stop(self):
+        await self.disconnect()
+        for _, task in self._tasks.items():
+            if task:
+                task.cancel()
+
+    async def _push_handle_loop(self):
+        while True:
+            sso = await self._server_push_queue.get()
+            try:
+                await self.push_handler(sso)
+            except:
+                logger.root.exception("Unhandled exception on push handler")
 
     async def wait_closed(self) -> None:
         await self._network.wait_closed()
@@ -103,7 +125,6 @@ class BaseClient:
             sign = await self._sign_provider(cmd, seq, buf)
         packet = build_uni_packet(
             uin=self.uin,
-            uid=self._sig.uid,
             seq=seq,
             cmd=cmd,
             sign=sign,
@@ -176,7 +197,7 @@ class BaseClient:
         response = await self.send_uni_packet(
             "wtlogin.trans_emp",
             build_code2d_packet(
-                self.uin,
+                0,  # self.uin
                 0x12,
                 self.app_info,
                 body
@@ -186,9 +207,9 @@ class BaseClient:
         reader = Reader(response.data)
         # length = reader.read_u32()
         reader.read_bytes(8)  # 4 + 4
-        cmd = reader.read_u16()
+        reader.read_u16()  # cmd, 0x12
         reader.read_bytes(40)
-        app_id = reader.read_u32()
+        _app_id = reader.read_u32()
         ret_code = QrCodeResult(reader.read_u8())
 
         if ret_code == 0:
@@ -196,7 +217,6 @@ class BaseClient:
             self._uin = reader.read_u32()
             reader.read_bytes(4)
             t = reader.read_tlv()
-            print(t)
             self._t106 = t[0x18]
             self._t16a = t[0x19]
             self._sig.tgtgt = t[0x1e]
@@ -213,7 +233,7 @@ class BaseClient:
         )
         parse_key_exchange_response(packet.data, self._sig)
 
-    async def password_login(self, password: str) -> bool:
+    async def password_login(self, password: str) -> LoginErrorCode:
         md5_passwd = hashlib.md5(password.encode()).digest()
 
         cr = CommonTlvBuilder().t106(
@@ -231,7 +251,7 @@ class BaseClient:
 
         return parse_ntlogin_response(packet.data, self._sig)
 
-    async def token_login(self, token: bytes) -> bool:
+    async def token_login(self, token: bytes) -> LoginErrorCode:
         packet = await self.send_uni_packet(
             "trpc.login.ecdh.EcdhService.SsoNTLoginEasyLogin",
             build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, token)
@@ -307,3 +327,6 @@ class BaseClient:
         if calc_latency:
             return time.time() - start_time
         return 0
+
+    async def push_handler(self, sso: SSOPacket):
+        pass

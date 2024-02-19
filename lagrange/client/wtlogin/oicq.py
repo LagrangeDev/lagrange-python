@@ -3,6 +3,7 @@ import os
 import time
 
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
+from lagrange.utils.log import logger
 from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.utils.crypto.ecdh import ecdh
 from lagrange.utils.crypto.tea import qqtea_encrypt, qqtea_decrypt
@@ -86,7 +87,6 @@ def build_login_packet(
 
 def build_uni_packet(
         uin: int,
-        uid: str,
         seq: int,
         cmd: str,
         sign: dict,
@@ -99,7 +99,7 @@ def build_uni_packet(
 
     head = {
         15: trace,
-        16: uid
+        16: sig_info.uid
     }
     if sign:
         head[24] = {
@@ -160,6 +160,8 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         sig.temp_pwd = tlv[0x106]
         sig.uid = proto_decode(tlv[0x543])[9][11][1].decode()  # noqa
 
+        logger.login.debug("SigInfo got")
+
         print("info:", tlv[0x11a])
 
         return True
@@ -168,14 +170,17 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         err_buf.read_bytes(4)
         title = err_buf.read_string(err_buf.read_u16())
         content = err_buf.read_string(err_buf.read_u16())
-        print(f"[{title}]: {content}")
     elif 0x149 in tlv:
         err_buf = Reader(tlv[0x149])
         err_buf.read_bytes(2)
         title = err_buf.read_string(err_buf.read_u16())
         content = err_buf.read_string(err_buf.read_u16())
-        print(f"[{title}]: {content}")
     else:
-        print("Unknown login status")
+        title = "未知错误"
+        content = "无法解析错误原因，请将完整日志提交给开发者"
+
+    logger.login.error(
+        f"Login fail on oicq({hex(typ)}): [{title}]>{content}"
+    )
 
     return False

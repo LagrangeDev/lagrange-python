@@ -40,11 +40,11 @@ def build_key_exchange_request(uin: int, guid: str) -> bytes:
 
 
 def parse_key_exchange_response(response: bytes, sig: SigInfo):
-    p = proto_decode(response, True)
+    p = proto_decode(response, 0)
 
     share_key = ecdh["prime256v1"].exchange(p[3])
     dec_pb = proto_decode(
-        aes_gcm_decrypt(p[1], share_key), True
+        aes_gcm_decrypt(p[1], share_key), 0
     )
 
     sig.exchange_key = dec_pb[1]
