@@ -54,7 +54,10 @@ class ProtoReader(Reader):
 
     def read_length_delimited(self) -> bytes:
         length = self.read_varint()
-        return self.read_bytes(length)
+        data = self.read_bytes(length)
+        if len(data) != length:
+            raise ValueError("length of data does not match")
+        return data
 
 
 def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
@@ -72,7 +75,7 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
     else:
         raise Exception("Unsupported wire type in protobuf")
 
-    head = tag << 3 | wire_type
+    head = int(tag) << 3 | wire_type
     builder.write_varint(head)
 
     if wire_type == 0:
@@ -107,7 +110,7 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
         elif wire_type == 2:
             value = reader.read_length_delimited()
             try:  # serialize nested
-                if max_layer > 0 or max_layer < 0:
+                if max_layer > 0 or max_layer < 0 and len(value) > 1:
                     val = proto_decode(value, max_layer - 1)
                 else:
                     val = value
