@@ -106,6 +106,10 @@ class BaseClient:
         return self._uin
 
     @property
+    def uid(self) -> str:
+        return self._sig.uid
+
+    @property
     def online(self) -> asyncio.Event:
         return self._online
 

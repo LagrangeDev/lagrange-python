@@ -50,13 +50,16 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
             })
         elif 8 in raw:  # gpic
             img = raw[8]
-            msg_chain.append({
-                "type": "image",
-                "text": unpack_proto_dict(img, "34.9", "[图片]".encode()).decode(),
-                "url": "https://gchat.qpic.cn" + img[16].decode(),
-                "name": unpack_proto_dict(img, "2", b"undefined").decode(),
-                "is_emoji": bool(unpack_proto_dict(img, "34.1"))
-            })
+            try:
+                msg_chain.append({
+                    "type": "image",
+                    "text": unpack_proto_dict(img, "34.9", "[图片]".encode()).decode(),
+                    "url": "https://gchat.qpic.cn" + img[16].decode(),
+                    "name": unpack_proto_dict(img, "2", b"undefined").decode(),
+                    "is_emoji": bool(unpack_proto_dict(img, "34.1"))
+                })
+            except (AttributeError, KeyError):
+                raise
         elif 9 in raw:  # unknown
             pass
         elif 16 in raw:  # extra
@@ -76,7 +79,6 @@ def parse_grp_msg(pb: dict):
     grp_id = unpack_proto_dict(pb, "1.8.1")
     grp_name = unpack_proto_dict(pb, "1.8.7").decode()
     parsed_msg = parse_msg(pb[3][1][2])
-    print(parsed_msg)
 
     display_msg = ""
     for m in parsed_msg:
@@ -91,10 +93,11 @@ def parse_grp_msg(pb: dict):
         rand=rand,
         grp_id=grp_id,
         grp_name=grp_name,
-        msg=display_msg
+        msg=display_msg,
+        msg_chain=parsed_msg
     )
 
-    print(msg)
+    return msg
 
 
 @push_handler.subscribe("trpc.msg.olpush.OlPushService.MsgPush")

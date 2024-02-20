@@ -2,6 +2,7 @@ import time
 import hashlib
 
 from lagrange.info import SigInfo
+from lagrange.utils.operator import timestamp
 from lagrange.utils.binary.builder import Builder
 from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.utils.crypto.aes import aes_gcm_encrypt, aes_gcm_decrypt
@@ -17,7 +18,6 @@ def build_key_exchange_request(uin: int, guid: str) -> bytes:
     })
 
     enc1 = aes_gcm_encrypt(p1, ecdh["prime256v1"].share_key)
-    timestamp = int(time.time())
 
     p2 = (
         Builder()
@@ -25,7 +25,7 @@ def build_key_exchange_request(uin: int, guid: str) -> bytes:
         .write_u32(1)
         .write_bytes(enc1)
         .write_u32(0)
-        .write_u32(timestamp)
+        .write_u32(timestamp())
     ).pack()
     p2_hash = hashlib.sha256(p2).digest()
     enc_p2_hash = aes_gcm_encrypt(p2_hash, _enc_key)

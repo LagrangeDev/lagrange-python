@@ -1,7 +1,7 @@
 import hashlib
 import random
-import time
 
+from lagrange.utils.operator import timestamp
 from lagrange.info import AppInfo, DeviceInfo
 from lagrange.client.packet import PacketBuilder
 from lagrange.utils.crypto.tea import qqtea_encrypt
@@ -77,7 +77,7 @@ class CommonTlvBuilder(PacketBuilder):
                 app_client_version,
                 uin,
             )
-            .write_u32(int(time.time()) & 0xffffffff)
+            .write_u32(timestamp() & 0xffffffff)
             .write_bytes(ip)
             .write_bool(save_password)
             .write_bytes(password_md5)

@@ -1,6 +1,9 @@
+import os
 from typing import Coroutine, Callable, Optional
 
 from lagrange.utils.log import logger
+from lagrange.utils.operator import timestamp
+from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
 from .base import BaseClient
 from .wtlogin.sso import SSOPacket
@@ -52,4 +55,39 @@ class Client(BaseClient):
         return False
 
     async def push_handler(self, sso: SSOPacket):
-        await push_handler.execute(sso.cmd, sso)
+        ret = await push_handler.execute(sso.cmd, sso)
+        if ret:
+            print(ret)
+
+    async def _send_msg_raw(self, pb: dict, uin=0, grp_id=0, uid="") -> dict:
+        assert uin or grp_id, "uin and grp_id"
+        seq = self.seq + 1
+        sendto = {}
+        if not grp_id:  # friend
+            assert uin and uid, "uin and uid must be filled"
+            sendto[1] = {1: uin, 2: uid}
+        elif grp_id:  # grp
+            sendto[2] = {1: grp_id}
+        elif uin and grp_id:  # temp msg
+            sendto[3] = {1: grp_id, 2: uin}
+        else:
+            assert False
+        body = {
+            1: sendto,
+            2: {
+                1: 1,
+                2: 0,
+                3: 0
+            },
+            3: pb,
+            4: seq,
+            5: int.from_bytes(os.urandom(4), byteorder="big", signed=False)
+        }
+        if not grp_id:
+            body[12] = {1: timestamp()}
+
+        packet = await self.send_uni_packet(
+            "MessageSvc.PbSendMsg",
+            proto_encode(body)
+        )
+        return proto_decode(packet.data)

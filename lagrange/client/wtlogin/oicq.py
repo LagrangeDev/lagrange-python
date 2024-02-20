@@ -1,9 +1,9 @@
 import hashlib
 import os
-import time
 
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
 from lagrange.utils.log import logger
+from lagrange.utils.operator import timestamp
 from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.utils.crypto.ecdh import ecdh
 from lagrange.utils.crypto.tea import qqtea_encrypt, qqtea_decrypt
@@ -29,7 +29,7 @@ def build_code2d_packet(
             .write_u32(app_info.app_id)
             .write_u32(0x72)
             .write_bytes(bytes(3))
-            .write_u32(int(time.time()))
+            .write_u32(timestamp())
             .write_u8(2)
 
             .write_u16(len(body) + 49)

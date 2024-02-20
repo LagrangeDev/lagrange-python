@@ -24,7 +24,7 @@ class PushDeliver:
         if cmd not in self._handle_map:
             logger.warning("unsupported command: {}".format(cmd))
         else:
-            await self._handle_map[cmd](sso)
+            return await self._handle_map[cmd](sso)
 
 
 push_handler = PushDeliver()

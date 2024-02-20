@@ -1,3 +1,4 @@
+import time
 from typing import TypeVar
 
 T = TypeVar('T')
@@ -13,3 +14,7 @@ def unpack_proto_dict(pd: dict, rule: str, default: T = None) -> T:
             else:
                 raise KeyError(r)
     return pd
+
+
+def timestamp() -> int:
+    return int(time.time())
