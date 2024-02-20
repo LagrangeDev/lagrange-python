@@ -7,13 +7,13 @@ from .log import logger
 from .binder import push_handler
 from ..wtlogin.sso import SSOPacket
 
-from .events.message import GroupMessage
+from .models.message import GroupMessage
 
 
 def parse_msg_info(pb: dict) -> Tuple[int, str, int, int, int]:
     info, head, body = pb[1], pb[2], pb[3]
     user_id = info[1]
-    uid = info[2].decode()
+    uid = info[2]
     seq = head[5]
     time = head[6]
     rand = unpack_proto_dict(pb, "3.1.1.3", head[7])
@@ -24,23 +24,25 @@ def parse_msg_info(pb: dict) -> Tuple[int, str, int, int, int]:
 def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
     msg_chain = []
     for raw in rich:
+        if not raw:
+            continue
         if 1 in raw:  # msg
             msg = raw[1]
             if 1 in msg and 3 in msg:  # AtElem
                 if isinstance(msg[3], bytes) and msg[3][6]:  # AtAll
-                    msg_chain.append({"type": "atall", "text": msg[1].decode()})
+                    msg_chain.append({"type": "atall", "text": msg[1]})
                 else:  # At
                     msg_chain.append({
                         "type": "at",
-                        "text": msg[1].decode(),
+                        "text": msg[1],
                         "uin": int.from_bytes(msg[3][7:11], "big") if isinstance(msg[3], bytes)
                         else unpack_proto_dict(msg, "12.4"),
-                        "uid": msg[12][9].decode()
+                        "uid": msg[12][9]
                     })
             else:  # Text
                 msg_chain.append({
                     "type": "text",
-                    "text": msg[1].decode()
+                    "text": msg[1]
                 })
         elif 2 in raw:  # q emoji
             emo = raw[2]
@@ -50,20 +52,17 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
             })
         elif 8 in raw:  # gpic
             img = raw[8]
-            try:
-                msg_chain.append({
-                    "type": "image",
-                    "text": unpack_proto_dict(img, "34.9", "[图片]".encode()).decode(),
-                    "url": "https://gchat.qpic.cn" + img[16].decode(),
-                    "name": unpack_proto_dict(img, "2", b"undefined").decode(),
-                    "is_emoji": bool(unpack_proto_dict(img, "34.1"))
-                })
-            except (AttributeError, KeyError):
-                raise
+            msg_chain.append({
+                "type": "image",
+                "text": unpack_proto_dict(img, "34.9", "[图片]"),
+                "url": "https://gchat.qpic.cn" + img[16],
+                "name": unpack_proto_dict(img, "2", "undefined"),
+                "is_emoji": bool(unpack_proto_dict(img, "34.1", 0))
+            })
         elif 9 in raw:  # unknown
             pass
         elif 16 in raw:  # extra
-            nickname = unpack_proto_dict(raw, "16.2", b"").decode()
+            nickname = unpack_proto_dict(raw, "16.2", "")
         elif 37 in raw:  # unknown
             pass
         elif 45 in raw:  # msg source info
@@ -77,13 +76,16 @@ def parse_grp_msg(pb: dict):
     user_id, uid, seq, time, rand = parse_msg_info(pb)
 
     grp_id = unpack_proto_dict(pb, "1.8.1")
-    grp_name = unpack_proto_dict(pb, "1.8.7").decode()
+    grp_name = unpack_proto_dict(pb, "1.8.7")
     parsed_msg = parse_msg(pb[3][1][2])
 
     display_msg = ""
     for m in parsed_msg:
         if "text" in m:
-            display_msg += m["text"]
+            try:
+                display_msg += m["text"]
+            except TypeError:
+                print(m, "ignore")
 
     msg = GroupMessage(
         uin=user_id,

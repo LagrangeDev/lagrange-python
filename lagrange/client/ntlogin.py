@@ -69,14 +69,14 @@ def parse_ntlogin_response(response: bytes, sig: SigInfo) -> LoginErrorCode:
         ret = LoginErrorCode(body[1][4][1])
         if ret == LoginErrorCode.captcha_verify:
             sig.cookies = body[1][5][1]
-            verify_url: str = body[2][2][3].decode()
+            verify_url: str = body[2][2][3]
             aid = verify_url.split("&sid=")[1].split("&")[0]
             sig.captcha_info[2] = aid
             logger.login.waring("need captcha verify: " + verify_url)
         elif 2 in body[1][4]:
             stat = body[1][4]
-            title = stat[2].decode()
-            content = stat[3].decode()
+            title = stat[2]
+            content = stat[3]
             logger.login.error(f"Login fail on ntlogin({ret.name}): [{title}]>{content}")
         else:
             logger.login.error(f"Login fail: {ret.name}")

@@ -30,7 +30,7 @@ def build_sso_heartbeat_request() -> bytes:
 
 def parse_register_response(response: bytes) -> bool:
     pb = proto_decode(response, 0)
-    if pb[2].decode() == "register success":
+    if pb[2] == "register success":
         return True
     print(pb)
     return False

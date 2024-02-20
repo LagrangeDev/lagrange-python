@@ -109,15 +109,21 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
             proto[tag] = reader.read_varint()
         elif wire_type == 2:
             value = reader.read_length_delimited()
-            try:  # serialize nested
-                if max_layer > 0 or max_layer < 0 and len(value) > 1:
-                    val = proto_decode(value, max_layer - 1)
-                else:
-                    val = value
-            except:
-                val = value
 
-            if tag in proto:
+            val = None
+            if max_layer > 0 or max_layer < 0 and len(value) > 1:
+                try:  # serialize nested
+                    val = proto_decode(value, max_layer - 1)
+                except:
+                    pass
+
+            if not val:
+                try:
+                    val = value.decode()
+                except UnicodeDecodeError:
+                    val = value
+
+            if tag in proto:  # repeated elem
                 if not isinstance(proto[tag], list):
                     proto[tag] = [proto[tag]]
                 proto[tag].append(val)
