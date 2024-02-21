@@ -1,13 +1,14 @@
 from typing import Tuple, List, Dict, Union
 
-from lagrange.utils.binary.protobuf import proto_decode
+from lagrange.utils.binary.protobuf import proto_decode, proto_encode
 from lagrange.utils.operator import unpack_proto_dict
 
 from .log import logger
 from .binder import push_handler
 from ..wtlogin.sso import SSOPacket
 
-from .models.message import GroupMessage
+from .models import elems
+from .events.message import GroupMessage
 
 
 def parse_msg_info(pb: dict) -> Tuple[int, str, int, int, int]:
@@ -80,12 +81,21 @@ def parse_grp_msg(pb: dict):
     parsed_msg = parse_msg(pb[3][1][2])
 
     display_msg = ""
+    msg_chain: List[elems.T] = []
     for m in parsed_msg:
         if "text" in m:
             try:
                 display_msg += m["text"]
             except TypeError:
-                print(m, "ignore")
+                # dec proto err, fallback
+                m["text"] = proto_encode(m["text"])  # noqa
+                display_msg += m["text"].encode()
+
+        obj_name = m.pop("type").capitalize()
+        if hasattr(elems, obj_name):
+            msg_chain.append(
+                getattr(elems, obj_name)(**m)
+            )
 
     msg = GroupMessage(
         uin=user_id,
@@ -96,7 +106,7 @@ def parse_grp_msg(pb: dict):
         grp_id=grp_id,
         grp_name=grp_name,
         msg=display_msg,
-        msg_chain=parsed_msg
+        msg_chain=msg_chain
     )
 
     return msg

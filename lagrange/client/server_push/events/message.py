@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List
+from client.server_push.models.elems import T
 
 
 @dataclass
@@ -16,4 +17,4 @@ class GroupMessage(MessageInfo):
     grp_id: int
     grp_name: str
     msg: str
-    msg_chain: List[dict]
+    msg_chain: List[T]

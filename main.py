@@ -6,6 +6,7 @@ from lagrange.client.client import Client
 from lagrange.info.app import app_list
 from lagrange.info.device import DeviceInfo
 from lagrange.info.sig import SigInfo
+from lagrange.client.server_push.events.message import GroupMessage
 
 DEVICE_INFO_PATH = "./device.json"
 SIGINFO_PATH = "./sig.bin"
@@ -71,6 +72,10 @@ async def heartbeat_task(client: Client):
         print(f"{round(await client.sso_heartbeat(True) * 1000, 2)}ms to server")
 
 
+async def msg_handler(client: Client, event: GroupMessage):
+    print(event)
+
+
 async def main():
     uin = 0
     sign_url = ""
@@ -85,6 +90,7 @@ async def main():
             im.sig_info,
             sign_provider(sign_url) if sign_url else None
         )
+        client.events.subscribe(GroupMessage, msg_handler)
         client.connect()
         asyncio.create_task(heartbeat_task(client))
         if not await client.register():

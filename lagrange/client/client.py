@@ -6,6 +6,7 @@ from lagrange.utils.operator import timestamp
 from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
 from .base import BaseClient
+from .event import Events
 from .wtlogin.sso import SSOPacket
 from .server_push.binder import push_handler
 
@@ -20,6 +21,12 @@ class Client(BaseClient):
             sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider)
+
+        self._events = Events()
+
+    @property
+    def events(self) -> Events:
+        return self._events
 
     async def login(self, password="", qrcode_path="./qrcode.png") -> bool:
         try:
@@ -54,10 +61,22 @@ class Client(BaseClient):
                 return await self.register()
         return False
 
+    async def send_oidb_svc(self, cmd: int, sub_cmd: int, buf: bytes, is_uid=False) -> SSOPacket:
+        body = {
+            1: cmd,
+            2: sub_cmd,
+            4: buf,
+            12: is_uid
+        }
+        return await self.send_uni_packet(
+            "OidbSvcTrpcTcp.0x{:0>2x}_{}".format(cmd, sub_cmd),
+            proto_encode(body)
+        )
+
     async def push_handler(self, sso: SSOPacket):
         ret = await push_handler.execute(sso.cmd, sso)
         if ret:
-            print(ret)
+            self._events.emit(ret, self)
 
     async def _send_msg_raw(self, pb: dict, uin=0, grp_id=0, uid="") -> dict:
         assert uin or grp_id, "uin and grp_id"

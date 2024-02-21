@@ -8,7 +8,6 @@ from typing_extensions import Self
 
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.binary.builder import Builder
-from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 
 
 class BaseSerializer(ABC):
