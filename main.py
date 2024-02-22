@@ -7,6 +7,7 @@ from lagrange.info.app import app_list
 from lagrange.info.device import DeviceInfo
 from lagrange.info.sig import SigInfo
 from lagrange.client.server_push.events.message import GroupMessage
+from lagrange.client.message.models.elems import Text
 
 DEVICE_INFO_PATH = "./device.json"
 SIGINFO_PATH = "./sig.bin"
@@ -74,6 +75,9 @@ async def heartbeat_task(client: Client):
 
 async def msg_handler(client: Client, event: GroupMessage):
     print(event)
+    if event.msg.startswith("114514"):
+        await client.send_grp_msg([Text("1919810")], event.grp_id)
+    print(f"{event.nickname}({event.grp_name}): {event.msg}")
 
 
 async def main():

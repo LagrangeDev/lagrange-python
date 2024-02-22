@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from typing import List
-from client.server_push.models.elems import T
+from lagrange.client.message.models.elems import T
 
 
 @dataclass
 class MessageInfo:
     uin: int
     uid: str
+    nickname: str
     seq: int
     time: int
     rand: int

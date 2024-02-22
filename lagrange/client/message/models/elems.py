@@ -1,12 +1,13 @@
+import json
 from typing import TypeVar
 from dataclasses import dataclass
 
 from lagrange.info.serialize import JsonSerializer
 
-T = TypeVar('T', "Text", "AtAll", "At", "Image", "Emoji")
+T = TypeVar('T', "Text", "AtAll", "At", "Image", "Emoji", "Json")
 
 
-@dataclass(slots=True)
+@dataclass
 class BaseElem(JsonSerializer):
     @property
     def display(self) -> str:
@@ -24,6 +25,15 @@ class Text(BaseElem):
     @property
     def display(self) -> str:
         return self.text
+
+
+@dataclass
+class Json(Text):
+    raw: bytes
+
+    def to_dict(self) -> dict:
+        return json.loads(self.raw)
+
 
 
 @dataclass

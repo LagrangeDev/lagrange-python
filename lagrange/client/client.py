@@ -1,5 +1,5 @@
 import os
-from typing import Coroutine, Callable, Optional
+from typing import Coroutine, Callable, Optional, List
 
 from lagrange.utils.log import logger
 from lagrange.utils.operator import timestamp
@@ -7,8 +7,10 @@ from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
 from .base import BaseClient
 from .event import Events
+from .message.models.elems import T
+from .message.encoder import build_message
 from .wtlogin.sso import SSOPacket
-from .server_push.binder import push_handler
+from .server_push import push_handler
 
 
 class Client(BaseClient):
@@ -78,7 +80,7 @@ class Client(BaseClient):
         if ret:
             self._events.emit(ret, self)
 
-    async def _send_msg_raw(self, pb: dict, uin=0, grp_id=0, uid="") -> dict:
+    async def _send_msg_raw(self, pb: dict, *, uin=0, grp_id=0, uid="") -> dict:
         assert uin or grp_id, "uin and grp_id"
         seq = self.seq + 1
         sendto = {}
@@ -110,3 +112,9 @@ class Client(BaseClient):
             proto_encode(body)
         )
         return proto_decode(packet.data)
+
+    async def send_grp_msg(self, msg_chain: List[T], grp_id: int) -> None:
+        await self._send_msg_raw(
+            build_message(msg_chain),
+            grp_id=grp_id
+        )
