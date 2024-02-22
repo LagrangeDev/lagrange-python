@@ -81,8 +81,8 @@ async def msg_handler(client: Client, event: GroupMessage):
 
 
 async def main():
-    uin = 0
-    sign_url = ""
+    uin = int(os.environ.get("LAGRANGE_UIN", "0"))
+    sign_url = os.environ.get("LAGRANGE_SIGN_URL", "")
 
     app = app_list["linux"]
 

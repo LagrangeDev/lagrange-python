@@ -1,14 +1,12 @@
 import logging
+from typing import Optional
 
 __all__ = ["logger"]
 
 
 class LoggerProvider:
-    def __init__(self, root: logging.Logger = None):
-        if not root:
-            root = logging.getLogger("lagrange")
-
-        self._root = root
+    def __init__(self, root: Optional[logging.Logger] = None):
+        self._root = root or logging.getLogger("lagrange")
         self._init()
 
     def _init(self):
