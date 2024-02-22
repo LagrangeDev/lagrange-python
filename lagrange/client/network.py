@@ -98,5 +98,5 @@ class ClientNetwork(Connection):
             else:
                 self._wait_fut_map[packet.seq].set_result(packet)
         else:  # server pushed
-            logger.network.debug(f"{packet.seq}({packet.ret_code})<- {packet.cmd}")
+            logger.network.debug(f"{packet.seq}({packet.ret_code})<- {packet.cmd or packet.extra}")
             await self._push_store.put(packet)
