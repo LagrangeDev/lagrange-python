@@ -97,7 +97,10 @@ async def main():
         client.events.subscribe(GroupMessage, msg_handler)
         client.connect()
         asyncio.create_task(heartbeat_task(client))
-        if not await client.register():
+        if im.sig_info.d2:
+            if not await client.register():
+                await client.login()
+        else:
             await client.login()
         im.save_all()
         await client.wait_closed()
