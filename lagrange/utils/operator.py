@@ -1,19 +1,27 @@
 import time
-from typing import TypeVar
+from typing import TypeVar, overload, Any, Union
 
 T = TypeVar('T')
 
 
-def unpack_dict(pd: dict, rule: str, default: T = None) -> T:
+@overload
+def unpack_dict(pd: dict, rule: str) -> Any: ...
+
+
+@overload
+def unpack_dict(pd: dict, rule: str, default: T) -> Union[Any, T]: ...
+
+
+def unpack_dict(pd: dict, rule: str, default: Union[T, None] = None) -> Union[Any, T]:
+    _pd: Any = pd
     for r in rule.split("."):
-        if int(r) in pd or isinstance(pd, list):
-            pd = pd[int(r)]
+        if isinstance(_pd, list) or (isinstance(_pd, dict) and int(r) in _pd):
+            _pd = _pd[int(r)]
+        elif default is not None:
+            return default
         else:
-            if default is not None:
-                return default
-            else:
-                raise KeyError(r)
-    return pd
+            raise KeyError(r)
+    return _pd
 
 
 def timestamp() -> int:

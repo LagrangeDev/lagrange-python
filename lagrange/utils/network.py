@@ -84,9 +84,9 @@ class Connection:
         except asyncio.CancelledError:
             await self.on_error()
             await self.stop()
-        except:
+        except Exception as e:
             if not await self.on_error():
-                raise
+                raise e
 
     async def loop(self):
         while not self._stop_flag:
