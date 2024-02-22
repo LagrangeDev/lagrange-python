@@ -15,6 +15,9 @@ requires-python = ">=3.8"
 [tool.pdm]
 distribution = true
 
+[tool.pdm.build]
+includes = ["lagrange"]
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
