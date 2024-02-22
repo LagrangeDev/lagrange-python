@@ -7,7 +7,7 @@ from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
 from .base import BaseClient
 from .event import Events
-from .message.models.elems import T
+from .message.elems import T
 from .message.encoder import build_message
 from .wtlogin.sso import SSOPacket
 from .server_push import push_handler

@@ -35,6 +35,10 @@ class Json(Text):
         return json.loads(self.raw)
 
 
+@dataclass
+class Service(Json):
+    id: int
+
 
 @dataclass
 class AtAll(Text):

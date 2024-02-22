@@ -33,7 +33,7 @@ class Events:
     def emit(self, event: T, client: "Client"):
         typ = type(event)
         if typ not in self._handle_map:
-            logger.root.debug(f"Unhandled event: {typ.__name__}")
+            logger.root.debug(f"Unhandled event: {event}")
             return
 
         t = asyncio.create_task(

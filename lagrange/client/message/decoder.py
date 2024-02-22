@@ -4,9 +4,8 @@ from typing import Tuple, List, Dict, Union
 from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.utils.operator import unpack_dict
 
-
-from .models import elems
-from ..server_push.events.message import GroupMessage
+from . import elems
+from ..server_push.events.group import GroupMessage
 
 
 def parse_msg_info(pb: dict) -> Tuple[int, str, int, int, int]:
@@ -57,23 +56,15 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
             img = raw[8]
             msg_chain.append({
                 "type": "image",
-                "text": unpack_dict(img, "34.9", "[图片]"),
+                "text": unpack_dict(img, "34.9", "") or "[图片]",
                 "url": "https://gchat.qpic.cn" + img[16],
                 "name": unpack_dict(img, "2", "undefined"),
                 "is_emoji": bool(unpack_dict(img, "34.1", 0))
             })
         elif 9 in raw:  # unknown
             pass
-        elif 16 in raw:  # extra
-            nickname = unpack_dict(raw, "16.2", "")
-        elif 37 in raw:  # unknown
-            pass
-        elif 45 in raw:  # msg source info
-            print(raw[45])
-            ignore_next = True
-        elif 51 in raw:
-            service = raw[51]
-            print(service)
+        elif 19 in raw:
+            service = raw[19]
             if service[1]:
                 jr = service[1]
                 if jr[0]:
@@ -85,7 +76,28 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
                     "text": f"[json:{len(content)}]",
                     "raw": content
                 })
-
+        elif 16 in raw:  # extra
+            nickname = unpack_dict(raw, "16.2", "")
+        elif 37 in raw:  # unknown
+            pass
+        elif 45 in raw:  # msg source info
+            print(raw[45])
+            ignore_next = True
+        elif 12 in raw:
+            service = raw[12]
+            if service[1]:
+                jr = service[1]
+                sid = service[2]
+                if jr[0]:
+                    content = zlib.decompress(jr[1:])
+                else:
+                    content = jr[1:]
+                msg_chain.append({
+                    "type": "service",
+                    "text": f"[service:{sid}]",
+                    "raw": content,
+                    "id": sid
+                })
         else:
             print("unknown msg", raw)
     return msg_chain
@@ -96,6 +108,7 @@ def parse_grp_msg(pb: dict):
 
     grp_id = unpack_dict(pb, "1.8.1")
     grp_name = unpack_dict(pb, "1.8.7")
+    sub_id = unpack_dict(pb, "1.4")
     sender = unpack_dict(pb, "1.8.4")
     parsed_msg = parse_msg(unpack_dict(pb, "3.1.2"))
     if isinstance(sender, dict):  # admin or
@@ -132,6 +145,7 @@ def parse_grp_msg(pb: dict):
         rand=rand,
         grp_id=grp_id,
         grp_name=grp_name,
+        sub_id=sub_id,
         msg=display_msg,
         msg_chain=msg_chain
     )
