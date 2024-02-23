@@ -1,13 +1,13 @@
 import hashlib
 import random
-import time
 
+from lagrange.utils.operator import timestamp
 from lagrange.info import AppInfo, DeviceInfo
+from lagrange.client.packet import PacketBuilder
 from lagrange.utils.crypto.tea import qqtea_encrypt
-from lagrange.utils.binary.builder import Builder
 
 
-class CommonTlvBuilder(Builder):
+class CommonTlvBuilder(PacketBuilder):
     @classmethod
     def _rand_u32(cls) -> int:
         return random.randint(0x0, 0xffffffff)
@@ -59,40 +59,40 @@ class CommonTlvBuilder(Builder):
             app_id: int,
             app_client_version: int,
             uin: int,
-            salt: int,
             password_md5: bytes,
-            guid: bytes,
+            guid: str,
             tgtgt_key: bytes,
             ip: bytes = bytes(4),
             save_password: bool = True,
     ) -> bytes:
-        key = hashlib.md5(password_md5 + bytes(4) + cls().write_u32(salt or uin).pack()).digest()
+        key = hashlib.md5(password_md5 + bytes(4) + cls().write_u32(uin).pack()).digest()
 
         body = (
             cls().write_struct(
-                ">HIIIIIQ",
+                "HIIIIQ",
                 4,  # tgtgt version
                 cls._rand_u32(),
                 0,  # sso_version, depreciated
                 app_id,
                 app_client_version,
-                uin or salt,
+                uin,
             )
-            .write_u32(int(time.time()))
+            .write_u32(timestamp() & 0xffffffff)
             .write_bytes(ip)
             .write_bool(save_password)
             .write_bytes(password_md5)
             .write_bytes(tgtgt_key)
             .write_u32(0)
-            .write_bool(bool(guid))
+            .write_bool(True)
+            .write_bytes(bytes.fromhex(guid))
+            .write_u32(0)
             .write_u32(1)
-            .write_u32(1)
-            .write_string(str(uin))
+            .write_string(str(uin), "u16", False)
         ).pack()
 
         return cls().write_bytes(
             qqtea_encrypt(body, key),
-            with_length=True
+            "u32"
         ).pack(0x106)
 
     @classmethod
@@ -126,7 +126,7 @@ class CommonTlvBuilder(Builder):
         return cls().write_bytes(bytes(12)).pack(0x124)
 
     @classmethod
-    def t128(cls, app_info_os: str, device_guid: str) -> bytes:
+    def t128(cls, app_info_os: str, device_guid: bytes) -> bytes:
         return (
             cls()
             .write_u16(0)
@@ -134,25 +134,21 @@ class CommonTlvBuilder(Builder):
             .write_u8(1)
             .write_u8(0)
             .write_u32(0)
-            .write_string(app_info_os)
-            .write_string(device_guid)
-            .write_string("")
+            .write_string(app_info_os, "u16", False)
+            .write_bytes(device_guid, "u16", False)
+            .write_string("", "u16", False)
         ).pack(0x128)
 
     @classmethod
     def t141(
             cls,
             sim_info: bytes,
-            network_type: int = 0,
             apn: bytes = bytes(0),
-            _version: int = 0
     ) -> bytes:
         return (
             cls()
-            .write_u16(_version)
-            .write_bytes(sim_info, with_length=True)
-            .write_u16(network_type)
-            .write_bytes(apn, with_length=True)
+            .write_bytes(sim_info, "u32", False)
+            .write_bytes(apn, "u32", False)
         ).pack(0x141)
 
     @classmethod
@@ -160,7 +156,7 @@ class CommonTlvBuilder(Builder):
         return (
             cls()
             .write_u16(_version)
-            .write_string(apk_id[:32])
+            .write_string(apk_id[:32], "u16", False)
         ).pack(0x142)
 
     @classmethod
@@ -170,7 +166,7 @@ class CommonTlvBuilder(Builder):
             .write_tlv(
                 cls.t16e(device.device_name),
                 cls.t147(app_info.app_id, app_info.pt_version, app_info.package_name),
-                cls.t128(app_info.os, device.guid),
+                cls.t128(app_info.os, bytes.fromhex(device.guid)),
                 cls.t124()
             )
         ).pack(0x144)
@@ -186,14 +182,14 @@ class CommonTlvBuilder(Builder):
         return (
             cls()
             .write_u32(app_id)
-            .write_string(pt_version)
-            .write_string(package_name)
+            .write_string(pt_version, "u16", False)
+            .write_string(package_name, "u16", False)
         ).pack(0x147)
 
     @classmethod
-    def t166(cls, image_type: bytes) -> bytes:
+    def t166(cls, image_type: int) -> bytes:
         return (
-            cls().write_byte(image_type[0])
+            cls().write_byte(image_type)
         ).pack(0x166)
 
     @classmethod
@@ -213,7 +209,7 @@ class CommonTlvBuilder(Builder):
         return (
             cls()
             .write_struct("BI", 1, build_time)
-            .write_string(sdk_version)
+            .write_string(sdk_version, "u16", False)
         ).pack(0x177)
 
     @classmethod
@@ -234,5 +230,5 @@ class CommonTlvBuilder(Builder):
         return (
             cls()
             .write_u32(product_type)
-            .write_string(product_desc)
+            .write_string(product_desc, "u16", False)
         ).pack(0x521)

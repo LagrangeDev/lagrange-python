@@ -76,7 +76,7 @@ class Connection:
     async def _read_loop(self):
         try:
             while not self.closed:
-                length = int.from_bytes(await self.reader.readexactly(4), byteorder="big")
+                length = int.from_bytes(await self.reader.readexactly(4), byteorder="big") - 4
                 if length:
                     await self.on_message(length)
                 else:
@@ -84,9 +84,9 @@ class Connection:
         except asyncio.CancelledError:
             await self.on_error()
             await self.stop()
-        except:
+        except Exception as e:
             if not await self.on_error():
-                raise
+                raise e
 
     async def loop(self):
         while not self._stop_flag:

@@ -7,12 +7,16 @@ authors = [
     {name="wyapx"},
 ]
 dependencies = [
-    "typing-extensions"
+    "typing-extensions",
+    "cryptography"
 ]
 requires-python = ">=3.8"
 
 [tool.pdm]
 distribution = true
+
+[tool.pdm.build]
+includes = ["lagrange"]
 
 [build-system]
 requires = ["pdm-backend"]

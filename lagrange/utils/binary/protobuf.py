@@ -18,10 +18,10 @@ class ProtoBuilder(Builder):
             while v > 127:
                 buffer[length] = (v & 127) | 128
                 v >>= 7
-                v += 1
+                length += 1
 
             buffer[length] = v
-            self.write_bytes(buffer)
+            self.write_bytes(buffer[:length+1])
         else:
             self.write_u8(v)
 
@@ -54,7 +54,10 @@ class ProtoReader(Reader):
 
     def read_length_delimited(self) -> bytes:
         length = self.read_varint()
-        return self.read_bytes(length)
+        data = self.read_bytes(length)
+        if len(data) != length:
+            raise ValueError("length of data does not match")
+        return data
 
 
 def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
@@ -72,14 +75,14 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
     else:
         raise Exception("Unsupported wire type in protobuf")
 
-    head = tag << 3 | wire_type
+    head = int(tag) << 3 | wire_type
     builder.write_varint(head)
 
     if wire_type == 0:
         if isinstance(value, bool):
             value = 1 if value else 0
 
-        if value > 0:
+        if value >= 0:
             builder.write_varint(value)
         else:
             raise NotImplemented
@@ -93,7 +96,7 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         raise AssertionError
 
 
-def proto_decode(data: bytes) -> Proto:
+def proto_decode(data: bytes, max_layer=-1) -> Proto:
     reader = ProtoReader(data)
     proto = {}
 
@@ -102,14 +105,33 @@ def proto_decode(data: bytes) -> Proto:
         tag = leaf >> 3
         wire_type = leaf & 0b111
 
+        if not tag:
+            raise AssertionError("Invalid tag")
+
         if wire_type == 0:
             proto[tag] = reader.read_varint()
         elif wire_type == 2:
             value = reader.read_length_delimited()
-            try:  # serialize nested
-                proto[tag] = proto_decode(value)
-            except:
-                proto[tag] = value
+
+            val = None
+            if max_layer > 0 or max_layer < 0 and len(value) > 1:
+                try:  # serialize nested
+                    val = proto_decode(value, max_layer - 1)
+                except:
+                    pass
+
+            if not val:
+                try:
+                    val = value.decode()
+                except UnicodeDecodeError:
+                    val = value
+
+            if tag in proto:  # repeated elem
+                if not isinstance(proto[tag], list):
+                    proto[tag] = [proto[tag]]
+                proto[tag].append(val)
+            else:
+                proto[tag] = val
         else:
             raise AssertionError
 

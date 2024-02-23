@@ -1,4 +1,4 @@
-from lagrange.utils.crypto.ecdh import EllipticPoint
+from .point import EllipticPoint
 
 
 class EllipticCurve:
