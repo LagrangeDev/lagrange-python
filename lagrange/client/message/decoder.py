@@ -28,22 +28,24 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
             continue
         if 1 in raw:  # msg
             msg = raw[1]
-            if 1 in msg and 3 in msg:  # At
+            if 1 in msg:  # Text
+                msg_chain.append({
+                    "type": "text",
+                    "text": msg[1]
+                })
+            elif 3 in msg:  # At
                 buf3 = msg[3] if isinstance(msg[3], bytes) else msg[3].encode()
                 if buf3[6]:  # AtAll
                     msg_chain.append({"type": "atall", "text": msg[1]})
                 else:  # At
                     msg_chain.append({
                         "type": "at",
-                        "text": msg[1],
+                        "text": msg.get(1),
                         "uin": int.from_bytes(buf3[7:11], "big"),
                         "uid": msg[12][9]
                     })
-            else:  # Text
-                msg_chain.append({
-                    "type": "text",
-                    "text": msg[1]
-                })
+            else:
+                raise AssertionError("Invalid message")
         elif 2 in raw:  # q emoji
             emo = raw[2]
             msg_chain.append({
@@ -59,7 +61,12 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
                 "text": unpack_dict(img, "34.9", "") or "[图片]",
                 "url": "https://gchat.qpic.cn" + img[16],
                 "name": unpack_dict(img, "2", "undefined"),
-                "is_emoji": bool(unpack_dict(img, "34.1", 0))
+                "is_emoji": bool(unpack_dict(img, "34.1", 0)),
+                "id": unpack_dict(img, "7"),
+                "md5": unpack_dict(img, "13"),
+                "width": unpack_dict(img, "22"),
+                "height": unpack_dict(img, "23"),
+                "size": unpack_dict(img, "25")
             })
         elif 9 in raw:  # unknown
             pass
@@ -113,6 +120,24 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
                     "text": f"[json:{len(content)}]",
                     "raw": content
                 })
+        elif 53 in raw:  # q emoji
+            qe = raw[53]
+            typ = qe[1]
+            if typ == 33:  # sm size
+                eid = qe[2][1]
+                text = qe[2].get(2, f"[se:{eid}]")
+            elif typ == 37:  # bg size
+                eid = qe[2][3]
+                text = qe[2][7]
+            else:
+                raise AttributeError("unknown type of reaction: ", qe)
+
+            msg_chain.append({
+                "type": "reaction",
+                "text": text,
+                "show_type": typ,
+                "id": eid
+            })
         else:
             print("unknown msg", raw)
     return msg_chain

@@ -1,6 +1,6 @@
 import json
 from typing import TypeVar
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lagrange.info.serialize import JsonSerializer
 
@@ -63,9 +63,21 @@ class At(Text):
 class Image(Text):
     url: str
     name: str
+    width: int
+    height: int
+    size: int
+    id: int = field(repr=False)
+    md5: bytes = field(repr=False)
     is_emoji: bool
 
 
 @dataclass
 class Emoji(BaseElem):
     id: int
+
+
+@dataclass
+class Reaction(Emoji):
+    """QQ: super emoji"""
+    text: str
+    show_type: int  # size - sm: 33, bg: 37
