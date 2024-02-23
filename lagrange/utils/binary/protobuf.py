@@ -105,6 +105,9 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
         tag = leaf >> 3
         wire_type = leaf & 0b111
 
+        if not tag:
+            raise AssertionError("Invalid tag")
+
         if wire_type == 0:
             proto[tag] = reader.read_varint()
         elif wire_type == 2:

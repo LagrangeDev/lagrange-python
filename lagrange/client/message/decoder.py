@@ -29,14 +29,14 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
         if 1 in raw:  # msg
             msg = raw[1]
             if 1 in msg and 3 in msg:  # At
-                if isinstance(msg[3], bytes) and msg[3][6]:  # AtAll
+                buf3 = msg[3] if isinstance(msg[3], bytes) else msg[3].encode()
+                if buf3[6]:  # AtAll
                     msg_chain.append({"type": "atall", "text": msg[1]})
                 else:  # At
                     msg_chain.append({
                         "type": "at",
                         "text": msg[1],
-                        "uin": int.from_bytes(msg[3][7:11], "big") if isinstance(msg[3], bytes)
-                        else unpack_dict(msg, "12.4"),
+                        "uin": int.from_bytes(buf3[7:11], "big"),
                         "uid": msg[12][9]
                     })
             else:  # Text
@@ -63,26 +63,6 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
             })
         elif 9 in raw:  # unknown
             pass
-        elif 19 in raw:
-            service = raw[19]
-            if service[1]:
-                jr = service[1]
-                if jr[0]:
-                    content = zlib.decompress(jr[1:])
-                else:
-                    content = jr[1:]
-                msg_chain.append({
-                    "type": "json",
-                    "text": f"[json:{len(content)}]",
-                    "raw": content
-                })
-        elif 16 in raw:  # extra
-            nickname = unpack_dict(raw, "16.2", "")
-        elif 37 in raw:  # unknown
-            pass
-        elif 45 in raw:  # msg source info
-            print(raw[45])
-            ignore_next = True
         elif 12 in raw:
             service = raw[12]
             if service[1]:
@@ -98,6 +78,41 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
                     "raw": content,
                     "id": sid
                 })
+        elif 16 in raw:  # extra
+            # nickname = unpack_dict(raw, "16.2", "")
+            pass
+        elif 19 in raw:  # video
+            pass
+        elif 37 in raw:  # unknown
+            pass
+        elif 45 in raw:  # msg source info
+            src = raw[45]
+            msg_text = ""
+            for v in src[5] if isinstance(src[5], list) else [src[5]]:
+                msg_text += unpack_dict(v, "1.1", "")
+            # src[10]: optional[grp_id]
+            msg_chain.append({
+                "type": "quote",
+                "text": f"[quote:{msg_text}]",
+                "seq": src[1],
+                "uin": src[2],
+                "timestamp": src[3],
+                "uid": src[8][6]
+            })
+            ignore_next = True
+        elif 51 in raw:  # qq mini app or others
+            service = raw[51]
+            if service[1]:
+                jr = service[1]
+                if jr[0]:
+                    content = zlib.decompress(jr[1:])
+                else:
+                    content = jr[1:]
+                msg_chain.append({
+                    "type": "json",
+                    "text": f"[json:{len(content)}]",
+                    "raw": content
+                })
         else:
             print("unknown msg", raw)
     return msg_chain
@@ -108,7 +123,7 @@ def parse_grp_msg(pb: dict):
 
     grp_id = unpack_dict(pb, "1.8.1")
     grp_name = unpack_dict(pb, "1.8.7")
-    sub_id = unpack_dict(pb, "1.4")
+    sub_id = unpack_dict(pb, "1.4", 0)  # some client may not report it, old pcqq?
     sender = unpack_dict(pb, "1.8.4")
     parsed_msg = parse_msg(unpack_dict(pb, "3.1.2"))
     if isinstance(sender, dict):  # admin or

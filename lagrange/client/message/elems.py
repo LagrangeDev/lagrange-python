@@ -28,6 +28,14 @@ class Text(BaseElem):
 
 
 @dataclass
+class Quote(Text):
+    seq: int
+    uin: int
+    uid: str
+    timestamp: int
+
+
+@dataclass
 class Json(Text):
     raw: bytes
 

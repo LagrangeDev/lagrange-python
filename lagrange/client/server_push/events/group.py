@@ -25,6 +25,7 @@ class GroupMessage(MessageInfo):
 @dataclass
 class GroupRecall(MessageInfo):
     grp_id: int
+    suffix: str
 
 
 @dataclass

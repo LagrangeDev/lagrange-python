@@ -19,6 +19,8 @@ async def msg_push_handler(sso: SSOPacket):
         return parse_grp_msg(pb)
     elif typ == 166:  # frd msg
         pass
+    elif typ == 0x210:
+        print(210, pb)
     elif typ == 0x2dc:  # grp event, 732
         sub_typ = unpack_dict(pb, "2.2")
         if sub_typ == 20:  # nudget(grp_id only)
@@ -29,15 +31,17 @@ async def msg_push_handler(sso: SSOPacket):
             reader.read_u8()  # reserve
             in_pb = unpack_dict(
                 proto_decode(reader.read_bytes_with_length("u16", False)),
-                "11.3"
+                "11"
             )
 
+            info = in_pb[3]
             return GroupRecall(
-                in_pb[6],  # uid
-                in_pb[1],  # seq
-                in_pb[2],  # timestamp
-                in_pb[3],  # rand
-                grp_id
+                uid=info[6],
+                seq=info[1],
+                time=info[2],
+                rand=info[3],
+                grp_id=grp_id,
+                suffix=unpack_dict(in_pb, "9.2", "").strip()
             )
         elif sub_typ == 12:  # mute
             info = unpack_dict(pb, "3.2")
