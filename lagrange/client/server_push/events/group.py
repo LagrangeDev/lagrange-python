@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List
-from client.message.elems import T
+from lagrange.client.message.elems import T
 
 
 @dataclass
