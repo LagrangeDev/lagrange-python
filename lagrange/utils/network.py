@@ -1,7 +1,10 @@
 import asyncio
+import socket
+import logging
 import traceback
 from typing import Optional
 
+_logger = logging.getLogger("lagrange.network")
 
 class Connection:
     def __init__(
@@ -9,7 +12,7 @@ class Connection:
         host: str,
         port: int,
         ssl: bool = False,
-        timeout: Optional[float] = None,
+        timeout: Optional[float] = 10,
     ) -> None:
         self._host = host
         self._port = port
@@ -89,8 +92,19 @@ class Connection:
                 raise e
 
     async def loop(self):
+        fail = False
         while not self._stop_flag:
-            await self.connect()
+            try:
+                await self.connect()
+                fail = False
+            except (ConnectionError, socket.error) as e:
+                if fail:
+                    _logger.debug(f"connect retry fail: {' '.join([str(i) for i in e.args[1:]])}[{e.args[0]}]")
+                else:
+                    _logger.error("Connect fail, retying...")
+                    fail = True
+                await asyncio.sleep(1 if not fail else 5)
+                continue
             await self.on_connected()
             await self._read_loop()
 
