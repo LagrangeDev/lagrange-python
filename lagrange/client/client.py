@@ -13,6 +13,7 @@ from .message.decoder import parse_grp_msg
 from .wtlogin.sso import SSOPacket
 from .server_push import push_handler
 from .events.group import GroupMessage
+from .highway import HighWaySession
 
 
 class Client(BaseClient):
@@ -27,6 +28,7 @@ class Client(BaseClient):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider)
 
         self._events = Events()
+        self._highway = HighWaySession(self, logger.fork("highway"))
 
     @property
     def events(self) -> Events:
