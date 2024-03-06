@@ -66,7 +66,7 @@ def sign_provider(upstream_url: str):
 
         start_time = time.time()
         ret = await HttpCat.request(
-            "get",
+            "GET",
             upstream_url + _pack_params(params)
         )
         _logger.debug(f"signed for [{cmd}:{seq}]({round((time.time() - start_time) * 1000, 2)}ms)")

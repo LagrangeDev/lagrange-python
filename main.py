@@ -8,6 +8,8 @@ from lagrange.info.device import DeviceInfo
 from lagrange.info.sig import SigInfo
 from lagrange.client.server_push.events.group import GroupMessage
 from lagrange.client.message.elems import Text
+from lagrange.client.events.group import GroupMessage
+from lagrange.client.message.elems import Text, At
 
 DEVICE_INFO_PATH = "./device.json"
 SIGINFO_PATH = "./sig.bin"

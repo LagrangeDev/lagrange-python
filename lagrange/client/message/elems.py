@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from lagrange.info.serialize import JsonSerializer
 
-T = TypeVar('T', "Text", "AtAll", "At", "Image", "Emoji", "Json")
+T = TypeVar('T', "Text", "AtAll", "At", "Image", "Emoji", "Json", "Quote")
 
 
 @dataclass
@@ -16,6 +16,16 @@ class BaseElem(JsonSerializer):
     @property
     def type(self) -> str:
         return self.__class__.__name__.lower()
+
+
+@dataclass
+class MediaInfo:
+    name: str
+    width: int
+    height: int
+    size: int
+    id: int = field(repr=False)
+    md5: bytes = field(repr=False)
 
 
 @dataclass
@@ -60,15 +70,14 @@ class At(Text):
 
 
 @dataclass
-class Image(Text):
+class Image(Text, MediaInfo):
     url: str
-    name: str
-    width: int
-    height: int
-    size: int
-    id: int = field(repr=False)
-    md5: bytes = field(repr=False)
     is_emoji: bool
+
+
+@dataclass
+class Video(Text, MediaInfo):
+    ...
 
 
 @dataclass

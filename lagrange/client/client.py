@@ -9,8 +9,10 @@ from .base import BaseClient
 from .event import Events
 from .message.elems import T
 from .message.encoder import build_message
+from .message.decoder import parse_grp_msg
 from .wtlogin.sso import SSOPacket
 from .server_push import push_handler
+from .events.group import GroupMessage
 
 
 class Client(BaseClient):
@@ -118,3 +120,20 @@ class Client(BaseClient):
             build_message(msg_chain),
             grp_id=grp_id
         )
+
+    async def get_grp_msg(self, grp_id: int, start: int, end: int = 0) -> List[GroupMessage]:
+        payload = await self.send_uni_packet(
+            "trpc.msg.register_proxy.RegisterProxy.SsoGetGroupMsg",
+            proto_encode({
+                1: {
+                    1: grp_id,
+                    2: start,
+                    3: end or start
+                },
+                2: True
+            })
+        )
+        ret = proto_decode(payload.data)[3]
+
+        assert ret[3] == grp_id and ret[4] == start and ret[5] == (end or start), "return args not matched"
+        return [parse_grp_msg(i) for i in ret[6]] if isinstance(ret[6], list) else [parse_grp_msg(ret[6])]

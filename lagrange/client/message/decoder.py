@@ -5,7 +5,7 @@ from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.utils.operator import unpack_dict
 
 from . import elems
-from ..server_push.events.group import GroupMessage
+from lagrange.client.events.group import GroupMessage
 
 
 def parse_msg_info(pb: dict) -> Tuple[int, str, int, int, int]:
@@ -89,7 +89,17 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
             # nickname = unpack_dict(raw, "16.2", "")
             pass
         elif 19 in raw:  # video
-            pass
+            video = raw[19]
+            msg_chain.append({
+                "type": "video",
+                "text": "[视频]",
+                "name": unpack_dict(video, "3", "undefined"),
+                "id": unpack_dict(video, "1"),  # tlv struct? contain md5, filetype
+                "md5": unpack_dict(video, "2"),
+                "width": unpack_dict(video, "7"),
+                "height": unpack_dict(video, "8"),
+                "size": unpack_dict(video, "6")
+            })
         elif 37 in raw:  # unknown
             pass
         elif 45 in raw:  # msg source info
@@ -129,6 +139,8 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
             elif typ == 37:  # bg size
                 eid = qe[2][3]
                 text = qe[2][7]
+            elif typ == 48:
+                voice = unpack_dict(qe, "2.1.1.1")
             else:
                 raise AttributeError("unknown type of reaction: ", qe)
 
@@ -143,11 +155,15 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
     return msg_chain
 
 
-def parse_grp_msg(pb: dict):
+def parse_friend_msg(pb: dict):
+    uin = pb[1][4]
+
+
+def parse_grp_msg(pb: dict) -> GroupMessage:
     user_id, uid, seq, time, rand = parse_msg_info(pb)
 
     grp_id = unpack_dict(pb, "1.8.1")
-    grp_name = unpack_dict(pb, "1.8.7")
+    grp_name = unpack_dict(pb, "1.8.7", str(grp_id))
     sub_id = unpack_dict(pb, "1.4", 0)  # some client may not report it, old pcqq?
     sender = unpack_dict(pb, "1.8.4")
     parsed_msg = parse_msg(unpack_dict(pb, "3.1.2"))

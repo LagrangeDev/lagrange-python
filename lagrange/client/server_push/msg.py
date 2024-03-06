@@ -5,7 +5,7 @@ from lagrange.utils.operator import unpack_dict
 
 from .log import logger
 from .binder import push_handler
-from .events.group import GroupRecall, GroupMuteMember
+from ..events.group import GroupRecall, GroupMuteMember
 from ..wtlogin.sso import SSOPacket
 
 
@@ -13,6 +13,7 @@ from ..wtlogin.sso import SSOPacket
 async def msg_push_handler(sso: SSOPacket):
     pb = proto_decode(sso.data)[1]
     typ = unpack_dict(pb, "2.1")
+    sub_typ = unpack_dict(pb, "2.2", 0)
 
     logger.debug("msg_push received, type:{}".format(typ))
     if typ == 82:  # grp msg
@@ -22,7 +23,6 @@ async def msg_push_handler(sso: SSOPacket):
     elif typ == 0x210:
         print(210, pb)
     elif typ == 0x2dc:  # grp event, 732
-        sub_typ = unpack_dict(pb, "2.2")
         if sub_typ == 20:  # nudget(grp_id only)
             pass
         if sub_typ == 17:  # recall
