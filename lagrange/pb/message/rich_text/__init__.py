@@ -34,7 +34,7 @@ class Elems(ProtoStruct):
 
 
 class RichText(ProtoStruct):
-    attrs: dict = ProtoField(1)
+    attrs: dict = ProtoField(1, {})
     content: list[Elems] = ProtoField(2)
     not_online_file: dict = ProtoField(3, {})
     ptt: dict = ProtoField(4, {})
