@@ -70,7 +70,7 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         wire_type = 0
     elif isinstance(value, float):
         wire_type = 1
-    elif isinstance(value, str) or isinstance(value, bytes) or isinstance(value, dict):
+    elif isinstance(value, (str, bytes, bytearray, dict)):
         wire_type = 2
     else:
         raise Exception("Unsupported wire type in protobuf")
@@ -109,31 +109,24 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
             raise AssertionError("Invalid tag")
 
         if wire_type == 0:
-            proto[tag] = reader.read_varint()
+            value = reader.read_varint()
         elif wire_type == 2:
             value = reader.read_length_delimited()
 
-            val = None
             if max_layer > 0 or max_layer < 0 and len(value) > 1:
                 try:  # serialize nested
-                    val = proto_decode(value, max_layer - 1)
+                    value = proto_decode(value, max_layer - 1)
                 except:
                     pass
-
-            if not val:
-                try:
-                    val = value.decode()
-                except UnicodeDecodeError:
-                    val = value
-
-            if tag in proto:  # repeated elem
-                if not isinstance(proto[tag], list):
-                    proto[tag] = [proto[tag]]
-                proto[tag].append(val)
-            else:
-                proto[tag] = val
         else:
             raise AssertionError
+
+        if tag in proto:  # repeated elem
+            if not isinstance(proto[tag], list):
+                proto[tag] = [proto[tag]]
+            proto[tag].append(value)
+        else:
+            proto[tag] = value
 
     return proto
 

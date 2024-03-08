@@ -1,80 +1,82 @@
 import zlib
 from typing import Tuple, List, Dict, Union
 
-from lagrange.utils.binary.protobuf import proto_encode
+from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.utils.operator import unpack_dict
 
 from . import elems
 from lagrange.client.events.group import GroupMessage
+from lagrange.pb.message.msg_push import MsgPushBody
+from lagrange.pb.message.rich_text import Elems
 
 
-def parse_msg_info(pb: dict) -> Tuple[int, str, int, int, int]:
-    info, head, body = pb[1], pb[2], pb[3]
-    user_id = info[1]
-    uid = info[2]
-    seq = head[5]
-    time = head[6]
-    rand = unpack_dict(pb, "3.1.1.3", head.get(7, -1))
+def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
+    user_id = pb.response_head.from_uin
+    uid = pb.response_head.from_uid
+    seq = pb.content_head.seq
+    time = pb.content_head.timestamp
+    rand = pb.message.body.attrs.get(3, -1)
 
     return user_id, uid, seq, time, rand
 
 
-def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
+def parse_msg(elems: List[Elems]) -> List[Dict[str, Union[int, str]]]:
     msg_chain = []
     ignore_next = False
-    for raw in rich:
+    for raw in elems:
         if not raw or ignore_next:
             ignore_next = False
             continue
-        if 1 in raw:  # msg
-            msg = raw[1]
-            if 1 in msg:  # Text
+        if raw.text:  # msg
+            msg = raw.text
+            if msg.string:  # Text
                 msg_chain.append({
                     "type": "text",
-                    "text": msg[1]
+                    "text": msg.string
                 })
-            elif 3 in msg:  # At
-                buf3 = msg[3] if isinstance(msg[3], bytes) else msg[3].encode()
+            elif msg.attr6_buf:  # At
+                buf3 = msg.attr6_buf
                 if buf3[6]:  # AtAll
-                    msg_chain.append({"type": "atall", "text": msg[1]})
+                    msg_chain.append({"type": "atall", "text": msg.string})
                 else:  # At
                     msg_chain.append({
                         "type": "at",
-                        "text": msg.get(1),
+                        "text": msg.string,
                         "uin": int.from_bytes(buf3[7:11], "big"),
-                        "uid": msg[12][9]
+                        "uid": msg.pb_reserved.get(12)
                     })
             else:
                 raise AssertionError("Invalid message")
-        elif 2 in raw:  # q emoji
-            emo = raw[2]
+        elif raw.face:  # q emoji
+            emo = raw.face
             msg_chain.append({
                 "type": "emoji",
-                "id": emo[1]
+                "id": emo.index
             })
-        elif 6 in raw:  # qq大表情
+        elif raw.market_face:  # qq大表情
+            print(raw.market_face)
             pass
-        elif 8 in raw:  # gpic
-            img = raw[8]
+        elif raw.custom_face:  # gpic
+            img = raw.custom_face
             msg_chain.append({
                 "type": "image",
-                "text": unpack_dict(img, "34.9", "") or "[图片]",
-                "url": "https://gchat.qpic.cn" + img[16],
-                "name": unpack_dict(img, "2", "undefined"),
-                "is_emoji": bool(unpack_dict(img, "34.1", 0)),
-                "id": unpack_dict(img, "7"),
-                "md5": unpack_dict(img, "13"),
-                "width": unpack_dict(img, "22"),
-                "height": unpack_dict(img, "23"),
-                "size": unpack_dict(img, "25")
+                "text": img.args.display_name,
+                "url": "https://gchat.qpic.cn" + img.original_url,
+                "name": img.file_path,
+                "is_emoji": img.args.is_emoji,
+                "id": img.fileid,
+                "md5": img.md5,
+                "width": img.width,
+                "height": img.height,
+                "size": img.size
             })
-        elif 9 in raw:  # unknown
-            pass
-        elif 12 in raw:
-            service = raw[12]
-            if service[1]:
-                jr = service[1]
-                sid = service[2]
+        # elif 9 in raw:  # unknown
+        #     pass
+        elif raw.rich_msg:
+            service = raw.rich_msg
+            if service.template:
+                jr = service.template
+                sid = service.service_id
                 if jr[0]:
                     content = zlib.decompress(jr[1:])
                 else:
@@ -85,73 +87,74 @@ def parse_msg(rich: List[Dict[int, dict]]) -> List[Dict[str, Union[int, str]]]:
                     "raw": content,
                     "id": sid
                 })
-        elif 16 in raw:  # extra
-            # nickname = unpack_dict(raw, "16.2", "")
-            pass
-        elif 19 in raw:  # video
-            video = raw[19]
-            msg_chain.append({
-                "type": "video",
-                "text": "[视频]",
-                "name": unpack_dict(video, "3", "undefined"),
-                "id": unpack_dict(video, "1"),  # tlv struct? contain md5, filetype
-                "md5": unpack_dict(video, "2"),
-                "width": unpack_dict(video, "7"),
-                "height": unpack_dict(video, "8"),
-                "size": unpack_dict(video, "6")
-            })
-        elif 37 in raw:  # unknown
-            pass
-        elif 45 in raw:  # msg source info
-            src = raw[45]
+        # elif 16 in raw:  # extra
+        #     # nickname = unpack_dict(raw, "16.2", "")
+        #     pass
+        # elif 19 in raw:  # video
+        #     video = raw[19]
+        #     msg_chain.append({
+        #         "type": "video",
+        #         "text": "[视频]",
+        #         "name": unpack_dict(video, "3", "undefined"),
+        #         "id": unpack_dict(video, "1"),  # tlv struct? contain md5, filetype
+        #         "md5": unpack_dict(video, "2"),
+        #         "width": unpack_dict(video, "7"),
+        #         "height": unpack_dict(video, "8"),
+        #         "size": unpack_dict(video, "6")
+        #     })
+        # elif 37 in raw:  # unknown
+        #     pass
+        elif raw.src_msg:  # msg source info
+            src = raw.src_msg
             msg_text = ""
-            for v in src[5] if isinstance(src[5], list) else [src[5]]:
-                msg_text += unpack_dict(v, "1.1", "")
+
+            for v in src.elems:
+                msg_text += v.get(1, {1: b""})[1].decode()
             # src[10]: optional[grp_id]
             msg_chain.append({
                 "type": "quote",
                 "text": f"[quote:{msg_text}]",
-                "seq": src[1],
-                "uin": src[2],
-                "timestamp": src[3],
-                "uid": src[8][6]
+                "seq": src.seq,
+                "uin": src.uin,
+                "timestamp": src.timestamp,
+                "uid": src.pb_reserved[6]
             })
             ignore_next = True
-        elif 51 in raw:  # qq mini app or others
-            service = raw[51]
-            if service[1]:
-                jr = service[1]
-                if jr[0]:
-                    content = zlib.decompress(jr[1:])
-                else:
-                    content = jr[1:]
-                msg_chain.append({
-                    "type": "json",
-                    "text": f"[json:{len(content)}]",
-                    "raw": content
-                })
-        elif 53 in raw:  # q emoji
-            qe = raw[53]
-            typ = qe[1]
-            if typ == 33:  # sm size
-                eid = qe[2][1]
-                text = qe[2].get(2, f"[se:{eid}]")
-            elif typ == 37:  # bg size
-                eid = qe[2][3]
-                text = qe[2][7]
-            elif typ == 48:
-                voice = unpack_dict(qe, "2.1.1.1")
-            else:
-                raise AttributeError("unknown type of reaction: ", qe)
+        elif raw.mini_app:  # qq mini app or others
+            service = raw.mini_app.template
 
+            if service[0]:
+                content = zlib.decompress(service[1:])
+            else:
+                content = service[1:]
             msg_chain.append({
-                "type": "reaction",
-                "text": text,
-                "show_type": typ,
-                "id": eid
+                "type": "json",
+                "text": f"[json:{len(content)}]",
+                "raw": content
             })
+        # elif 53 in raw:  # q emoji
+        #     qe = raw[53]
+        #     typ = qe[1]
+        #     if typ == 33:  # sm size
+        #         eid = qe[2][1]
+        #         text = qe[2].get(2, f"[se:{eid}]")
+        #     elif typ == 37:  # bg size
+        #         eid = qe[2][3]
+        #         text = qe[2][7]
+        #     elif typ == 48:
+        #         voice = unpack_dict(qe, "2.1.1.1")
+        #     else:
+        #         raise AttributeError("unknown type of reaction: ", qe)
+        #
+        #     msg_chain.append({
+        #         "type": "reaction",
+        #         "text": text,
+        #         "show_type": typ,
+        #         "id": eid
+        #     })
         else:
-            print("unknown msg", raw)
+            pass
+            # print("unknown msg", raw)
     return msg_chain
 
 
@@ -159,18 +162,14 @@ def parse_friend_msg(pb: dict):
     uin = pb[1][4]
 
 
-def parse_grp_msg(pb: dict) -> GroupMessage:
-    user_id, uid, seq, time, rand = parse_msg_info(pb)
+def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
+    user_id, uid, seq, time, rand = parse_msg_info(pkg)
 
-    grp_id = unpack_dict(pb, "1.8.1")
-    grp_name = unpack_dict(pb, "1.8.7", str(grp_id))
-    sub_id = unpack_dict(pb, "1.4", 0)  # some client may not report it, old pcqq?
-    sender = unpack_dict(pb, "1.8.4")
-    parsed_msg = parse_msg(unpack_dict(pb, "3.1.2"))
-    if isinstance(sender, dict):  # admin or
-        sender_name = unpack_dict(sender, "1.-1.2")
-    else:
-        sender_name = sender
+    grp_id = pkg.response_head.rsp_grp.gid
+    grp_name = pkg.response_head.rsp_grp.grp_name
+    sub_id = pkg.response_head.sigmap  # some client may not report it, old pcqq?
+    sender_name = pkg.response_head.rsp_grp.sender_name
+    parsed_msg = parse_msg(pkg.message.body.content)
 
     if isinstance(grp_name, bytes):  # unexpected end of data
         grp_name = grp_name.decode("utf-8", errors="ignore")
@@ -179,12 +178,7 @@ def parse_grp_msg(pb: dict) -> GroupMessage:
     msg_chain: List[elems.T] = []
     for m in parsed_msg:
         if "text" in m:
-            try:
-                display_msg += m["text"]
-            except TypeError:
-                # dec proto err, fallback
-                m["text"] = proto_encode(m["text"])  # noqa
-                display_msg += m["text"].decode()  # noqa
+            display_msg += m["text"]
 
         obj_name = m.pop("type").capitalize()
         if hasattr(elems, obj_name):

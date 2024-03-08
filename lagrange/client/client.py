@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Coroutine, Callable, Optional, List
 
@@ -5,6 +6,16 @@ from lagrange.utils.log import logger
 from lagrange.utils.operator import timestamp
 from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
+from lagrange.pb.message.send import SendMsgRsp
+from lagrange.pb.message.msg_push import MsgPushBody
+from lagrange.pb.service.group import (
+    PBGroupRecallRequest,
+    PBGroupRenameRequest,
+    PBRenameMemberRequest,
+    PBLeaveGroupRequest,
+    PBGetGrpMsgRequest,
+    GetGrpMsgRsp
+)
 from .base import BaseClient
 from .event import Events
 from .message.elems import T
@@ -75,7 +86,7 @@ class Client(BaseClient):
             12: is_uid
         }
         return await self.send_uni_packet(
-            "OidbSvcTrpcTcp.0x{:0>2x}_{}".format(cmd, sub_cmd),
+            "OidbSvcTrpcTcp.0x{:0>2X}_{}".format(cmd, sub_cmd),
             proto_encode(body)
         )
 
@@ -84,7 +95,7 @@ class Client(BaseClient):
         if ret:
             self._events.emit(ret, self)
 
-    async def _send_msg_raw(self, pb: dict, *, uin=0, grp_id=0, uid="") -> dict:
+    async def _send_msg_raw(self, pb: dict, *, uin=0, grp_id=0, uid="") -> SendMsgRsp:
         assert uin or grp_id, "uin and grp_id"
         seq = self.seq + 1
         sendto = {}
@@ -115,27 +126,59 @@ class Client(BaseClient):
             "MessageSvc.PbSendMsg",
             proto_encode(body)
         )
-        return proto_decode(packet.data)
+        return SendMsgRsp.decode(packet.data)
 
-    async def send_grp_msg(self, msg_chain: List[T], grp_id: int) -> None:
-        await self._send_msg_raw(
+    async def send_grp_msg(self, msg_chain: List[T], grp_id: int) -> int:
+        result = await self._send_msg_raw(
             build_message(msg_chain),
             grp_id=grp_id
         )
+        if result.ret_code:
+            raise AssertionError(result.ret_code, result.err_msg)
+        return result.seq
 
     async def get_grp_msg(self, grp_id: int, start: int, end: int = 0) -> List[GroupMessage]:
         payload = await self.send_uni_packet(
             "trpc.msg.register_proxy.RegisterProxy.SsoGetGroupMsg",
-            proto_encode({
-                1: {
-                    1: grp_id,
-                    2: start,
-                    3: end or start
-                },
-                2: True
-            })
+            PBGetGrpMsgRequest.build(grp_id, start, end or start).encode()
         )
-        ret = proto_decode(payload.data)[3]
+        ret = GetGrpMsgRsp.decode(payload.data).body
 
-        assert ret[3] == grp_id and ret[4] == start and ret[5] == (end or start), "return args not matched"
-        return [parse_grp_msg(i) for i in ret[6]] if isinstance(ret[6], list) else [parse_grp_msg(ret[6])]
+        assert ret.grp_id == grp_id and ret.start_seq == start and ret.end_seq == (end or start), "return args not matched"
+        return [parse_grp_msg(MsgPushBody.decode(i)) for i in ret.elems]
+
+    async def recall_grp_msg(self, grp_id: int, seq: int):
+        payload = await self.send_uni_packet(
+            "trpc.msg.msg_svc.MsgService.SsoGroupRecallMsg",
+            PBGroupRecallRequest.build(grp_id, seq).encode()
+        )
+        result = proto_decode(payload.data)
+        if result[2] != b"Success":
+            raise AssertionError(result)
+
+    async def rename_grp_name(self, grp_id: int, name: str) -> bool:
+        try:
+            await self.send_oidb_svc(
+                0x89A, 15,
+                PBGroupRenameRequest.build(grp_id, name).encode()
+            )
+        except asyncio.TimeoutError:
+            return False
+        return True
+
+    async def rename_member_name(self, grp_id: int, target_uid: str, name: str) -> bool:  # fixme
+        payload = await self.send_oidb_svc(
+            0x89A, 15,
+            PBRenameMemberRequest.build(grp_id, target_uid, name).encode()
+        )
+        print(proto_decode(payload.data))
+
+    async def leave_grp(self, grp_id: int) -> bool:
+        try:
+            await self.send_oidb_svc(
+                0x1097, 1,
+                PBLeaveGroupRequest.build(grp_id).encode()
+            )
+        except asyncio.TimeoutError:
+            return False
+        return True

@@ -8,25 +8,27 @@ from .binder import push_handler
 from ..events.group import GroupRecall, GroupMuteMember
 from ..wtlogin.sso import SSOPacket
 
+from lagrange.pb.message.msg_push import MsgPush
+
 
 @push_handler.subscribe("trpc.msg.olpush.OlPushService.MsgPush")
 async def msg_push_handler(sso: SSOPacket):
-    pb = proto_decode(sso.data)[1]
-    typ = unpack_dict(pb, "2.1")
-    sub_typ = unpack_dict(pb, "2.2", 0)
+    pkg = MsgPush.decode(sso.data).body
+    typ = pkg.content_head.type
+    sub_typ = pkg.content_head.sub_type
 
     logger.debug("msg_push received, type:{}".format(typ))
     if typ == 82:  # grp msg
-        return parse_grp_msg(pb)
+        return parse_grp_msg(pkg)
     elif typ == 166:  # frd msg
         pass
     elif typ == 0x210:
-        print(210, pb)
+        print(210, pkg)
     elif typ == 0x2dc:  # grp event, 732
         if sub_typ == 20:  # nudget(grp_id only)
             pass
         if sub_typ == 17:  # recall
-            reader = Reader(unpack_dict(pb, "3.2"))
+            reader = Reader(pkg.message.buf2)
             grp_id = reader.read_u32()
             reader.read_u8()  # reserve
             in_pb = unpack_dict(
@@ -44,7 +46,7 @@ async def msg_push_handler(sso: SSOPacket):
                 suffix=unpack_dict(in_pb, "9.2", "").strip()
             )
         elif sub_typ == 12:  # mute
-            info = unpack_dict(pb, "3.2")
+            info = proto_decode(pkg.message.buf2)
             return GroupMuteMember(
                 grp_id=info[1],
                 operator_uid=info[4],

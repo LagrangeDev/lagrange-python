@@ -34,7 +34,7 @@ def build_key_exchange_request(uin: int, guid: str) -> bytes:
         1: ecdh["prime256v1"].public_key,
         2: 1,
         3: enc1,
-        4: timestamp,
+        4: timestamp(),
         5: enc_p2_hash
     })
 
