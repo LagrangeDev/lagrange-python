@@ -1,7 +1,7 @@
 import inspect
 from types import GenericAlias
-from typing import TypeVar, Tuple, Type, Dict, Optional, List, TypeAlias, Union, dataclass_transform
-from typing_extensions import Self
+from typing import TypeVar, Tuple, Type, Dict, List, Union
+from typing_extensions import Self, TypeAlias, Optional, dataclass_transform
 
 from .coder import proto_encode, proto_decode
 
@@ -56,7 +56,9 @@ class ProtoStruct:
     def _get_annotations(cls) -> Dict[str, Tuple[Type[T], "ProtoField"]]:  # Name: (ReturnType, ProtoField)
         annotations: Dict[str, Tuple[Type[T], "ProtoField"]] = {}
         for obj in reversed(inspect.getmro(cls)):
-            for name, typ in inspect.get_annotations(obj, eval_str=True).items():  # type: str, Type[T]
+            if obj in (ProtoStruct, object):  # base object, ignore
+                continue
+            for name, typ in obj.__annotations__.items():  # type: str, Type[T]
                 if name[0] == "_":  # ignore internal var
                     continue
                 if not hasattr(obj, name):
@@ -67,7 +69,7 @@ class ProtoStruct:
                     raise TypeError("attribute '{name}' is not a ProtoField object")
 
                 if hasattr(typ, "__origin__"):
-                    typ = typ.__origin__[*typ.__args__]
+                    typ = typ.__origin__[typ.__args__[0]]
                 annotations[name] = (typ, field)
 
         return annotations
