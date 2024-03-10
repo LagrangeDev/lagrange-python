@@ -11,6 +11,7 @@ from .elems import (
     ExtraInfo,
     SrcMsg,
     MiniApp,
+    OpenData,
 )
 
 
@@ -29,6 +30,7 @@ class Elems(ProtoStruct):
     rich_msg: RichMsg = ProtoField(12, None)
     extra_info: ExtraInfo = ProtoField(16, None)
     #video_file: VideoFile = ProtoField(19, None)
+    open_data: OpenData = ProtoField(41, None)
     src_msg: SrcMsg = ProtoField(45, None)
     mini_app: MiniApp = ProtoField(51, None)
 

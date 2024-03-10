@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from lagrange.info.serialize import JsonSerializer
 
-T = TypeVar('T', "Text", "AtAll", "At", "Image", "Emoji", "Json", "Quote")
+T = TypeVar('T', "Text", "AtAll", "At", "Image", "Emoji", "Json", "Quote", "Raw")
 
 
 @dataclass
@@ -78,6 +78,11 @@ class Image(Text, MediaInfo):
 @dataclass
 class Video(Text, MediaInfo):
     ...
+
+
+@dataclass
+class Raw(Text):
+    data: bytes
 
 
 @dataclass

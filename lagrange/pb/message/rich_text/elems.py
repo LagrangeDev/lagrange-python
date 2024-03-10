@@ -24,11 +24,12 @@ class NotOnlineImage(ProtoStruct):
     file_len: int = ProtoField(2)
     download_path: str = ProtoField(3)
     image_type: int = ProtoField(5)
-    image_preview: bytes = ProtoField(6)
+    #image_preview: bytes = ProtoField(6)
     file_md5: bytes = ProtoField(7)
     height: int = ProtoField(8)
     width: int = ProtoField(9)
     res_id: str = ProtoField(10)
+    origin_path: str = ProtoField(15)
 
 
 class TransElem(ProtoStruct):
@@ -91,6 +92,10 @@ class SrcMsg(ProtoStruct):
 
 class MiniApp(ProtoStruct):
     template: bytes = ProtoField(1)
+
+
+class OpenData(ProtoStruct):
+    data: bytes = ProtoField(1)
 
 
 class RichMsg(MiniApp):

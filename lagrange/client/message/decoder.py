@@ -104,6 +104,12 @@ def parse_msg(elems: List[Elems]) -> List[Dict[str, Union[int, str]]]:
         #     })
         # elif 37 in raw:  # unknown
         #     pass
+        elif raw.open_data:
+            msg_chain.append({
+                "type": "raw",
+                "text": f"[raw:{len(raw.open_data.data)}]",
+                "data": raw.open_data.data
+            })
         elif raw.src_msg:  # msg source info
             src = raw.src_msg
             msg_text = ""

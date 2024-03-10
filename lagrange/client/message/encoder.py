@@ -11,6 +11,7 @@ from .elems import (
     Json,
     Text,
     Emoji,
+    Raw
 )
 
 
@@ -75,6 +76,12 @@ def build_message(msg_chain: List[T], compatible=True) -> dict:
                 12: {
                     1: b"\x01" + zlib.compress(msg.raw),
                     2: msg.id
+                }
+            })
+        elif isinstance(msg, Raw):
+            msg_pb.append({
+                41: {
+                    1: msg.data
                 }
             })
         elif isinstance(msg, Reaction):
