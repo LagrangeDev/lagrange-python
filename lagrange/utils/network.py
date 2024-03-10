@@ -99,7 +99,7 @@ class Connection:
                 fail = False
             except (ConnectionError, socket.error) as e:
                 if fail:
-                    _logger.debug(f"connect retry fail: {' '.join([str(i) for i in e.args[1:]])}[{e.args[0]}]")
+                    _logger.debug(f"connect retry fail: {repr(e)}]")
                 else:
                     _logger.error("Connect fail, retying...")
                     fail = True

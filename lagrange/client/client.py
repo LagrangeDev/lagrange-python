@@ -1,4 +1,3 @@
-import asyncio
 import os
 from typing import Coroutine, Callable, Optional, List
 
@@ -8,12 +7,17 @@ from lagrange.utils.binary.protobuf import proto_encode, proto_decode
 from lagrange.info import DeviceInfo, AppInfo, SigInfo
 from lagrange.pb.message.send import SendMsgRsp
 from lagrange.pb.message.msg_push import MsgPushBody
+from lagrange.pb.service.oidb import OidbRequest, OidbResponse
+from lagrange.pb.service.comm import SendNudge
 from lagrange.pb.service.group import (
     PBGroupRecallRequest,
     PBGroupRenameRequest,
     PBRenameMemberRequest,
     PBLeaveGroupRequest,
     PBGetGrpMsgRequest,
+    PBGroupMuteRequest,
+    PBSetEssence,
+    SetEssenceRsp,
     GetGrpMsgRsp
 )
 from .base import BaseClient
@@ -50,8 +54,8 @@ class Client(BaseClient):
             if self._sig.temp_pwd:  # EasyLogin
                 await self._key_exchange()
 
-                ret = await self.token_login(self._sig.temp_pwd)
-                if ret.successful:
+                rsp = await self.token_login(self._sig.temp_pwd)
+                if rsp.successful:
                     return await self.register()
         except:
             logger.login.exception("EasyLogin fail")
@@ -60,15 +64,15 @@ class Client(BaseClient):
             await self._key_exchange()
 
             while True:
-                ret = await self.password_login(password)
-                if ret.successful:
+                rsp = await self.password_login(password)
+                if rsp.successful:
                     return await self.register()
-                elif ret.captcha_verify:
+                elif rsp.captcha_verify:
                     logger.root.warning("captcha verification required")
                     self._sig.captcha_info[0] = input("ticket?->")
                     self._sig.captcha_info[1] = input("rand_str?->")
                 else:
-                    logger.root.error(f"Unhandled exception raised: {ret.name}")
+                    logger.root.error(f"Unhandled exception raised: {rsp.name}")
         else:  # QrcodeLogin
             png, _link = await self.fetch_qrcode()
             logger.root.info(f"save qrcode to '{qrcode_path}'")
@@ -78,22 +82,23 @@ class Client(BaseClient):
                 return await self.register()
         return False
 
-    async def send_oidb_svc(self, cmd: int, sub_cmd: int, buf: bytes, is_uid=False) -> SSOPacket:
-        body = {
-            1: cmd,
-            2: sub_cmd,
-            4: buf,
-            12: is_uid
-        }
-        return await self.send_uni_packet(
-            "OidbSvcTrpcTcp.0x{:0>2X}_{}".format(cmd, sub_cmd),
-            proto_encode(body)
+    async def send_oidb_svc(self, cmd: int, sub_cmd: int, buf: bytes, is_uid=False) -> OidbResponse:
+        rsp = OidbResponse.decode(
+            (
+                await self.send_uni_packet(
+                    "OidbSvcTrpcTcp.0x{:0>2X}_{}".format(cmd, sub_cmd),
+                    OidbRequest(cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), is_uid=is_uid).encode()
+                )
+            ).data
         )
+        if rsp.ret_code:
+            logger.network.error(f"OidbSvc({hex(cmd)}_{sub_cmd}) return an error ({rsp.ret_code}):{rsp.err_msg}")
+        return rsp
 
     async def push_handler(self, sso: SSOPacket):
-        ret = await push_handler.execute(sso.cmd, sso)
-        if ret:
-            self._events.emit(ret, self)
+        rsp = await push_handler.execute(sso.cmd, sso)
+        if rsp:
+            self._events.emit(rsp, self)
 
     async def _send_msg_raw(self, pb: dict, *, uin=0, grp_id=0, uid="") -> SendMsgRsp:
         assert uin or grp_id, "uin and grp_id"
@@ -156,29 +161,64 @@ class Client(BaseClient):
         if result[2] != b"Success":
             raise AssertionError(result)
 
-    async def rename_grp_name(self, grp_id: int, name: str) -> bool:
-        try:
+    async def rename_grp_name(self, grp_id: int, name: str) -> int:  # not test
+        return (
             await self.send_oidb_svc(
                 0x89A, 15,
                 PBGroupRenameRequest.build(grp_id, name).encode()
             )
-        except asyncio.TimeoutError:
-            return False
-        return True
+        ).ret_code
 
-    async def rename_member_name(self, grp_id: int, target_uid: str, name: str) -> bool:  # fixme
-        payload = await self.send_oidb_svc(
-            0x89A, 15,
-            PBRenameMemberRequest.build(grp_id, target_uid, name).encode()
+    async def rename_grp_member(self, grp_id: int, target_uid: str, name: str):  # fixme
+        rsp = await self.send_oidb_svc(
+            0x8fc, 3,
+            PBRenameMemberRequest.build(grp_id, target_uid, name).encode(),
+            True
         )
-        print(proto_decode(payload.data))
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
 
-    async def leave_grp(self, grp_id: int) -> bool:
-        try:
+    async def leave_grp(self, grp_id: int) -> int:  # not test
+        return (
             await self.send_oidb_svc(
                 0x1097, 1,
                 PBLeaveGroupRequest.build(grp_id).encode()
             )
-        except asyncio.TimeoutError:
-            return False
-        return True
+        ).ret_code
+
+    async def send_nudge(self, uin: int, grp_id: int = 0) -> int:
+        """grp_id=0 when send to friend"""
+        return (
+            await self.send_oidb_svc(
+                0xed3,
+                1,
+                SendNudge(
+                    to_dst1=uin,
+                    to_grp=grp_id if grp_id else None,
+                    to_uin=uin if not grp_id else None
+                ).encode()
+            )
+        ).ret_code
+
+    async def set_essence(self, grp_id: int, seq: int, rand: int, is_remove=False):
+        rsp = SetEssenceRsp.decode(
+            (
+                await self.send_oidb_svc(
+                    0xeac,
+                    1 if not is_remove else 2,
+                    PBSetEssence(grp_id=grp_id, seq=seq, rand=rand).encode()
+                )
+            ).data
+        )
+        if rsp:
+            raise AssertionError(rsp.code, rsp.msg)
+
+    async def set_mute_grp(self, grp_id: int, enable: bool):
+        rsp = await self.send_oidb_svc(
+            0x89a,
+            0,
+            PBGroupMuteRequest.build(grp_id, 0xffffffff if enable else 0).encode()
+        )
+        print(rsp)
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)

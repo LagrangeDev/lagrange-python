@@ -1,4 +1,3 @@
-from lagrange.pb.message.rich_text import Elems
 from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
 
 
@@ -78,8 +77,32 @@ class GetGrpMsgRspBody(ProtoStruct):
     grp_id: int = ProtoField(3)
     start_seq: int = ProtoField(4)
     end_seq: int = ProtoField(5)
-    elems: list[bytes] = ProtoField(6)
+    elems: list[bytes] = ProtoField(6, [])
 
 
 class GetGrpMsgRsp(ProtoStruct):
     body: GetGrpMsgRspBody = ProtoField(3)
+
+
+class PBSetEssence(ProtoStruct):
+    grp_id: int = ProtoField(1)
+    seq: int = ProtoField(2)
+    rand: int = ProtoField(3)
+
+
+class SetEssenceRsp(ProtoStruct):
+    msg: str = ProtoField(1)
+    code: int = ProtoField(10)
+
+
+class GroupMuteBody(ProtoStruct):
+    duration: int = ProtoField(17)
+
+
+class PBGroupMuteRequest(ProtoStruct):
+    grp_id: int = ProtoField(1)
+    body: GroupMuteBody = ProtoField(2)
+
+    @classmethod
+    def build(cls, grp_id: int, duration: int) -> "PBGroupMuteRequest":
+        return cls(grp_id=grp_id, body=GroupMuteBody(duration=duration))
