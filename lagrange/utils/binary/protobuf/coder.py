@@ -118,6 +118,8 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
                     value = proto_decode(value, max_layer - 1)
                 except:
                     pass
+        elif wire_type == 5:
+            value = reader.read_u32()
         else:
             raise AssertionError
 
@@ -143,4 +145,4 @@ def proto_encode(proto: Proto) -> bytes:
         else:
             _encode(builder, tag, value)
 
-    return builder.data
+    return bytes(builder.data)

@@ -5,7 +5,7 @@ from typing_extensions import Self, TypeAlias, Optional, dataclass_transform
 
 from .coder import proto_encode, proto_decode
 
-T = TypeVar('T', str, list, dict, bytes, int, float, bool)
+T = TypeVar('T', str, list, dict, bytes, int, float, bool, "ProtoStruct")
 V = TypeVar('V')
 NT: TypeAlias = Dict[int, Union[T, "NT"]]
 

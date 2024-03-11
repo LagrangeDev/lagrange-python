@@ -5,8 +5,20 @@
 #     ExtensionReq,
 #     ReqBody as VideoReqBody
 # )
+import os
+from lagrange.pb.highway.comm import CommonHead, FileInfo, FileType, ExtBizInfo, PicExtInfo
+from lagrange.pb.highway.head import HighwayTransReqHead, DataHighwayHead, SegHead, LoginSigHead
 from lagrange.utils.binary.protobuf import proto_encode
 from typing import Sequence, TYPE_CHECKING
+from lagrange.pb.highway.req import (
+    MultiMediaReqHead,
+    NTV2RichMediaReq,
+    SceneInfo,
+    C2CUserInfo,
+    GroupInfo,
+    UploadReq,
+    UploadInfo
+)
 
 if TYPE_CHECKING:
     from lagrange.utils.image.decoder import ImageInfo
@@ -69,49 +81,103 @@ def encode_login_head(
 
 
 def encode_highway_head(
-        req_head: dict,
-        seg_head: dict,
-        ext_info: bytes,
+        uin: int,
+        seq: int,
+        cmd: str,
+        cmd_id: int,
+        file_size: int,
+        file_offset: int,
+        file_md5: bytes,
+        blk_size: int,
+        blk_md5: bytes,
+        ticket: bytes,
+        tgt: bytes,
+        app_id: int,
+        sub_app_id: int,
         timestamp: int,
-        login_head: dict
-) -> bytes:
-    return proto_encode({
-        1: req_head,
-        2: seg_head,
-        3: ext_info,
-        4: timestamp,
-        5: login_head
-    })
+        ext_info: bytes
+) -> HighwayTransReqHead:
+    return HighwayTransReqHead(
+        msg_head=DataHighwayHead(
+            uin=str(uin),
+            command=cmd,
+            seq=seq,
+            app_id=sub_app_id,
+            command_id=cmd_id
+        ),
+        seg_head=SegHead(
+            file_size=file_size,
+            data_offset=file_offset,
+            data_length=blk_size,
+            ticket=ticket,
+            md5=blk_md5,
+            file_md5=file_md5
+        ),
+        req_ext_info=ext_info,
+        timestamp=timestamp,
+        login_head=LoginSigHead(
+            login_sig_type=8,
+            login_sig=tgt,
+            app_id=app_id,
+        )
+    )
 
 
-# def encode_upload_img_req(
-#         group_code: int,
-#         uin: int,
-#         md5: bytes,
-#         size: int,
-#         info: "ImageInfo"
-# ) -> ReqBody:
-#     fn = f"{md5.hex().upper()}.{info.name or 'jpg'}"
-#     return encode_d388_req(subcmd=1, tryup_img=[
-#         TryUpImgReq(
-#             group_code=group_code,
-#             src_uin=uin,
-#             file_name=fn.encode(),
-#             file_md5=md5,
-#             file_size=size,
-#             file_id=0,
-#             src_term=5,
-#             platform_type=9,
-#             bu_type=1,
-#             pic_type=info.pic_type,
-#             pic_width=info.width,
-#             pic_height=info.height,
-#             build_ver=b"8.8.50.2324",
-#             app_pic_type=1052,
-#             original_pic=1,
-#             srv_upload=0,
-#         )
-#     ])
+def encode_upload_img_req(
+        grp_id: int,
+        md5: bytes,
+        sha1: bytes,
+        size: int,
+        info: "ImageInfo",
+        is_origin=True
+) -> NTV2RichMediaReq:
+    fn = f"{md5.hex().upper()}.{info.name or 'jpg'}"
+    scene_type = 2
+    return NTV2RichMediaReq(
+        req_head=MultiMediaReqHead(
+            common=CommonHead(
+                cmd=100
+            ),
+            scene=SceneInfo(
+                req_type=2,
+                bus_type=1,
+                scene_type=scene_type,
+                grp=GroupInfo(
+                    grp_id=grp_id
+                )
+            )
+        ),
+        upload=UploadReq(
+            infos=[UploadInfo(
+                file_info=FileInfo(
+                    size=size,
+                    hash=md5.hex(),
+                    sha1=sha1.hex(),
+                    name=fn,
+                    type=FileType(
+                        type=1,
+                        pic_format=info.pic_type.value
+                    ),
+                    width=info.width,
+                    height=info.height,
+                    is_origin=is_origin
+                ),
+                sub_type=0
+            )],
+            compat_stype=scene_type,
+            client_rand_id=int.from_bytes(os.urandom(4), "big"),
+            biz_info=ExtBizInfo(
+                pic=PicExtInfo(
+                    # c2c_reserved=bytes.fromhex(
+                    #     "0800180020004200500062009201009a0100a2010c080012001800200028003a00"
+                    # )
+                    troop_reserved=bytes.fromhex(
+                        "0800180020004a00500062009201009a0100aa010c080012001800200028003a00"
+                    )
+                )
+            )
+        )
+    )
 #
 #
 # def encode_upload_voice_req(

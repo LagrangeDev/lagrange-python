@@ -8,8 +8,10 @@ from lagrange.info.device import DeviceInfo
 from lagrange.info.sig import SigInfo
 from lagrange.client.server_push.events.group import GroupMessage
 from lagrange.client.message.elems import Text
+from lagrange.client.events.service import ServerKick
 from lagrange.client.events.group import GroupMessage
 from lagrange.client.message.elems import Text, At
+from lagrange.client.message.elems import Text, At, Raw
 
 DEVICE_INFO_PATH = "./device.json"
 SIGINFO_PATH = "./sig.bin"
@@ -78,8 +80,19 @@ async def heartbeat_task(client: Client):
 async def msg_handler(client: Client, event: GroupMessage):
     print(event)
     if event.msg.startswith("114514"):
-        await client.send_grp_msg([Text("1919810")], event.grp_id)
+        p = await client.send_grp_msg([Text("1919810")], event.grp_id)
+        await asyncio.sleep(5)
+        await client.recall_grp_msg(event.grp_id, p)
+    elif event.msg.startswith("imgs"):
+        await client.send_grp_msg([
+            await client._highway.upload_image(open("img.png", "rb"), event.grp_id)
+        ], event.grp_id)
     print(f"{event.nickname}({event.grp_name}): {event.msg}")
+
+
+async def handle_kick(client: "Client", event: "ServerKick"):
+    print(f"被服务器踢出：[{event.title}] {event.tips}")
+    await client.stop()
 
 
 async def main():
@@ -97,6 +110,7 @@ async def main():
             sign_provider(sign_url) if sign_url else None
         )
         client.events.subscribe(GroupMessage, msg_handler)
+        client.events.subscribe(ServerKick, handle_kick)
         client.connect()
         asyncio.create_task(heartbeat_task(client))
         if im.sig_info.d2:

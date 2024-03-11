@@ -220,7 +220,7 @@ class HttpCat:
             True,
             loop
         )
-        _logger.debug(f"request: {method} {url} {resp.code}")
+        _logger.debug(f"request({method})[{resp.code}]: {url}")
         if resp.code // 100 == 3 and follow_redirect:
             return await cls.request(method, resp.header["Location"], header, body, cookies)
         else:
@@ -259,7 +259,7 @@ class HttpCat:
             self.cookie,
             True
         )
-        _logger.debug(f"request: {method} http{'s' if self.ssl else ''}://{self.host}:{self.port}{path} {resp.code}")
+        _logger.debug(f"send_request({method})[{resp.code}]: http{'s' if self.ssl else ''}://{self.host}:{self.port}{path}")
         if resp.cookies:
             self.cookie = resp.cookies
         if resp.code // 100 == 3 and follow_redirect:
@@ -273,6 +273,7 @@ class HttpCat:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self._stop_flag = True
-        self._writer.close()
-        await self._writer.wait_closed()
-        self._reader, self._writer = None, None
+        if self._reader and self._writer:
+            self._writer.close()
+            await self._writer.wait_closed()
+            self._reader, self._writer = None, None

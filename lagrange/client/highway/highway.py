@@ -2,7 +2,8 @@ import random
 import asyncio
 import logging
 import secrets
-from hashlib import md5
+import time
+from hashlib import md5, sha1
 from io import BytesIO
 from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Optional
 
@@ -11,12 +12,18 @@ from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
 from lagrange.client.message.elems import Image
 from lagrange.utils.binary.protobuf import proto_encode, proto_decode
-# from cai.pb.highway.protocol.highway_head_pb2 import highway_head
-# from cai.pb.highway.ptt_center import PttShortVideoUploadResp
+from .encoders import encode_highway_head
 
 #from .encoders import encode_upload_img_req, encode_upload_voice_req, encode_video_upload_req
-from .frame import write_frame
-from .utils import to_id, timeit, calc_file_md5_and_length
+from .encoders import encode_upload_img_req
+from .frame import write_frame, read_frame
+from .utils import to_id, timeit, calc_file_hash_and_length, itoa
+from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
+from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
+from lagrange.utils.operator import timestamp
+from lagrange.pb.message.rich_text.elems import CustomFace
+from ...pb.highway.rsp import NTV2RichMediaResp
+
 #from ..message_service.models import ImageElement, VoiceElement, VideoElement, ForwardNode, ForwardMessage
 #from .decoders import decode_upload_ptt_resp, decode_upload_image_resp, decode_video_upload_resp, parse_addr
 #from ..multi_msg.forward import prepare_upload
@@ -36,35 +43,80 @@ class HighWaySession:
         self._session_key: Optional[bytes] = None
         self._session_addr_list: Optional[List[Tuple[str, int]]] = []
 
+    # async def upload_image(self, image: str, uid: str) -> NTV2RichMediaResp:
+    #     try:
+    #         f = open(image, "rb")
+    #         ft = decoder.decode(f)
+    #         buf = f.read()
+    #         size = len(buf)
+    #         _md5 = md5(buf).hexdigest()
+    #         _sha1 = sha1(buf).hexdigest()
+    #         f.seek(0)
+    #
+    #         body = NTV2RichMediaReq(
+    #             req_head=MultiMediaReqHead(
+    #                 common=CommonHead(
+    #                     cmd=100
+    #                 ),
+    #                 scene=SceneInfo(
+    #                     req_type=2,
+    #                     bus_type=1,
+    #                     scene_type=1,
+    #                     c2c=C2CUserInfo(
+    #                         uid=uid
+    #                     )
+    #                 )
+    #             ),
+    #             upload=UploadReq(
+    #                 infos=[UploadInfo(
+    #                     file_info=FileInfo(
+    #                         size=size,
+    #                         hash=_md5,
+    #                         sha1=_sha1,
+    #                         name=f"{_md5}.{ft.name}",
+    #                         type=FileType(
+    #                             type=1,
+    #                             pic_format=1001
+    #                         ),
+    #                         width=ft.width,
+    #                         height=ft.height,
+    #                         is_origin=True
+    #                     ),
+    #                     sub_type=0
+    #                 )],
+    #                 client_rand_id=1145141919,
+    #                 biz_info=ExtBizInfo(
+    #                     pic=PicExtInfo(
+    #                         c2c_reserved=bytes.fromhex(
+    #                             "0800180020004200500062009201009a0100a2010c080012001800200028003a00"
+    #                         )
+    #                     )
+    #                 )
+    #             )
+    #         )
+    #         ret = await self._client.send_oidb_svc(
+    #             0x11c5,
+    #             100,
+    #             body.encode()
+    #         )
+    #         return NTV2RichMediaResp.decode(ret.data)
+    #     finally:
+    #         f.close()
+
     async def _get_bdh_session(self):
         rsp = await self._client.send_uni_packet(
-            "HttpConn0x6ff_501",
-            proto_encode({
-                0x501: {
-                    1: 0,
-                    2: 0,
-                    3: 16,
-                    4: 1,
-                    5: self._client._sig.tgt.hex(),
-                    6: 3,
-                    7: [1, 5, 10, 21],
-                    9: 2,
-                    10: 9,
-                    11: 8,
-                    15: "1.0.1"
-                }
-            })
+            "HttpConn.0x6ff_501",
+            HttpConn0x6ffReq.build(self._client._sig.tgt).encode()
         )
 
-        pb = proto_decode(rsp.data)[0x501]
-
+        pb = HttpConn0x6ffRsp.decode(rsp.data)
         if not pb:
             raise ValueError("info not found, try again later")
-        self._session_sig = pb[1]
-        self._session_key = pb[2]
-        # for iplist in info.big_data_channel.bigdata_iplists:
-        #     for ip in iplist.ip_list:
-        #         self._session_addr_list.append((ip.ip, ip.port))
+        self._session_sig = pb.body.sig_session
+        self._session_key = pb.body.sig_key
+        for iplist in pb.body.servers:
+            for ip in iplist.server_addrs:
+                self._session_addr_list.append((itoa(ip.ip), ip.port))
 
     def _encrypt_ext(self, ext: bytes) -> bytes:
         if not self._session_key:
@@ -85,7 +137,7 @@ class HighWaySession:
         for addr in addrs:
             try:
                 sec, data = await timeit(
-                    self._bdh_uploader(b"PicUp.DataUp", addr, list(files), cmd_id, ticket, ext, block_size=bs)
+                    self._bdh_uploader("PicUp.DataUp", addr, list(files), cmd_id, ticket, ext, block_size=bs)
                 )
                 self.logger.info("upload complete, use %fms" % (sec * 1000))
                 return data
@@ -100,7 +152,7 @@ class HighWaySession:
 
     async def _bdh_uploader(
         self,
-        cmd: bytes,
+        cmd: str,
         addr: Tuple[str, int],
         files: List[BinaryIO],
         cmd_id: int,
@@ -109,12 +161,19 @@ class HighWaySession:
         *,
         block_size=65535,
     ) -> Optional[bytes]:
-        fmd5, fl = calc_file_md5_and_length(*files)
+        fmd5, _, fl = calc_file_hash_and_length(*files)
         # reader, writer = await asyncio.open_connection(*addr)
+        ts = int(time.time() * 1000)
         bc = 0
         total_transfer = 0
         current_file = files.pop(0)
-        async with HttpCat(*addr) as session:
+        async with HttpCat(
+                *addr,
+                headers={
+                    "Accept-Encoding": "identity",
+                    "User-Agent": "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2)"
+                }
+        ) as session:
             while True:
                 bl = current_file.read(block_size)
                 if not bl and not files:
@@ -123,24 +182,24 @@ class HighWaySession:
                     current_file = files.pop(0)
                     continue
 
-                # head = highway_head.ReqDataHighwayHead(
-                #     basehead=_create_highway_header(
-                #         cmd, 4096, cmd_id, self._client
-                #     ),
-                #     seghead=highway_head.SegHead(
-                #         filesize=fl,
-                #         dataoffset=total_transfer,
-                #         datalength=len(bl),
-                #         serviceticket=ticket,
-                #         md5=md5(bl).digest(),
-                #         fileMd5=fmd5,
-                #     ),
-                #     reqExtendinfo=ext,
-                # )
-                head = ...
+                head = encode_highway_head(
+                    uin=self._client.uin,
+                    seq=bc,
+                    cmd=cmd,
+                    cmd_id=cmd_id,
+                    file_size=fl,
+                    file_offset=total_transfer,
+                    file_md5=fmd5,
+                    blk_size=len(bl),
+                    blk_md5=md5(bl).digest(),
+                    ticket=ticket,
+                    tgt=self._client._sig.tgt,
+                    app_id=self._client.app_info.app_id,
+                    sub_app_id=self._client.app_info.sub_app_id,
+                    timestamp=ts,
+                    ext_info=ext
+                ).encode()
 
-                # writer.write(write_frame(head.SerializeToString(), bl))
-                # await writer.drain()
                 rsp_http = await session.send_request(
                     "POST",
                     f"/cgi-bin/httpconn?htcmd=0x6FF0087&uin={self._client.uin}",
@@ -148,59 +207,75 @@ class HighWaySession:
                 )
                 total_transfer += len(bl)
 
-                # resp, data = await read_frame(rsp_http.decompressed_body)
-                # if resp.errorCode:
-                #     raise ConnectionError(resp.errorCode, "upload error", resp)
-                # elif resp and ext:
-                #     if resp.rspExtendinfo:
-                #         ext = resp.rspExtendinfo
-                #     if resp.seghead:
-                #         if resp.seghead.serviceticket:
-                #             self._session_key = resp.seghead.serviceticket
+                resp, data = read_frame(BytesIO(rsp_http.decompressed_body))
+                if resp.err_code:
+                    raise ConnectionError(resp.err_code, "upload error", resp)
+                elif resp and ext:
+                    if resp.ext_info:
+                        ext = resp.ext_info
+                    if resp.seg_head:
+                        if resp.seg_head.ticket:
+                            self._session_key = resp.seg_head.ticket
 
                 bc += 1
 
-    # async def upload_image(self, file: BinaryIO, gid: int) -> Image:
-    #     fmd5, fl = calc_file_md5_and_length(file)
-    #     info = decoder.decode(file)
-    #     ret = decode_upload_image_resp(
-    #         (
-    #             await self._client.send_unipkg_and_wait(
-    #                 "ImgStore.GroupPicUp",
-    #                 encode_upload_img_req(gid, self._client.uin, fmd5, fl, info).SerializeToString(),
-    #             )
-    #         ).data
-    #     )
-    #     if ret.resultCode != 0:
-    #         raise ConnectionError(ret.resultCode)
-    #     elif not ret.isExists:
-    #         self.logger.debug("file not found, uploading...")
-    #
-    #         await self.upload_controller(file, cmd_id=2, ticket=ret.uploadKey, addrs=ret.uploadAddr, bs=1048576)
-    #
-    #     if ret.hasMetaData:
-    #         image_type = ret.fileType
-    #         w, h = ret.width, ret.height
-    #     else:
-    #         image_type = info.pic_type
-    #         w, h = info.width, info.height
-    #
-    #     return ImageElement(
-    #         id=ret.fileId,
-    #         filename=to_id(fmd5) + f".{info.name}",
-    #         size=fl,
-    #         width=w,
-    #         height=h,
-    #         md5=fmd5,
-    #         filetype=image_type,
-    #         url="https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
-    #             uin=self._client.uin,
-    #             gid=gid,
-    #             file_id=ret.fileId,
-    #             fmd5=fmd5.hex().upper()
-    #         )
-    #     )
-    #
+    async def upload_image(self, file: BinaryIO, gid=0) -> Image:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        fmd5, fsha1, fl = calc_file_hash_and_length(file)
+        info = decoder.decode(file)
+        ret = NTV2RichMediaResp.decode(
+            (
+                await self._client.send_oidb_svc(
+                    0x11c4,
+                    100,
+                    encode_upload_img_req(gid, fmd5, fsha1, fl, info).encode()
+                )
+            ).data
+        )
+        if ret.rsp_head.ret_code != 0:
+            raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
+        self.logger.debug("file not found, uploading...")
+
+        index = ret.upload.msg_info.body[0].index
+
+        ext = NTV2RichMediaHighwayExt.build(
+            index.file_uuid,
+            ret.upload.ukey,
+            ret.upload.v4_addrs,
+            ret.upload.msg_info.body,
+            1048576,
+            fsha1
+        ).encode()
+
+        await self.upload_controller(
+            file, cmd_id=1004,
+            ticket=self._session_sig,
+            ext=ext,
+            addrs=self._session_addr_list,
+            bs=1048576
+        )
+
+        w, h = info.width, info.height
+        cf = proto_decode(ret.upload.compat_qmsg)[7]
+
+        return Image(
+            id=cf,
+            text=f"[图片]" if info.pic_type.name != "gif" else "[动画表情]",
+            name=f"{fmd5.hex()}.{info.pic_type.name}",
+            size=fl,
+            width=w,
+            height=h,
+            md5=fmd5,
+            url="https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
+                uin=self._client.uin,
+                gid=gid,
+                file_id=cf,
+                fmd5=fmd5.hex().upper()
+            ),
+            is_emoji=info.pic_type.name == "gif"
+        )
+
     # async def upload_voice(self, file: BinaryIO, gid: int) -> VoiceElement:
     #     fmd5, fl = calc_file_md5_and_length(file)
     #     ext = encode_upload_voice_req(
