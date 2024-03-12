@@ -54,7 +54,7 @@ class FileType(ProtoStruct):
     type: int = ProtoField(1)
     pic_format: int = ProtoField(2, 0)
     video_format: int = ProtoField(3, 0)
-    audio_type: int = ProtoField(4, 0)
+    audio_format: int = ProtoField(4, 0)
 
 
 class FileInfo(ProtoStruct):
@@ -65,8 +65,8 @@ class FileInfo(ProtoStruct):
     type: FileType = ProtoField(5)
     width: int = ProtoField(6, 0)
     height: int = ProtoField(7, 0)
-    timestamp: int = ProtoField(8, 2)
-    is_origin: bool = ProtoField(9, 1)
+    time: int = ProtoField(8, 0)
+    is_origin: bool = ProtoField(9, True)
 
 
 class IndexNode(ProtoStruct):
@@ -84,7 +84,7 @@ class MsgInfoBody(ProtoStruct):
     video: dict = ProtoField(3, None)
     audio: dict = ProtoField(4, None)
     file_exists: bool = ProtoField(5, None)
-    hashsum: bytes = ProtoField(6)
+    hashsum: bytes = ProtoField(6, b"")
 
 
 class MsgInfo(ProtoStruct):

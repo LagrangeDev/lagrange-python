@@ -1,5 +1,6 @@
 from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
 from .elems import (
+    Ptt,
     Text,
     Face,
     OnlineImage,
@@ -39,4 +40,4 @@ class RichText(ProtoStruct):
     attrs: dict = ProtoField(1, {})
     content: list[Elems] = ProtoField(2)
     not_online_file: dict = ProtoField(3, {})
-    ptt: dict = ProtoField(4, {})
+    ptt: Ptt = ProtoField(4, None)

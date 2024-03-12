@@ -1,13 +1,10 @@
 import zlib
 from typing import Tuple, List, Dict, Union
 
-from lagrange.utils.binary.protobuf import proto_encode, proto_decode
-from lagrange.utils.operator import unpack_dict
-
 from . import elems
 from lagrange.client.events.group import GroupMessage
 from lagrange.pb.message.msg_push import MsgPushBody
-from lagrange.pb.message.rich_text import Elems
+from lagrange.pb.message.rich_text import Elems, RichText
 
 
 def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
@@ -20,7 +17,20 @@ def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
     return user_id, uid, seq, time, rand
 
 
-def parse_msg(elems: List[Elems]) -> List[Dict[str, Union[int, str]]]:
+def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
+    if rich.ptt:
+        ptt = rich.ptt
+        return [{
+            "type": "audio",
+            "text": f"[audio:{ptt.time}]",
+            "time": ptt.time,
+            "name": ptt.name,
+            "id": ptt.file_id,
+            "size": ptt.size,
+            "file_key": ptt.group_file_key,
+            "md5": ptt.md5
+        }]
+    elems: List[Elems] = rich.content
     msg_chain = []
     ignore_next = False
     for raw in elems:
@@ -175,7 +185,8 @@ def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
     grp_name = pkg.response_head.rsp_grp.grp_name
     sub_id = pkg.response_head.sigmap  # some client may not report it, old pcqq?
     sender_name = pkg.response_head.rsp_grp.sender_name
-    parsed_msg = parse_msg(pkg.message.body.content)
+
+    parsed_msg = parse_msg(pkg.message.body)
 
     if isinstance(grp_name, bytes):  # unexpected end of data
         grp_name = grp_name.decode("utf-8", errors="ignore")

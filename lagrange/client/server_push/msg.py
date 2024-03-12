@@ -5,10 +5,11 @@ from lagrange.utils.operator import unpack_dict
 
 from .log import logger
 from .binder import push_handler
-from ..events.group import GroupRecall, GroupMuteMember
+from ..events.group import GroupRecall, GroupMuteMember, GroupMemberJoined, GroupMemberQuit, GroupMemberJoinRequest
 from ..wtlogin.sso import SSOPacket
 
 from lagrange.pb.message.msg_push import MsgPush
+from lagrange.pb.status.group import MemberChanged, MemberJoinRequest, MemberInviteRequest
 
 
 @push_handler.subscribe("trpc.msg.olpush.OlPushService.MsgPush")
@@ -22,7 +23,43 @@ async def msg_push_handler(sso: SSOPacket):
         return parse_grp_msg(pkg)
     elif typ == 166:  # frd msg
         pass
-    elif typ == 0x210:
+    elif typ == 33:  # member joined
+        pb = MemberChanged.decode(pkg.message.buf2)
+        return GroupMemberJoined(
+            uin=pb.uin,
+            uid=pb.uid,
+            join_type=pb.join_type
+        )
+    elif typ == 34:  # member exit
+        pb = MemberChanged.decode(pkg.message.buf2)
+        return GroupMemberQuit(
+            uin=pb.uin,
+            uid=pb.uid,
+            operator_uid=pb.operator_uid,
+            exit_type=pb.exit_type
+        )
+    elif typ == 84:
+        pb = MemberJoinRequest.decode(pkg.message.buf2)
+        return GroupMemberJoinRequest(
+            grp_id=pb.grp_id,
+            uid=pb.uid,
+            _key=pb.field_9,
+            src=pb.src,
+            answer=pb.request_field
+        )
+    elif typ == 525:
+        pb = MemberInviteRequest.decode(pkg.message.buf2)
+        print(pb)
+        if pb.cmd == 87:
+            inn = pb.info.inner
+            return GroupMemberJoinRequest(
+                grp_id=inn.grp_id,
+                uid=inn.uid,
+                _key=b"",
+                src=0,
+                invitor_uid=inn.invitor_uid
+            )
+    elif typ == 0x210:  # frd event
         print(210, pkg)
     elif typ == 0x2dc:  # grp event, 732
         if sub_typ == 20:  # nudget(grp_id only)
@@ -53,3 +90,7 @@ async def msg_push_handler(sso: SSOPacket):
                 target_uid=unpack_dict(info, "5.3.1", ""),
                 duration=unpack_dict(info, "5.3.2")
             )
+        else:
+            print("unknown subtype", sub_typ, pkg.message.buf2.hex())
+    else:
+        print("unknown type", typ, pkg.message.buf2.hex())

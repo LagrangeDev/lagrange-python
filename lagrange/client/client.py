@@ -17,17 +17,20 @@ from lagrange.pb.service.group import (
     PBGetGrpMsgRequest,
     PBGroupMuteRequest,
     PBSetEssence,
+    PBFetchGroupRequest,
+    PBHandleGroupRequest,
+    FetchGroupResponse,
     SetEssenceRsp,
     GetGrpMsgRsp
 )
 from .base import BaseClient
 from .event import Events
-from .message.elems import T, Image
+from .message.elems import T, Image, Audio
 from .message.encoder import build_message
 from .message.decoder import parse_grp_msg
 from .wtlogin.sso import SSOPacket
 from .server_push import push_handler
-from .events.group import GroupMessage
+from .events.group import GroupMessage, GroupMemberJoinRequest
 from .highway import HighWaySession
 
 
@@ -135,7 +138,7 @@ class Client(BaseClient):
 
     async def send_grp_msg(self, msg_chain: List[T], grp_id: int) -> int:
         result = await self._send_msg_raw(
-            build_message(msg_chain),
+            {1: build_message(msg_chain).encode()},
             grp_id=grp_id
         )
         if result.ret_code:
@@ -144,6 +147,9 @@ class Client(BaseClient):
 
     async def upload_grp_image(self, image: BinaryIO, grp_id: int) -> Image:
         return await self._highway.upload_image(image, gid=grp_id)
+
+    async def upload_grp_audio(self, voice: BinaryIO, grp_id: int) -> Audio:
+        return await self._highway.upload_voice(voice, gid=grp_id)
 
     async def get_grp_msg(self, grp_id: int, start: int, end: int = 0) -> List[GroupMessage]:
         payload = await self.send_uni_packet(
@@ -222,6 +228,30 @@ class Client(BaseClient):
             0,
             PBGroupMuteRequest.build(grp_id, 0xffffffff if enable else 0).encode()
         )
-        print(rsp)
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
+
+    async def fetch_grp_request(self, count=20) -> FetchGroupResponse:
+        rsp = FetchGroupResponse.decode(
+            (
+                await self.send_oidb_svc(
+                    0x10c0,
+                    1,
+                    PBFetchGroupRequest(count=count).encode()
+                )
+            ).data
+        )
+        return rsp
+
+    async def set_grp_request(self, grp_id: int, grp_req_seq: int, ev_type: int, action: int, reason=""):
+        """
+        grp_req_seq: from fetch_grp_request
+        action: 1 for accept; 2 for reject; 3 for ignore
+        """
+        rsp = await self.send_oidb_svc(
+            0x10c8,
+            1,
+            PBHandleGroupRequest.build(action, grp_req_seq, ev_type, grp_id, reason).encode()
+        )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)

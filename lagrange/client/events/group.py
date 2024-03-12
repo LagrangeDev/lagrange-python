@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 from lagrange.client.message.elems import T
 
 
@@ -35,3 +35,32 @@ class GroupMuteMember:
     target_uid: str
     grp_id: int
     duration: int
+
+
+@dataclass
+class GroupMemberJoinRequest:
+    grp_id: int
+    uid: str
+    _key: bytes  # unknown, field9
+    src: int
+    invitor_uid: Optional[str] = None
+    answer: Optional[str] = None  # 问题：(.*)答案：(.*)
+
+
+@dataclass
+class GroupMemberJoined:
+    uin: int
+    uid: str
+    join_type: int
+
+
+@dataclass
+class GroupMemberQuit:
+    uin: int
+    uid: str
+    exit_type: int
+    operator_uid: str = ""
+
+    @property
+    def is_kicked(self) -> bool:
+        return self.exit_type == 131

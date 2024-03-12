@@ -42,14 +42,14 @@ class ClientNetwork(Connection):
         await self.writer.drain()
 
     @overload
-    async def send(self, buf: bytes, wait_seq: Literal["-1"] = -1, timeout=5) -> None:
+    async def send(self, buf: bytes, wait_seq: Literal["-1"] = -1, timeout=10) -> None:
         ...
 
     @overload
-    async def send(self, buf: bytes, wait_seq=-1, timeout=5) -> SSOPacket:
+    async def send(self, buf: bytes, wait_seq=-1, timeout=10) -> SSOPacket:
         ...
 
-    async def send(self, buf: bytes, wait_seq=-1, timeout=5):
+    async def send(self, buf: bytes, wait_seq=-1, timeout=10):
         await self.write(buf)
         if wait_seq != -1:
             fut: asyncio.Future[SSOPacket] = asyncio.Future()

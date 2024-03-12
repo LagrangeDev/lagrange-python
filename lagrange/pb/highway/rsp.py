@@ -29,7 +29,7 @@ class UploadRsp(ProtoStruct):
     v6_addrs: list[IPv6] = ProtoField(4)
     msg_seq: int = ProtoField(5, 0)
     msg_info: MsgInfo = ProtoField(6)
-    ext: list[RichMediaStorageTransInfo] = ProtoField(7)
+    ext: list[RichMediaStorageTransInfo] = ProtoField(7, [])
     compat_qmsg: bytes = ProtoField(8)
     sub_file_info: list[SubFileInfo] = ProtoField(10, [])
 

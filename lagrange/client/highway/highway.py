@@ -7,11 +7,10 @@ from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Optional
 from lagrange.utils.image import decoder
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
-from lagrange.client.message.elems import Image
+from lagrange.client.message.elems import Image, Audio
 from lagrange.utils.binary.protobuf import proto_decode
-from .encoders import encode_highway_head
+from .encoders import encode_highway_head, encode_audio_upload_req, encode_upload_img_req
 
-from .encoders import encode_upload_img_req
 from .frame import write_frame, read_frame
 from .utils import timeit, calc_file_hash_and_length, itoa
 from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
@@ -69,7 +68,7 @@ class HighWaySession:
                 sec, data = await timeit(
                     self._bdh_uploader("PicUp.DataUp", addr, list(files), cmd_id, ticket, ext, block_size=bs)
                 )
-                self.logger.info("upload complete, use %fms" % round(sec * 1000, 2))
+                self.logger.info("upload complete, use %.2fms" % (sec * 1000))
                 return data
             except TimeoutError:
                 self.logger.error(f"server {addr[0]}:{addr[1]} timeout")
@@ -206,28 +205,57 @@ class HighWaySession:
             is_emoji=info.pic_type.name == "gif"
         )
 
-    # async def upload_voice(self, file: BinaryIO, gid: int) -> VoiceElement:
-    #     fmd5, fl = calc_file_md5_and_length(file)
-    #     ext = encode_upload_voice_req(
-    #         gid, self._client.uin, fmd5, fl
-    #     ).SerializeToString()
-    #     if not (self._session_key and self._session_sig):
-    #         await self._get_bdh_session()
-    #     ret = decode_upload_ptt_resp(
-    #         await self.upload_controller(file, cmd_id=29, ticket=self._session_sig, ext=ext)
-    #     )
-    #     if ret.resultCode:
-    #         raise ConnectionError(ret.resultCode, ret.message)
-    #     return VoiceElement(
-    #         to_id(fmd5) + ".amr",
-    #         file_type=4,
-    #         file_id=ret.fileId,
-    #         from_uin=self._client.uin,
-    #         md5=fmd5,
-    #         size=fl,
-    #         group_file_key=ret.uploadKey,
-    #         url=f"https://grouptalk.c2c.qq.com/?ver=0&rkey={ret.uploadKey.hex()}&filetype=4%voice_codec=0",
-    #     )
+    async def upload_voice(self, file: BinaryIO, gid=0, uid="", _time=0) -> Audio:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        fmd5, fsha1, fl = calc_file_hash_and_length(file)
+
+        ret = NTV2RichMediaResp.decode(
+            (
+                await self._client.send_oidb_svc(
+                    0x126e if gid else 0x126d,
+                    100,
+                    encode_audio_upload_req(gid, uid, fmd5, fsha1, fl, _time).encode()
+                )
+            ).data
+        )
+
+        if ret.rsp_head.ret_code != 0:
+            raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
+        elif ret.upload.ukey:
+            self.logger.debug("file not found, uploading...")
+
+            index = ret.upload.msg_info.body[0].index
+
+            ext = NTV2RichMediaHighwayExt.build(
+                index.file_uuid,
+                ret.upload.ukey,
+                ret.upload.v4_addrs,
+                ret.upload.msg_info.body,
+                1048576,
+                fsha1
+            ).encode()
+
+            await self.upload_controller(
+                file, cmd_id=1008 if gid else 1007,
+                ticket=self._session_sig,
+                ext=ext,
+                addrs=self._session_addr_list,
+                bs=1048576
+            )
+
+        compat = proto_decode(ret.upload.compat_qmsg)[4]
+        # print(f"https://grouptalk.c2c.qq.com/?ver=0&rkey={compat[18].hex()}&filetype=4%voice_codec=0")
+
+        return Audio(
+            text="[语音]",
+            time=_time,
+            name=f"{fmd5.hex()}.amr",
+            id=compat[8],
+            md5=fmd5,
+            size=fl,
+            file_key=compat[18]
+        )
     #
     # async def upload_video(self, file: BinaryIO, thumb: BinaryIO, gid: int) -> VideoElement:
     #     thumb_md5, thumb_size = calc_file_md5_and_length(thumb)

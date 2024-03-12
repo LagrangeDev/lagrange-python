@@ -106,3 +106,65 @@ class PBGroupMuteRequest(ProtoStruct):
     @classmethod
     def build(cls, grp_id: int, duration: int) -> "PBGroupMuteRequest":
         return cls(grp_id=grp_id, body=GroupMuteBody(duration=duration))
+
+
+class PBFetchGroupRequest(ProtoStruct):
+    count: int = ProtoField(1, 20)
+    f2: int = ProtoField(2, 0)
+
+
+class RspGroup(ProtoStruct):
+    grp_id: int = ProtoField(1)
+    grp_name: str = ProtoField(2)
+
+
+class RspUser(ProtoStruct):
+    uid: str = ProtoField(1)
+    name: str = ProtoField(2)
+
+
+class FetchGrpRspBody(ProtoStruct):
+    seq: int = ProtoField(1)
+    event_type: int = ProtoField(2)
+    state: int = ProtoField(3, None)
+    group: RspGroup = ProtoField(4)
+    target: RspUser = ProtoField(5)
+    invitor: RspUser = ProtoField(6, None)
+    operator: RspUser = ProtoField(7, None)
+    comment: str = ProtoField(9, "")
+
+
+class FetchGroupResponse(ProtoStruct):
+    requests: list[FetchGrpRspBody] = ProtoField(1)
+    latest_seq: int = ProtoField(3)
+
+
+class HandleGrpReqBody(ProtoStruct):
+    seq: int = ProtoField(1)
+    event_type: int = ProtoField(2)
+    grp_id: int = ProtoField(3)
+    message: str = ProtoField(4)
+
+
+class PBHandleGroupRequest(ProtoStruct):
+    action: int = ProtoField(1)
+    body: HandleGrpReqBody = ProtoField(2)
+
+    @classmethod
+    def build(
+            cls,
+            action: int,
+            seq: int,
+            event_type: int,
+            grp_id: int,
+            message: str
+    ) -> "PBHandleGroupRequest":
+        return cls(
+            action=action,
+            body=HandleGrpReqBody(
+                seq=seq,
+                event_type=event_type,
+                grp_id=grp_id,
+                message=message
+            )
+        )

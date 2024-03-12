@@ -21,8 +21,6 @@ class BaseElem(JsonSerializer):
 @dataclass
 class MediaInfo:
     name: str
-    width: int
-    height: int
     size: int
     id: int = field(repr=False)
     md5: bytes = field(repr=False)
@@ -71,13 +69,23 @@ class At(Text):
 
 @dataclass
 class Image(Text, MediaInfo):
+    width: int
+    height: int
     url: str
     is_emoji: bool
 
 
 @dataclass
 class Video(Text, MediaInfo):
+    width: int
+    height: int
     ...
+
+
+@dataclass
+class Audio(Text, MediaInfo):
+    time: int
+    file_key: bytes = field(repr=False)
 
 
 @dataclass

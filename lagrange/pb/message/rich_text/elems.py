@@ -1,6 +1,20 @@
 from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
 
 
+class Ptt(ProtoStruct):
+    type: int = ProtoField(1, 4)
+    md5: bytes = ProtoField(4)
+    name: str = ProtoField(5)
+    size: int = ProtoField(6)
+    reserved: bytes = ProtoField(7, bytes())
+    file_id: int = ProtoField(8)
+    is_valid: bool = ProtoField(11, True)
+    group_file_key: bytes = ProtoField(18)
+    time: int = ProtoField(19)
+    format: int = ProtoField(29, 1)
+    pb_reserved: dict = ProtoField(30, {1: 0})
+
+
 class Text(ProtoStruct):
     string: str = ProtoField(1, "")
     #link: str = ProtoField(2, "")
@@ -50,7 +64,7 @@ class MarketFace(ProtoStruct):
     pb_reserved: dict = ProtoField(13)
 
 
-class _CustomFaceArgs(ProtoStruct):
+class CustomFaceArgs(ProtoStruct):
     is_emoji: bool = ProtoField(1, False)
     display_name: str = ProtoField(9, "[图片]")
 
@@ -62,15 +76,15 @@ class CustomFace(ProtoStruct):
     fileid: int = ProtoField(7)
     file_type: int = ProtoField(10)
     md5: bytes = ProtoField(13)
-    thumb_url: str = ProtoField(14)
-    big_url: str = ProtoField(15)
+    thumb_url: str = ProtoField(14, None)
+    big_url: str = ProtoField(15, None)
     original_url: str = ProtoField(16)
     #biz_type: int = ProtoField(17)
     image_type: int = ProtoField(20, 1000)
     width: int = ProtoField(22)
     height: int = ProtoField(23)
     size: int = ProtoField(25)
-    args: _CustomFaceArgs = ProtoField(34, _CustomFaceArgs())
+    args: CustomFaceArgs = ProtoField(34, CustomFaceArgs())
 
 
 class ExtraInfo(ProtoStruct):

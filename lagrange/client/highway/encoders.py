@@ -6,7 +6,7 @@
 #     ReqBody as VideoReqBody
 # )
 import os
-from lagrange.pb.highway.comm import CommonHead, FileInfo, FileType, ExtBizInfo, PicExtInfo
+from lagrange.pb.highway.comm import CommonHead, FileInfo, FileType, ExtBizInfo, PicExtInfo, AudioExtInfo
 from lagrange.pb.highway.head import HighwayTransReqHead, DataHighwayHead, SegHead, LoginSigHead
 from lagrange.utils.binary.protobuf import proto_encode
 from typing import Sequence, TYPE_CHECKING
@@ -191,35 +191,70 @@ def encode_upload_img_req(
             )
         )
     )
-#
-#
-# def encode_upload_voice_req(
-#         group_code: int,
-#         uin: int,
-#         md5: bytes,
-#         size: int,
-#         suffix: str = None,
-# ) -> ReqBody:
-#     return encode_d388_req(subcmd=3, tryup_ptt=[
-#         TryUpPttReq(
-#             group_code=group_code,
-#             src_uin=uin,
-#             file_md5=md5,
-#             file_name=f"{md5.hex().upper()}.{'amr' if not suffix else suffix}".encode(),
-#             file_size=size,
-#             voice_length=size,
-#             voice_type=1,
-#             codec=0,
-#             src_term=5,
-#             platform_type=9,
-#             bu_type=4,
-#             inner_ip=0,
-#             build_ver=b"8.8.50.2324",
-#             new_up_chan=True,
-#         )
-#     ])
-#
-#
+
+
+def encode_audio_upload_req(
+        grp_id: int,
+        uid: str,
+        md5: bytes,
+        sha1: bytes,
+        size: int,
+        time: int
+) -> NTV2RichMediaReq:
+    assert not (grp_id and uid)
+    c2c_info = None
+    grp_info = None
+    if grp_id:
+        scene_type = 2
+        grp_info = GroupInfo(grp_id=grp_id)
+    else:
+        scene_type = 1
+        c2c_info = C2CUserInfo(uid=uid)
+    return NTV2RichMediaReq(
+        req_head=MultiMediaReqHead(
+            common=CommonHead(
+                req_id=1 if grp_id else 4,
+                cmd=100
+            ),
+            scene=SceneInfo(
+                req_type=2,
+                bus_type=3,
+                scene_type=scene_type,
+                c2c=c2c_info,
+                grp=grp_info
+            )
+        ),
+        upload=UploadReq(
+            infos=[UploadInfo(
+                file_info=FileInfo(
+                    size=size,
+                    hash=md5.hex(),
+                    sha1=sha1.hex(),
+                    name=f"{md5.hex()}.amr",
+                    type=FileType(
+                        type=3,
+                        audio_format=1
+                    ),
+                    width=0,
+                    height=0,
+                    time=time,
+                    is_origin=False
+                ),
+                sub_type=0
+            )],
+            compat_stype=scene_type,
+            client_rand_id=int.from_bytes(os.urandom(4), "big"),
+            biz_info=ExtBizInfo(
+                audio=AudioExtInfo(
+                    bytes_reserved=b"\x08\x00\x38\x00",
+                    pb_reserved=b"",
+                    general_flags=b"\x9a\x01\x07\xaa\x03\x04\x08\x08\x12\x00" if grp_id
+                    else b"\x9a\x01\x0b\xaa\x03\x08\x08\x04\x12\x04\x00\x00\x00\x00"
+                )
+            )
+        )
+    )
+
 # def encode_video_upload_req(
 #         seq: int,
 #         from_uin: int,
