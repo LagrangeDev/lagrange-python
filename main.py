@@ -6,11 +6,8 @@ from lagrange.client.client import Client
 from lagrange.info.app import app_list
 from lagrange.info.device import DeviceInfo
 from lagrange.info.sig import SigInfo
-from lagrange.client.server_push.events.group import GroupMessage
-from lagrange.client.message.elems import Text
 from lagrange.client.events.service import ServerKick
 from lagrange.client.events.group import GroupMessage
-from lagrange.client.message.elems import Text, At
 from lagrange.client.message.elems import Text, At, Raw
 
 DEVICE_INFO_PATH = "./device.json"
@@ -85,7 +82,7 @@ async def msg_handler(client: Client, event: GroupMessage):
         await client.recall_grp_msg(event.grp_id, p)
     elif event.msg.startswith("imgs"):
         await client.send_grp_msg([
-            await client._highway.upload_image(open("img.png", "rb"), event.grp_id)
+            await client.upload_grp_image(open("98416427_p0.jpg", "rb"), event.grp_id)
         ], event.grp_id)
     print(f"{event.nickname}({event.grp_name}): {event.msg}")
 

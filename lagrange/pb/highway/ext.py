@@ -40,8 +40,8 @@ class NTV2RichMediaHighwayExt(ProtoStruct):
     ukey: str = ProtoField(2)
     network: NTHighwayNetwork = ProtoField(5)
     msg_info: list[MsgInfoBody] = ProtoField(6)
-    blk_size: int = ProtoField(7)
-    hash: NTHighwayHash = ProtoField(8)
+    blk_size: int = ProtoField(10)
+    hash: NTHighwayHash = ProtoField(11)
 
     @classmethod
     def build(

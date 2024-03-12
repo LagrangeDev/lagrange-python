@@ -27,10 +27,6 @@ def itoa(i: int) -> str:  # int to address(str)
     return ".".join([str(p) for p in i.to_bytes(4, "big", signed=signed)])
 
 
-def to_id(b_uuid: bytes) -> str:
-    return f"{{{str(uuid.UUID(bytes=b_uuid)).upper()}}}"
-
-
 async def timeit(func: Awaitable) -> Tuple[float, Any]:
     start = time.time()
     result = await func

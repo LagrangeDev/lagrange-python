@@ -125,14 +125,32 @@ def encode_highway_head(
 
 def encode_upload_img_req(
         grp_id: int,
+        uid: str,
         md5: bytes,
         sha1: bytes,
         size: int,
         info: "ImageInfo",
         is_origin=True
 ) -> NTV2RichMediaReq:
+    assert not (grp_id and uid)
     fn = f"{md5.hex().upper()}.{info.name or 'jpg'}"
-    scene_type = 2
+    c2c_info = None
+    grp_info = None
+    c2c_pb = bytes()
+    grp_pb = bytes()
+    if grp_id:
+        scene_type = 2
+        grp_info = GroupInfo(grp_id=grp_id)
+        grp_pb = bytes.fromhex(
+            "0800180020004a00500062009201009a0100aa010c080012001800200028003a00"
+        )
+    else:
+        scene_type = 1
+        c2c_info = C2CUserInfo(uid=uid)
+        c2c_pb = bytes.fromhex(
+            "0800180020004200500062009201009a0100a2010c080012001800200028003a00"
+        )
+
     return NTV2RichMediaReq(
         req_head=MultiMediaReqHead(
             common=CommonHead(
@@ -142,9 +160,8 @@ def encode_upload_img_req(
                 req_type=2,
                 bus_type=1,
                 scene_type=scene_type,
-                grp=GroupInfo(
-                    grp_id=grp_id
-                )
+                c2c=c2c_info,
+                grp=grp_info
             )
         ),
         upload=UploadReq(
@@ -168,12 +185,8 @@ def encode_upload_img_req(
             client_rand_id=int.from_bytes(os.urandom(4), "big"),
             biz_info=ExtBizInfo(
                 pic=PicExtInfo(
-                    # c2c_reserved=bytes.fromhex(
-                    #     "0800180020004200500062009201009a0100a2010c080012001800200028003a00"
-                    # )
-                    troop_reserved=bytes.fromhex(
-                        "0800180020004a00500062009201009a0100aa010c080012001800200028003a00"
-                    )
+                    c2c_reserved=c2c_pb,
+                    troop_reserved=grp_pb
                 )
             )
         )

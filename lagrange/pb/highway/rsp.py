@@ -23,7 +23,7 @@ class SubFileInfo(ProtoStruct):
 
 
 class UploadRsp(ProtoStruct):
-    ukey: str = ProtoField(1)
+    ukey: str = ProtoField(1, None)  # None when file exists
     ukey_ttl: int = ProtoField(2)
     v4_addrs: list[IPv4] = ProtoField(3)
     v6_addrs: list[IPv6] = ProtoField(4)

@@ -27,7 +27,7 @@ class ServerAddress(ProtoStruct):
     type: int = ProtoField(1)
     ip: int = ProtoField(2)
     port: int = ProtoField(3)
-    area: int = ProtoField(4)
+    area: int = ProtoField(4, None)
 
 
 class ServerInfo(ProtoStruct):

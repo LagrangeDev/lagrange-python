@@ -165,7 +165,7 @@ class HttpCat:
         header = {
             "Host": host,
             "Connection": "close",
-            "User-Agent": "HttpCat/1.0",
+            "User-Agent": "HttpCat/1.1",
             "Accept-Encoding": "gzip, deflate",
             "Content-Length": "0" if not body else str(len(body)),
             **(header if header else {})
@@ -186,7 +186,8 @@ class HttpCat:
             try:
                 return await cls._parse_response(reader)
             finally:
-                loop.call_soon(writer.close)
+                if header["Connection"] == "close":
+                    loop.call_soon(writer.close)
 
     @classmethod
     async def request(

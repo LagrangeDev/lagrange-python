@@ -1,9 +1,6 @@
-import random
-import asyncio
 import logging
-import secrets
 import time
-from hashlib import md5, sha1
+from hashlib import md5
 from io import BytesIO
 from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Optional
 
@@ -11,23 +8,16 @@ from lagrange.utils.image import decoder
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
 from lagrange.client.message.elems import Image
-from lagrange.utils.binary.protobuf import proto_encode, proto_decode
+from lagrange.utils.binary.protobuf import proto_decode
 from .encoders import encode_highway_head
 
-#from .encoders import encode_upload_img_req, encode_upload_voice_req, encode_video_upload_req
 from .encoders import encode_upload_img_req
 from .frame import write_frame, read_frame
-from .utils import to_id, timeit, calc_file_hash_and_length, itoa
+from .utils import timeit, calc_file_hash_and_length, itoa
 from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
 from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
-from lagrange.utils.operator import timestamp
-from lagrange.pb.message.rich_text.elems import CustomFace
-from ...pb.highway.rsp import NTV2RichMediaResp
+from lagrange.pb.highway.rsp import NTV2RichMediaResp
 
-#from ..message_service.models import ImageElement, VoiceElement, VideoElement, ForwardNode, ForwardMessage
-#from .decoders import decode_upload_ptt_resp, decode_upload_image_resp, decode_video_upload_resp, parse_addr
-#from ..multi_msg.forward import prepare_upload
-#from ..multi_msg.long_msg import build_multi_apply_up_pkg
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -42,66 +32,6 @@ class HighWaySession:
         self._session_sig: Optional[bytes] = None
         self._session_key: Optional[bytes] = None
         self._session_addr_list: Optional[List[Tuple[str, int]]] = []
-
-    # async def upload_image(self, image: str, uid: str) -> NTV2RichMediaResp:
-    #     try:
-    #         f = open(image, "rb")
-    #         ft = decoder.decode(f)
-    #         buf = f.read()
-    #         size = len(buf)
-    #         _md5 = md5(buf).hexdigest()
-    #         _sha1 = sha1(buf).hexdigest()
-    #         f.seek(0)
-    #
-    #         body = NTV2RichMediaReq(
-    #             req_head=MultiMediaReqHead(
-    #                 common=CommonHead(
-    #                     cmd=100
-    #                 ),
-    #                 scene=SceneInfo(
-    #                     req_type=2,
-    #                     bus_type=1,
-    #                     scene_type=1,
-    #                     c2c=C2CUserInfo(
-    #                         uid=uid
-    #                     )
-    #                 )
-    #             ),
-    #             upload=UploadReq(
-    #                 infos=[UploadInfo(
-    #                     file_info=FileInfo(
-    #                         size=size,
-    #                         hash=_md5,
-    #                         sha1=_sha1,
-    #                         name=f"{_md5}.{ft.name}",
-    #                         type=FileType(
-    #                             type=1,
-    #                             pic_format=1001
-    #                         ),
-    #                         width=ft.width,
-    #                         height=ft.height,
-    #                         is_origin=True
-    #                     ),
-    #                     sub_type=0
-    #                 )],
-    #                 client_rand_id=1145141919,
-    #                 biz_info=ExtBizInfo(
-    #                     pic=PicExtInfo(
-    #                         c2c_reserved=bytes.fromhex(
-    #                             "0800180020004200500062009201009a0100a2010c080012001800200028003a00"
-    #                         )
-    #                     )
-    #                 )
-    #             )
-    #         )
-    #         ret = await self._client.send_oidb_svc(
-    #             0x11c5,
-    #             100,
-    #             body.encode()
-    #         )
-    #         return NTV2RichMediaResp.decode(ret.data)
-    #     finally:
-    #         f.close()
 
     async def _get_bdh_session(self):
         rsp = await self._client.send_uni_packet(
@@ -139,7 +69,7 @@ class HighWaySession:
                 sec, data = await timeit(
                     self._bdh_uploader("PicUp.DataUp", addr, list(files), cmd_id, ticket, ext, block_size=bs)
                 )
-                self.logger.info("upload complete, use %fms" % (sec * 1000))
+                self.logger.info("upload complete, use %fms" % round(sec * 1000, 2))
                 return data
             except TimeoutError:
                 self.logger.error(f"server {addr[0]}:{addr[1]} timeout")
@@ -162,7 +92,6 @@ class HighWaySession:
         block_size=65535,
     ) -> Optional[bytes]:
         fmd5, _, fl = calc_file_hash_and_length(*files)
-        # reader, writer = await asyncio.open_connection(*addr)
         ts = int(time.time() * 1000)
         bc = 0
         total_transfer = 0
@@ -184,7 +113,7 @@ class HighWaySession:
 
                 head = encode_highway_head(
                     uin=self._client.uin,
-                    seq=bc,
+                    seq=0,
                     cmd=cmd,
                     cmd_id=cmd_id,
                     file_size=fl,
@@ -219,7 +148,7 @@ class HighWaySession:
 
                 bc += 1
 
-    async def upload_image(self, file: BinaryIO, gid=0) -> Image:
+    async def upload_image(self, file: BinaryIO, gid=0, uid="") -> Image:
         if not self._session_addr_list:
             await self._get_bdh_session()
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
@@ -227,40 +156,41 @@ class HighWaySession:
         ret = NTV2RichMediaResp.decode(
             (
                 await self._client.send_oidb_svc(
-                    0x11c4,
+                    0x11c4 if gid else 0x11c5,
                     100,
-                    encode_upload_img_req(gid, fmd5, fsha1, fl, info).encode()
+                    encode_upload_img_req(gid, uid, fmd5, fsha1, fl, info).encode()
                 )
             ).data
         )
         if ret.rsp_head.ret_code != 0:
             raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
-        self.logger.debug("file not found, uploading...")
+        elif ret.upload.ukey:
+            self.logger.debug("file not found, uploading...")
 
-        index = ret.upload.msg_info.body[0].index
+            index = ret.upload.msg_info.body[0].index
 
-        ext = NTV2RichMediaHighwayExt.build(
-            index.file_uuid,
-            ret.upload.ukey,
-            ret.upload.v4_addrs,
-            ret.upload.msg_info.body,
-            1048576,
-            fsha1
-        ).encode()
+            ext = NTV2RichMediaHighwayExt.build(
+                index.file_uuid,
+                ret.upload.ukey,
+                ret.upload.v4_addrs,
+                ret.upload.msg_info.body,
+                1048576,
+                fsha1
+            ).encode()
 
-        await self.upload_controller(
-            file, cmd_id=1004,
-            ticket=self._session_sig,
-            ext=ext,
-            addrs=self._session_addr_list,
-            bs=1048576
-        )
+            await self.upload_controller(
+                file, cmd_id=1004 if gid else 1003,
+                ticket=self._session_sig,
+                ext=ext,
+                addrs=self._session_addr_list,
+                bs=1048576
+            )
 
         w, h = info.width, info.height
-        cf = proto_decode(ret.upload.compat_qmsg)[7]
+        fileid = proto_decode(ret.upload.compat_qmsg)[7]
 
         return Image(
-            id=cf,
+            id=fileid,
             text=f"[图片]" if info.pic_type.name != "gif" else "[动画表情]",
             name=f"{fmd5.hex()}.{info.pic_type.name}",
             size=fl,
@@ -270,7 +200,7 @@ class HighWaySession:
             url="https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
                 uin=self._client.uin,
                 gid=gid,
-                file_id=cf,
+                file_id=fileid.hex().upper() if isinstance(fileid, bytes) else file,  # test required
                 fmd5=fmd5.hex().upper()
             ),
             is_emoji=info.pic_type.name == "gif"

@@ -1,5 +1,5 @@
 import os
-from typing import Coroutine, Callable, Optional, List
+from typing import Coroutine, Callable, Optional, List, BinaryIO
 
 from lagrange.utils.log import logger
 from lagrange.utils.operator import timestamp
@@ -22,7 +22,7 @@ from lagrange.pb.service.group import (
 )
 from .base import BaseClient
 from .event import Events
-from .message.elems import T
+from .message.elems import T, Image
 from .message.encoder import build_message
 from .message.decoder import parse_grp_msg
 from .wtlogin.sso import SSOPacket
@@ -141,6 +141,9 @@ class Client(BaseClient):
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
+
+    async def upload_grp_image(self, image: BinaryIO, grp_id: int) -> Image:
+        return await self._highway.upload_image(image, gid=grp_id)
 
     async def get_grp_msg(self, grp_id: int, start: int, end: int = 0) -> List[GroupMessage]:
         payload = await self.send_uni_packet(
