@@ -1,5 +1,4 @@
-from dataclasses import dataclass, field
-from typing import List
+from dataclasses import dataclass
 
 from .serialize import BinarySerializer
 
@@ -18,11 +17,13 @@ class SigInfo(BinarySerializer):
     cookies: str
     unusual_sig: bytes
     temp_pwd: bytes
+
+    uin: int
     uid: str
-    captcha_info: List[str] = field(default_factory=lambda: ["", "", ""])
+    nickname: str
 
     @classmethod
-    def new(cls, seq: int) -> "SigInfo":
+    def new(cls, seq=8830) -> "SigInfo":
         return cls(
             sequence=seq,
             tgtgt=bytes(),
@@ -35,5 +36,7 @@ class SigInfo(BinarySerializer):
             cookies="",
             unusual_sig=bytes(),
             temp_pwd=bytes(),
-            uid=""
+            uin=0,
+            uid="",
+            nickname=""
         )

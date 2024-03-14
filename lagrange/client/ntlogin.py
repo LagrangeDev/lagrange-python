@@ -13,7 +13,7 @@ def build_ntlogin_captcha_submit(ticket: str, rand_str: str, aid: str):
     }
 
 
-def build_ntlogin_request(uin: int, app: AppInfo, device: DeviceInfo, sig: SigInfo, credential: bytes) -> bytes:
+def build_ntlogin_request(uin: int, app: AppInfo, device: DeviceInfo, sig: SigInfo, captcha: list, credential: bytes) -> bytes:
     body = {
         1: {
             1: {
@@ -38,9 +38,9 @@ def build_ntlogin_request(uin: int, app: AppInfo, device: DeviceInfo, sig: SigIn
 
     if sig.cookies:
         body[1][5] = {1: sig.cookies}
-    if all(sig.captcha_info):
+    if all(captcha):
         logger.login.debug("login with captcha info")
-        body[2][2] = build_ntlogin_captcha_submit(*sig.captcha_info)
+        body[2][2] = build_ntlogin_captcha_submit(*captcha)
 
     return proto_encode({
         1: sig.key_sig,
@@ -49,7 +49,7 @@ def build_ntlogin_request(uin: int, app: AppInfo, device: DeviceInfo, sig: SigIn
     })
 
 
-def parse_ntlogin_response(response: bytes, sig: SigInfo) -> LoginErrorCode:
+def parse_ntlogin_response(response: bytes, sig: SigInfo, captcha: list) -> LoginErrorCode:
     frame = proto_decode(response, 0)
     body = proto_decode(
         aes_gcm_decrypt(frame[3], sig.exchange_key), 2
@@ -71,12 +71,12 @@ def parse_ntlogin_response(response: bytes, sig: SigInfo) -> LoginErrorCode:
             sig.cookies = body[1][5][1]
             verify_url: str = body[2][2][3]
             aid = verify_url.split("&sid=")[1].split("&")[0]
-            sig.captcha_info[2] = aid
+            captcha[2] = aid
             logger.login.waring("need captcha verify: " + verify_url)
         elif 2 in body[1][4]:
             stat = body[1][4]
-            title = stat[2]
-            content = stat[3]
+            title = stat[2].decode()
+            content = stat[3].decode()
             logger.login.error(f"Login fail on ntlogin({ret.name}): [{title}]>{content}")
         else:
             logger.login.error(f"Login fail: {ret.name}")

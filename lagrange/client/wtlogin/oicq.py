@@ -161,8 +161,7 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         sig.uid = proto_decode(tlv[0x543])[9][11][1].decode()
 
         logger.login.debug("SigInfo got")
-
-        print("info:", tlv[0x11a])
+        logger.login.info("Login success, username: %s" % tlv[0x11a][5:].decode())
 
         return True
     elif 0x146 in tlv:

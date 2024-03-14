@@ -32,10 +32,14 @@ class BaseClient:
             sig_info: Optional[SigInfo] = None,
             sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None
     ):
+        if uin and not sig_info.uin:
+            sig_info.uin = uin
+
         self._uin = uin
         self._sig = sig_info
         self._app_info = app_info
         self._device_info = device_info
+        self._captcha_info = ["", "", ""]  # ticket, rand_str, aid
 
         self._server_push_queue: asyncio.Queue[SSOPacket] = asyncio.Queue()
         self._tasks: Dict[str, Optional[asyncio.Task]] = {
@@ -103,7 +107,7 @@ class BaseClient:
 
     @property
     def uin(self) -> int:
-        return self._uin
+        return self._sig.uin
 
     @property
     def uid(self) -> str:
@@ -221,7 +225,7 @@ class BaseClient:
 
         if ret_code == 0:
             reader.read_bytes(4)
-            self._uin = reader.read_u32()
+            self._sig.uin = reader.read_u32()
             reader.read_bytes(4)
             t = reader.read_tlv()
             self._t106 = t[0x18]
@@ -240,6 +244,10 @@ class BaseClient:
         )
         parse_key_exchange_response(packet.data, self._sig)
 
+    def submit_login_captcha(self, ticket: str, rand_str: str):
+        self._captcha_info[0] = ticket
+        self._captcha_info[1] = rand_str
+
     async def password_login(self, password: str) -> LoginErrorCode:
         md5_passwd = hashlib.md5(password.encode()).digest()
 
@@ -253,26 +261,30 @@ class BaseClient:
         )[4:]
         packet = await self.send_uni_packet(
             "trpc.login.ecdh.EcdhService.SsoNTLoginPasswordLogin",
-            build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, cr)
+            build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, self._captcha_info, cr)
         )
 
-        return parse_ntlogin_response(packet.data, self._sig)
+        return parse_ntlogin_response(packet.data, self._sig, self._captcha_info)
 
     async def token_login(self, token: bytes) -> LoginErrorCode:
         packet = await self.send_uni_packet(
             "trpc.login.ecdh.EcdhService.SsoNTLoginEasyLogin",
-            build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, token)
+            build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, self._captcha_info, token)
         )
 
-        return parse_ntlogin_response(packet.data, self._sig)
+        return parse_ntlogin_response(packet.data, self._sig, self._captcha_info)
 
     async def qrcode_login(self, refresh_interval=5) -> bool:
         if not self._sig.qrsig:
             raise AssertionError("No QrSig found, fetch qrcode first")
 
+        ret_code = QrCodeResult.waiting_for_scan
         while not self._network.closed:
             await asyncio.sleep(refresh_interval)
-            ret_code = await self.get_qrcode_result()
+            ret_last = await self.get_qrcode_result()
+            if ret_code != ret_last:
+                logger.login.info(f"qrcode state changed: {ret_code.name}->{ret_last.name}")
+                ret_code = ret_last
             if not ret_code.waitable:
                 if not ret_code.success:
                     raise AssertionError(ret_code.name)

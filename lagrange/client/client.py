@@ -64,7 +64,7 @@ class Client(BaseClient):
         except:
             logger.login.exception("EasyLogin fail")
 
-        if password:  # PasswordLogin, WIP
+        if password:  # TODO: PasswordLogin, WIP
             await self._key_exchange()
 
             while True:
@@ -73,8 +73,10 @@ class Client(BaseClient):
                     return await self.register()
                 elif rsp.captcha_verify:
                     logger.root.warning("captcha verification required")
-                    self._sig.captcha_info[0] = input("ticket?->")
-                    self._sig.captcha_info[1] = input("rand_str?->")
+                    self.submit_login_captcha(
+                        ticket=input("ticket?->"),
+                        rand_str=input("rand_str?->")
+                    )
                 else:
                     logger.root.error(f"Unhandled exception raised: {rsp.name}")
         else:  # QrcodeLogin
