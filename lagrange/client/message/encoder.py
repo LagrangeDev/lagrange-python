@@ -14,8 +14,8 @@ from lagrange.pb.message.rich_text.elems import (
     OpenData,
     Ptt
 )
+from .types import T
 from .elems import (
-    T,
     At,
     AtAll,
     Image,
@@ -25,7 +25,8 @@ from .elems import (
     Text,
     Emoji,
     Audio,
-    Raw
+    Raw,
+    Quote
 )
 
 
@@ -47,9 +48,29 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                 msg_pb.append(Elems(
                     text=PBText(
                         string=msg.text,
-                        buf6=struct.pack("!xb3xbbI2x", 1, len(msg.text), 0, msg.uin)
+                        buf6=struct.pack("!xb3xbbI2x", 1, len(msg.text), 0, msg.uin),
+                        pb_reserved={3: 2, 4: 0, 5: 0, 9: msg.uid, 11: 0}
                     )
                 ))
+            elif isinstance(msg, Quote):
+                msg_pb.append(Elems(
+                    src_msg=SrcMsg(
+                        seq=msg.seq,
+                        uin=msg.uin,
+                        timestamp=msg.timestamp,
+                        elems=[{1: {1: msg.msg}}],
+                        pb_reserved={6: msg.uid} if msg.uid else {}
+                    )
+                ))
+                if compatible:
+                    text = f"@{msg.uin}"
+                    msg_pb.append(Elems(
+                        text=PBText(
+                            string=text,
+                            buf6=struct.pack("!xb3xbbI2x", 1, len(text), 0, msg.uin),
+                            pb_reserved={3: 2, 4: 0, 5: 0, 9: msg.uid, 11: 0}
+                        )
+                    ))
             elif isinstance(msg, Emoji):
                 msg_pb.append(Elems(
                     face=Face(index=msg.id)

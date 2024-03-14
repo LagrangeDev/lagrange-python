@@ -36,3 +36,22 @@ class MemberInviteRequest(ProtoStruct):
     """JoinType: From Friends(share link or others)"""
     cmd: int = ProtoField(1)
     info: InviteInfo = ProtoField(2)
+
+
+class MemberGotTitleBody(ProtoStruct):
+    string: str = ProtoField(2)
+    f3: int = ProtoField(3)
+    member_uin: int = ProtoField(5)
+
+
+class GroupRenamedBody(ProtoStruct):
+    type: int = ProtoField(1)  # unknown
+    grp_name: str = ProtoField(2)
+
+
+class GroupSub16Head(ProtoStruct):
+    timestamp: int = ProtoField(2, 0)
+    uin: int = ProtoField(4)
+    body: bytes = ProtoField(5)
+    flag: int = ProtoField(13)  # 12: renamed, 6: set special_title
+    operator_uid: str = ProtoField(21, "")

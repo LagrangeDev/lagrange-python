@@ -134,7 +134,7 @@ def build_uni_packet(
     service = (
         PacketBuilder()
         .write_u32(12)
-        .write_u8(2 if len(sig_info.d2) == 0 else 1)
+        .write_u8(1 if sig_info.d2 else 2)
         .write_bytes(sig_info.d2, "u32")
         .write_u8(0)
         .write_string(str(uin), "u32")

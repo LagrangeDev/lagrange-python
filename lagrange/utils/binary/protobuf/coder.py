@@ -105,7 +105,7 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
         tag = leaf >> 3
         wire_type = leaf & 0b111
 
-        if not tag:
+        if tag < 0:
             raise AssertionError("Invalid tag")
 
         if wire_type == 0:

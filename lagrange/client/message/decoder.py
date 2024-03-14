@@ -34,12 +34,14 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
     msg_chain = []
     ignore_next = False
     for raw in elems:
-        if not raw or ignore_next:
+        if not raw or raw == Elems():
+            continue
+        elif ignore_next:
             ignore_next = False
             continue
         if raw.text:  # msg
             msg = raw.text
-            if msg.string:  # Text
+            if msg.string and not msg.attr6_buf:  # Text
                 msg_chain.append({
                     "type": "text",
                     "text": msg.string
@@ -53,7 +55,7 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
                         "type": "at",
                         "text": msg.string,
                         "uin": int.from_bytes(buf3[7:11], "big"),
-                        "uid": msg.pb_reserved.get(12)
+                        "uid": msg.pb_reserved.get(9)
                     })
             else:
                 raise AssertionError("Invalid message")
@@ -97,6 +99,7 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
                     "raw": content,
                     "id": sid
                 })
+            ignore_next = True
         # elif 16 in raw:  # extra
         #     # nickname = unpack_dict(raw, "16.2", "")
         #     pass
@@ -133,7 +136,7 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
                 "seq": src.seq,
                 "uin": src.uin,
                 "timestamp": src.timestamp,
-                "uid": src.pb_reserved[6]
+                "uid": src.pb_reserved[6].decode()
             })
             ignore_next = True
         elif raw.mini_app:  # qq mini app or others
@@ -148,6 +151,7 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
                 "text": f"[json:{len(content)}]",
                 "raw": content
             })
+            ignore_next = True
         # elif 53 in raw:  # q emoji
         #     qe = raw[53]
         #     typ = qe[1]

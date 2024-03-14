@@ -25,12 +25,13 @@ from lagrange.pb.service.group import (
 )
 from .base import BaseClient
 from .event import Events
-from .message.elems import T, Image, Audio
+from .message.types import T
+from .message.elems import Image, Audio
 from .message.encoder import build_message
 from .message.decoder import parse_grp_msg
 from .wtlogin.sso import SSOPacket
 from .server_push import push_handler
-from .events.group import GroupMessage, GroupMemberJoinRequest
+from .events.group import GroupMessage
 from .highway import HighWaySession
 
 
@@ -145,8 +146,11 @@ class Client(BaseClient):
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
 
-    async def upload_grp_image(self, image: BinaryIO, grp_id: int) -> Image:
-        return await self._highway.upload_image(image, gid=grp_id)
+    async def upload_grp_image(self, image: BinaryIO, grp_id: int, is_emoji=False) -> Image:
+        img = await self._highway.upload_image(image, gid=grp_id)
+        if is_emoji:
+            img.is_emoji = True
+        return img
 
     async def upload_grp_audio(self, voice: BinaryIO, grp_id: int) -> Audio:
         return await self._highway.upload_voice(voice, gid=grp_id)

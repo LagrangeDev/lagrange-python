@@ -100,7 +100,7 @@ class SrcMsg(ProtoStruct):
     uin: int = ProtoField(2, 0)
     timestamp: int = ProtoField(3)
     elems: list[dict] = ProtoField(5, [{}])
-    pb_reserved: dict = ProtoField(8)
+    pb_reserved: dict = ProtoField(8, {})
     to_uin: int = ProtoField(10, 0)
 
 
@@ -114,3 +114,9 @@ class OpenData(ProtoStruct):
 
 class RichMsg(MiniApp):
     service_id: int = ProtoField(2)
+
+
+class CommonElem(ProtoStruct):
+    service_type: int = ProtoField(1)
+    pb_elem: dict = ProtoField(2)
+    bus_type: int = ProtoField(3)

@@ -13,6 +13,7 @@ NT: TypeAlias = Dict[int, Union[T, "NT"]]
 @dataclass_transform()
 class ProtoStruct:
     _anno_map: Dict[str, Tuple[Type[T], "ProtoField"]]
+    _proto_debug: bool
 
     def __init__(self, *args, **kwargs):
         undefined_params: List[str] = []
@@ -35,6 +36,7 @@ class ProtoStruct:
 
     def __init_subclass__(cls, **kwargs):
         cls._anno_map = cls._get_annotations()
+        cls._proto_debug = kwargs.pop("debug") if "debug" in kwargs else False
         super().__init_subclass__(**kwargs)
 
     def __repr__(self) -> str:
@@ -152,8 +154,12 @@ class ProtoStruct:
                 raise KeyError(
                     f"tag {tag} not found in '{cls.__name__}'"
                 )
-            value = pb_dict[tag]
-            kwargs[name] = cls._decode(typ, value)
+            kwargs[name] = cls._decode(
+                typ,
+                pb_dict.pop(tag)
+            )
+        if pb_dict and cls._proto_debug:  # unhandled tags
+            print(f"unhandled tags on '{cls.__name__}': {pb_dict}")
 
         return cls(**kwargs)
 

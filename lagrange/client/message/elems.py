@@ -1,10 +1,8 @@
 import json
-from typing import TypeVar
 from dataclasses import dataclass, field
 
+from lagrange.client.events.group import GroupMessage
 from lagrange.info.serialize import JsonSerializer
-
-T = TypeVar('T', "Text", "AtAll", "At", "Image", "Emoji", "Json", "Quote", "Raw")
 
 
 @dataclass
@@ -39,8 +37,20 @@ class Text(BaseElem):
 class Quote(Text):
     seq: int
     uin: int
-    uid: str
     timestamp: int
+    uid: str = ""
+    msg: str = ""
+
+    @classmethod
+    def build(cls, ev: GroupMessage) -> "Quote":
+        return cls(
+            text=f"[quote:{ev.msg}]",
+            seq=ev.seq,
+            uid=ev.uid,
+            uin=ev.uin,
+            timestamp=ev.time,
+            msg=ev.msg
+        )
 
 
 @dataclass
@@ -65,6 +75,14 @@ class AtAll(Text):
 class At(Text):
     uin: int
     uid: str
+
+    @classmethod
+    def build(cls, ev: GroupMessage) -> "At":
+        return cls(
+            uin=ev.uin,
+            uid=ev.uid,
+            text=f"@{ev.nickname or ev.uin}"
+        )
 
 
 @dataclass

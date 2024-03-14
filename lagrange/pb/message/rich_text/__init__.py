@@ -13,13 +13,14 @@ from .elems import (
     SrcMsg,
     MiniApp,
     OpenData,
+    CommonElem
 )
 
 
 __all__ = ["Elems", "RichText"]
 
 
-class Elems(ProtoStruct):
+class Elems(ProtoStruct, debug=True):
     text: Text = ProtoField(1, None)
     face: Face = ProtoField(2, None)
     online_image: OnlineImage = ProtoField(3, None)
@@ -27,13 +28,15 @@ class Elems(ProtoStruct):
     trans_elem: TransElem = ProtoField(5, None)
     market_face: MarketFace = ProtoField(6, None)
     custom_face: CustomFace = ProtoField(8, None)
-    #elem_flags2: ElemFlags2 = ProtoField(9, None)
+    elem_flags2: bytes = ProtoField(9, None)
     rich_msg: RichMsg = ProtoField(12, None)
     extra_info: ExtraInfo = ProtoField(16, None)
     #video_file: VideoFile = ProtoField(19, None)
+    general_flags: bytes = ProtoField(37, None)
     open_data: OpenData = ProtoField(41, None)
     src_msg: SrcMsg = ProtoField(45, None)
     mini_app: MiniApp = ProtoField(51, None)
+    common_elem: CommonElem = ProtoField(53, None)
 
 
 class RichText(ProtoStruct):
