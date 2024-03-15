@@ -44,6 +44,27 @@ class MemberGotTitleBody(ProtoStruct):
     member_uin: int = ProtoField(5)
 
 
+class RecallMsgInfo(ProtoStruct):
+    seq: int = ProtoField(1)
+    time: int = ProtoField(2)
+    rand: int = ProtoField(3)
+    uid: str = ProtoField(6)
+
+
+class RecallMsgExtra(ProtoStruct):
+    suffix: str = ProtoField(2, "")
+
+
+class MemberRecallMsgBody(ProtoStruct):
+    uid: str = ProtoField(1)
+    info: RecallMsgInfo = ProtoField(3)
+    extra: RecallMsgExtra = ProtoField(9, None)
+
+
+class MemberRecallMsg(ProtoStruct):
+    body: MemberRecallMsgBody = ProtoField(11)
+
+
 class GroupRenamedBody(ProtoStruct):
     type: int = ProtoField(1)  # unknown
     grp_name: str = ProtoField(2)
@@ -51,7 +72,7 @@ class GroupRenamedBody(ProtoStruct):
 
 class GroupSub16Head(ProtoStruct):
     timestamp: int = ProtoField(2, 0)
-    uin: int = ProtoField(4)
-    body: bytes = ProtoField(5)
-    flag: int = ProtoField(13)  # 12: renamed, 6: set special_title
+    uin: int = ProtoField(4, None)
+    body: bytes = ProtoField(5, None)
+    flag: int = ProtoField(13)  # 12: renamed, 6: set special_title, 13: unknown
     operator_uid: str = ProtoField(21, "")

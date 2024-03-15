@@ -157,15 +157,27 @@ class Client(BaseClient):
     async def upload_grp_audio(self, voice: BinaryIO, grp_id: int) -> Audio:
         return await self._highway.upload_voice(voice, gid=grp_id)
 
-    async def get_grp_msg(self, grp_id: int, start: int, end: int = 0) -> List[GroupMessage]:
-        payload = await self.send_uni_packet(
-            "trpc.msg.register_proxy.RegisterProxy.SsoGetGroupMsg",
-            PBGetGrpMsgRequest.build(grp_id, start, end or start).encode()
-        )
-        ret = GetGrpMsgRsp.decode(payload.data).body
+    async def get_grp_msg(self, grp_id: int, start: int, end: int = 0, filter_deleted_msg=True) -> List[GroupMessage]:
+        if not end:
+            end = start
+        payload = GetGrpMsgRsp.decode(
+            (
+                await self.send_uni_packet(
+                    "trpc.msg.register_proxy.RegisterProxy.SsoGetGroupMsg",
+                    PBGetGrpMsgRequest.build(grp_id, start, end).encode()
+                )
+            ).data
+        ).body
 
-        assert ret.grp_id == grp_id and ret.start_seq == start and ret.end_seq == (end or start), "return args not matched"
-        return [parse_grp_msg(MsgPushBody.decode(i)) for i in ret.elems]
+        assert (payload.grp_id == grp_id and
+                payload.start_seq == start and
+                payload.end_seq == end
+                ), "return args not matched"
+
+        rsp = [parse_grp_msg(MsgPushBody.decode(i)) for i in payload.elems]
+        if filter_deleted_msg:
+            return [*filter(lambda msg: msg.rand != -1, rsp)]
+        return rsp
 
     async def recall_grp_msg(self, grp_id: int, seq: int):
         payload = await self.send_uni_packet(

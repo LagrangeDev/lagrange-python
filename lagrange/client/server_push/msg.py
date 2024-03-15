@@ -24,6 +24,7 @@ from lagrange.pb.status.group import (
     MemberChanged,
     MemberJoinRequest,
     MemberInviteRequest,
+    MemberRecallMsg,
     GroupSub16Head,
     MemberGotTitleBody,
     GroupRenamedBody
@@ -116,26 +117,25 @@ async def msg_push_handler(sso: SSOPacket):
             reader = Reader(pkg.message.buf2)
             grp_id = reader.read_u32()
             reader.read_u8()  # reserve
-            in_pb = unpack_dict(
-                proto_decode(reader.read_bytes_with_length("u16", False)),
-                "11"
+            pb = MemberRecallMsg.decode(
+                reader.read_bytes_with_length("u16", False)
             )
 
-            info = in_pb[3]
+            info = pb.body.info
             return GroupRecall(
-                uid=info[6],
-                seq=info[1],
-                time=info[2],
-                rand=info[3],
+                uid=info.uid,
+                seq=info.seq,
+                time=info.time,
+                rand=info.rand,
                 grp_id=grp_id,
-                suffix=unpack_dict(in_pb, "9.2", "").strip()
+                suffix=pb.body.extra.suffix.strip() if pb.body.extra else ""
             )
         elif sub_typ == 12:  # mute
             info = proto_decode(pkg.message.buf2)
             return GroupMuteMember(
                 grp_id=info[1],
-                operator_uid=info[4],
-                target_uid=unpack_dict(info, "5.3.1", ""),
+                operator_uid=info[4].decode(),
+                target_uid=unpack_dict(info, "5.3.1", b"").decode(),
                 duration=unpack_dict(info, "5.3.2")
             )
         else:
