@@ -2,21 +2,24 @@ import logging
 import time
 from hashlib import md5
 from io import BytesIO
-from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Optional
+from typing import TYPE_CHECKING, BinaryIO, List, Optional, Tuple
 
-from lagrange.utils.image import decoder
+from lagrange.client.message.elems import Audio, Image
+from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
+from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
+from lagrange.pb.highway.rsp import NTV2RichMediaResp
+from lagrange.utils.binary.protobuf import proto_decode
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
-from lagrange.client.message.elems import Image, Audio
-from lagrange.utils.binary.protobuf import proto_decode
-from .encoders import encode_highway_head, encode_audio_upload_req, encode_upload_img_req
+from lagrange.utils.image import decoder
 
-from .frame import write_frame, read_frame
-from .utils import timeit, calc_file_hash_and_length, itoa
-from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
-from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
-from lagrange.pb.highway.rsp import NTV2RichMediaResp
-
+from .encoders import (
+    encode_audio_upload_req,
+    encode_highway_head,
+    encode_upload_img_req,
+)
+from .frame import read_frame, write_frame
+from .utils import calc_file_hash_and_length, itoa, timeit
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -34,8 +37,7 @@ class HighWaySession:
 
     async def _get_bdh_session(self):
         rsp = await self._client.send_uni_packet(
-            "HttpConn.0x6ff_501",
-            HttpConn0x6ffReq.build(self._client._sig.tgt).encode()
+            "HttpConn.0x6ff_501", HttpConn0x6ffReq.build(self._client._sig.tgt).encode()
         )
 
         pb = HttpConn0x6ffRsp.decode(rsp.data)
@@ -59,14 +61,22 @@ class HighWaySession:
         ticket: bytes,
         ext=None,
         addrs: List[Tuple[str, int]] = None,
-        bs=65535
+        bs=65535,
     ) -> Optional[bytes]:
         if not addrs:
             addrs = self._session_addr_list
         for addr in addrs:
             try:
                 sec, data = await timeit(
-                    self._bdh_uploader("PicUp.DataUp", addr, list(files), cmd_id, ticket, ext, block_size=bs)
+                    self._bdh_uploader(
+                        "PicUp.DataUp",
+                        addr,
+                        list(files),
+                        cmd_id,
+                        ticket,
+                        ext,
+                        block_size=bs,
+                    )
                 )
                 self.logger.info("upload complete, use %.2fms" % (sec * 1000))
                 return data
@@ -96,11 +106,11 @@ class HighWaySession:
         total_transfer = 0
         current_file = files.pop(0)
         async with HttpCat(
-                *addr,
-                headers={
-                    "Accept-Encoding": "identity",
-                    "User-Agent": "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2)"
-                }
+            *addr,
+            headers={
+                "Accept-Encoding": "identity",
+                "User-Agent": "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2)",
+            },
         ) as session:
             while True:
                 bl = current_file.read(block_size)
@@ -125,13 +135,13 @@ class HighWaySession:
                     app_id=self._client.app_info.app_id,
                     sub_app_id=self._client.app_info.sub_app_id,
                     timestamp=ts,
-                    ext_info=ext
+                    ext_info=ext,
                 ).encode()
 
                 rsp_http = await session.send_request(
                     "POST",
                     f"/cgi-bin/httpconn?htcmd=0x6FF0087&uin={self._client.uin}",
-                    write_frame(head, bl)
+                    write_frame(head, bl),
                 )
                 total_transfer += len(bl)
 
@@ -155,9 +165,9 @@ class HighWaySession:
         ret = NTV2RichMediaResp.decode(
             (
                 await self._client.send_oidb_svc(
-                    0x11c4 if gid else 0x11c5,
+                    0x11C4 if gid else 0x11C5,
                     100,
-                    encode_upload_img_req(gid, uid, fmd5, fsha1, fl, info).encode()
+                    encode_upload_img_req(gid, uid, fmd5, fsha1, fl, info).encode(),
                 )
             ).data
         )
@@ -174,15 +184,16 @@ class HighWaySession:
                 ret.upload.v4_addrs,
                 ret.upload.msg_info.body,
                 1048576,
-                fsha1
+                fsha1,
             ).encode()
 
             await self.upload_controller(
-                file, cmd_id=1004 if gid else 1003,
+                file,
+                cmd_id=1004 if gid else 1003,
                 ticket=self._session_sig,
                 ext=ext,
                 addrs=self._session_addr_list,
-                bs=1048576
+                bs=1048576,
             )
 
         w, h = info.width, info.height
@@ -199,10 +210,12 @@ class HighWaySession:
             url="https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
                 uin=self._client.uin,
                 gid=gid,
-                file_id=fileid.hex().upper() if isinstance(fileid, bytes) else file,  # test required
-                fmd5=fmd5.hex().upper()
+                file_id=fileid.hex().upper()
+                if isinstance(fileid, bytes)
+                else file,  # test required
+                fmd5=fmd5.hex().upper(),
             ),
-            is_emoji=info.pic_type.name == "gif"
+            is_emoji=info.pic_type.name == "gif",
         )
 
     async def upload_voice(self, file: BinaryIO, gid=0, uid="", _time=0) -> Audio:
@@ -213,9 +226,9 @@ class HighWaySession:
         ret = NTV2RichMediaResp.decode(
             (
                 await self._client.send_oidb_svc(
-                    0x126e if gid else 0x126d,
+                    0x126E if gid else 0x126D,
                     100,
-                    encode_audio_upload_req(gid, uid, fmd5, fsha1, fl, _time).encode()
+                    encode_audio_upload_req(gid, uid, fmd5, fsha1, fl, _time).encode(),
                 )
             ).data
         )
@@ -233,15 +246,16 @@ class HighWaySession:
                 ret.upload.v4_addrs,
                 ret.upload.msg_info.body,
                 1048576,
-                fsha1
+                fsha1,
             ).encode()
 
             await self.upload_controller(
-                file, cmd_id=1008 if gid else 1007,
+                file,
+                cmd_id=1008 if gid else 1007,
                 ticket=self._session_sig,
                 ext=ext,
                 addrs=self._session_addr_list,
-                bs=1048576
+                bs=1048576,
             )
 
         compat = proto_decode(ret.upload.compat_qmsg)[4]
@@ -254,8 +268,9 @@ class HighWaySession:
             id=compat[8],
             md5=fmd5,
             size=fl,
-            file_key=compat[18]
+            file_key=compat[18],
         )
+
     #
     # async def upload_video(self, file: BinaryIO, thumb: BinaryIO, gid: int) -> VideoElement:
     #     thumb_md5, thumb_size = calc_file_md5_and_length(thumb)

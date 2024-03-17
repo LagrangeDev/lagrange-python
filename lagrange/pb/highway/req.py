@@ -1,5 +1,6 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
-from .comm import CommonHead, FileInfo, ExtBizInfo, MsgInfo
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+
+from .comm import CommonHead, ExtBizInfo, FileInfo, MsgInfo
 
 
 class C2CUserInfo(ProtoStruct):

@@ -1,10 +1,10 @@
-import gzip
-import zlib
-import json
 import asyncio
+import gzip
+import json
 import logging
+import zlib
 from dataclasses import dataclass
-from typing import Dict, Tuple, Union, Optional
+from typing import Dict, Optional, Tuple, Union
 from urllib import parse
 
 _logger = logging.getLogger("lagrange.utils.httpcat")
@@ -26,15 +26,17 @@ class HttpResponse:
             elif self.header["Content-Encoding"] == "deflate":
                 return zlib.decompress(self.body)
             else:
-                raise TypeError("Unsuppoted compress type:", self.header["Content-Encoding"])
+                raise TypeError(
+                    "Unsuppoted compress type:", self.header["Content-Encoding"]
+                )
         else:
             return self.body
 
     def json(self, verify_type=True) -> Union[dict, list]:
         if (
-                "Content-Type" in self.header and
-                self.header["Content-Type"].find("application/json") == -1 and
-                verify_type
+            "Content-Type" in self.header
+            and self.header["Content-Type"].find("application/json") == -1
+            and verify_type
         ):
             raise TypeError(self.header.get("Content-Type", "NotSet"))
         return json.loads(self.decompressed_body)
@@ -45,13 +47,13 @@ class HttpResponse:
 
 class HttpCat:
     def __init__(
-            self,
-            host: str,
-            port: int,
-            headers: Dict[str, str] = None,
-            cookies: Dict[str, str] = None,
-            ssl=False,
-            timeout=5
+        self,
+        host: str,
+        port: int,
+        headers: Dict[str, str] = None,
+        cookies: Dict[str, str] = None,
+        ssl=False,
+        timeout=5,
     ):
         self.host = host
         self.port = port
@@ -66,12 +68,7 @@ class HttpCat:
 
     @classmethod
     def _encode_header(
-            cls,
-            method: str,
-            path: str,
-            header: Dict[str, str],
-            *,
-            protocol="HTTP/1.1"
+        cls, method: str, path: str, header: Dict[str, str], *, protocol="HTTP/1.1"
     ) -> bytearray:
         ret = bytearray()
         ret += f"{method.upper()} {path} {protocol}\r\n".encode()
@@ -100,7 +97,7 @@ class HttpCat:
         return (
             (host, int(port)),
             parse.quote(purl.path) + ("?" + purl.query if purl.query else ""),
-            purl.scheme == "https"
+            purl.scheme == "https",
         )
 
     @classmethod
@@ -132,33 +129,29 @@ class HttpCat:
             if head_block:
                 k, v = head_block.split(": ")  # type: str
                 if k.title() == "Set-Cookie":
-                    name, value = v[:v.find(";")].split("=", 1)
+                    name, value = v[: v.find(";")].split("=", 1)
                     cookies[name] = value
                 else:
                     header[k.title()] = v
             else:
                 break
         return HttpResponse(
-            int(code),
-            status,
-            header,
-            await cls._read_all(header, reader),
-            cookies
+            int(code), status, header, await cls._read_all(header, reader), cookies
         )
 
     @classmethod
     async def _request(
-            cls,
-            host: str,
-            reader: asyncio.StreamReader,
-            writer: asyncio.StreamWriter,
-            method: str,
-            path: str,
-            header: Dict[str, str] = None,
-            body: bytes = None,
-            cookies: Dict[str, str] = None,
-            wait_rsp: bool = True,
-            loop: asyncio.AbstractEventLoop = None
+        cls,
+        host: str,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+        method: str,
+        path: str,
+        header: Dict[str, str] = None,
+        body: bytes = None,
+        cookies: Dict[str, str] = None,
+        wait_rsp: bool = True,
+        loop: asyncio.AbstractEventLoop = None,
     ) -> HttpResponse:
         if not loop:
             loop = asyncio.get_running_loop()
@@ -168,16 +161,12 @@ class HttpCat:
             "User-Agent": "HttpCat/1.1",
             "Accept-Encoding": "gzip, deflate",
             "Content-Length": "0" if not body else str(len(body)),
-            **(header if header else {})
+            **(header if header else {}),
         }
         if cookies:
             header["Cookie"] = "; ".join([f"{k}={v}" for k, v in cookies.items()])
 
-        writer.write(cls._encode_header(
-            method,
-            path,
-            header
-        ))
+        writer.write(cls._encode_header(method, path, header))
         if body:
             writer.write(body)
         await writer.drain()
@@ -191,49 +180,36 @@ class HttpCat:
 
     @classmethod
     async def request(
-            cls,
-            method: str,
-            url: str,
-            header: Dict[str, str] = None,
-            body: bytes = None,
-            cookies: Dict[str, str] = None,
-            follow_redirect=True,
-            conn_timeout=0,
-            loop: asyncio.AbstractEventLoop = None
+        cls,
+        method: str,
+        url: str,
+        header: Dict[str, str] = None,
+        body: bytes = None,
+        cookies: Dict[str, str] = None,
+        follow_redirect=True,
+        conn_timeout=0,
+        loop: asyncio.AbstractEventLoop = None,
     ) -> HttpResponse:
         address, path, ssl = cls._parse_url(url)
         if conn_timeout:
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(*address, ssl=ssl),
-                conn_timeout
+                asyncio.open_connection(*address, ssl=ssl), conn_timeout
             )
         else:
             reader, writer = await asyncio.open_connection(*address, ssl=ssl)
         resp = await cls._request(
-            address[0],
-            reader,
-            writer,
-            method,
-            path,
-            header,
-            body,
-            cookies,
-            True,
-            loop
+            address[0], reader, writer, method, path, header, body, cookies, True, loop
         )
         _logger.debug(f"request({method})[{resp.code}]: {url}")
         if resp.code // 100 == 3 and follow_redirect:
-            return await cls.request(method, resp.header["Location"], header, body, cookies)
+            return await cls.request(
+                method, resp.header["Location"], header, body, cookies
+            )
         else:
             return resp
 
     async def send_request(
-            self,
-            method: str,
-            path: str,
-            body=None,
-            follow_redirect=True,
-            conn_timeout=0
+        self, method: str, path: str, body=None, follow_redirect=True, conn_timeout=0
     ) -> HttpResponse:
         if self._stop_flag:
             raise AssertionError("connection stopped")
@@ -241,10 +217,12 @@ class HttpCat:
             if conn_timeout:
                 reader, writer = await asyncio.wait_for(
                     asyncio.open_connection(self.host, self.port, ssl=self.ssl),
-                    conn_timeout
+                    conn_timeout,
                 )
             else:
-                reader, writer = await asyncio.open_connection(self.host, self.port, ssl=self.ssl)
+                reader, writer = await asyncio.open_connection(
+                    self.host, self.port, ssl=self.ssl
+                )
             self._reader = reader
             self._writer = writer
             _logger.debug(f"connected to {self.host}:{self.port}")
@@ -258,9 +236,11 @@ class HttpCat:
             self.header,
             body,
             self.cookie,
-            True
+            True,
         )
-        _logger.debug(f"send_request({method})[{resp.code}]: http{'s' if self.ssl else ''}://{self.host}:{self.port}{path}")
+        _logger.debug(
+            f"send_request({method})[{resp.code}]: http{'s' if self.ssl else ''}://{self.host}:{self.port}{path}"
+        )
         if resp.cookies:
             self.cookie = resp.cookies
         if resp.code // 100 == 3 and follow_redirect:

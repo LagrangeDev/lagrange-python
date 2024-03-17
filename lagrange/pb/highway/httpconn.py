@@ -1,4 +1,4 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
 class X501ReqBody(ProtoStruct):

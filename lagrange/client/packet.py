@@ -1,12 +1,14 @@
 from typing_extensions import Literal, Self
 
-from lagrange.utils.binary.builder import Builder, BYTES_LIKE
+from lagrange.utils.binary.builder import BYTES_LIKE, Builder
 
 LENGTH_PREFIX = Literal["none", "u8", "u16", "u32", "u64"]
 
 
 class PacketBuilder(Builder):
-    def write_bytes(self, v: BYTES_LIKE, prefix: LENGTH_PREFIX = "none", with_prefix: bool = True) -> Self:
+    def write_bytes(
+        self, v: BYTES_LIKE, prefix: LENGTH_PREFIX = "none", with_prefix: bool = True
+    ) -> Self:
         if with_prefix:
             if prefix == "none":
                 pass
@@ -37,5 +39,7 @@ class PacketBuilder(Builder):
         self._buffer += v
         return self
 
-    def write_string(self, s: str, prefix: LENGTH_PREFIX = "u32", with_prefix: bool = True) -> Self:
+    def write_string(
+        self, s: str, prefix: LENGTH_PREFIX = "u32", with_prefix: bool = True
+    ) -> Self:
         return self.write_bytes(s.encode(), prefix, with_prefix)

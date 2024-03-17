@@ -1,5 +1,5 @@
-from lagrange.info import DeviceInfo, AppInfo
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.info import AppInfo, DeviceInfo
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
 class _DeviceInfo(ProtoStruct):
@@ -30,8 +30,8 @@ class PBRegisterRequest(ProtoStruct):
                 device_name=device.device_name,
                 vendor_os=app.vendor_os.capitalize(),
                 system_kernel=device.system_kernel,
-                vendor_os_lower=app.vendor_os
-            )
+                vendor_os_lower=app.vendor_os,
+            ),
         )
 
 

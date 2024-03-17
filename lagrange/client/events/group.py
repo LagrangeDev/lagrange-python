@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from . import BaseEvent
 
@@ -40,6 +40,7 @@ class GroupRecall(GroupEvent, MessageInfo):
 @dataclass
 class GroupMuteMember(GroupEvent):
     """when target_uid is empty, mute all member"""
+
     operator_uid: str
     target_uid: str
     duration: int

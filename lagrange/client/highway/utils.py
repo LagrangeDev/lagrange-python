@@ -1,7 +1,7 @@
 import time
 import uuid
 from hashlib import md5, sha1
-from typing import Any, Tuple, BinaryIO, Awaitable
+from typing import Any, Awaitable, BinaryIO, Tuple
 
 
 def calc_file_hash_and_length(*files: BinaryIO, bs=4096) -> Tuple[bytes, bytes, int]:

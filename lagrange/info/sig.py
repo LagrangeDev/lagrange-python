@@ -38,5 +38,5 @@ class SigInfo(BinarySerializer):
             temp_pwd=bytes(),
             uin=0,
             uid="",
-            nickname=""
+            nickname="",
         )

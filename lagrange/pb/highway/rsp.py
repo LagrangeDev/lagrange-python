@@ -1,5 +1,6 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
-from .comm import CommonHead, MsgInfo, IPv4, IPv6
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+
+from .comm import CommonHead, IPv4, IPv6, MsgInfo
 
 
 class MultiMediaRspHead(ProtoStruct):

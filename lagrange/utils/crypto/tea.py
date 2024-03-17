@@ -3,18 +3,18 @@ from typing import Optional
 
 
 def _xor(a, b):
-    op = 0xffffffff
-    a1, a2 = struct.unpack(b'>LL', a[0:8])
-    b1, b2 = struct.unpack(b'>LL', b[0:8])
-    return struct.pack(b'>LL', (a1 ^ b1) & op, (a2 ^ b2) & op)
+    op = 0xFFFFFFFF
+    a1, a2 = struct.unpack(b">LL", a[0:8])
+    b1, b2 = struct.unpack(b">LL", b[0:8])
+    return struct.pack(b">LL", (a1 ^ b1) & op, (a2 ^ b2) & op)
 
 
 def _tea_code(v, k) -> bytes:  # 传入8字节数据 16字节key
     n = 16
     op = 0xFFFFFFFF
     delta = 0x9E3779B9
-    k = struct.unpack(b'>LLLL', k[0:16])
-    v0, v1 = struct.unpack(b'>LL', v[0:8])
+    k = struct.unpack(b">LLLL", k[0:16])
+    v0, v1 = struct.unpack(b">LL", v[0:8])
     sum_ = 0
     for i in range(n):
         sum_ += delta
@@ -22,15 +22,15 @@ def _tea_code(v, k) -> bytes:  # 传入8字节数据 16字节key
         v0 &= op
         v1 += (op & (v0 << 4)) + k[2] ^ v0 + sum_ ^ (op & (v0 >> 5)) + k[3]
         v1 &= op
-    r = struct.pack(b'>LL', v0, v1)
+    r = struct.pack(b">LL", v0, v1)
     return r
 
 
 def _tea_decipher(v: bytes, k: bytes) -> bytes:
     n = 16
     op = 0xFFFFFFFF
-    v0, v1 = struct.unpack('>LL', v[0:8])
-    k0, k1, k2, k3 = struct.unpack(b'>LLLL', k[0:16])
+    v0, v1 = struct.unpack(">LL", v[0:8])
+    k0, k1, k2, k3 = struct.unpack(b">LLLL", k[0:16])
     delta = 0x9E3779B9
     sum_ = (delta << 4) & op  # 左移4位 就是x16
     for i in range(n):
@@ -40,7 +40,7 @@ def _tea_decipher(v: bytes, k: bytes) -> bytes:
         v0 &= op
         sum_ -= delta
         sum_ &= op
-    return struct.pack(b'>LL', v0, v1)
+    return struct.pack(b">LL", v0, v1)
 
 
 class _TEA:
@@ -59,18 +59,15 @@ class _TEA:
         fills = bytearray()
         for i in range(filln):
             fills.append(220)
-        return (bytes([(filln - 2) | 0xf8])
-                + fills
-                + data
-                + b"\x00" * 7)
+        return bytes([(filln - 2) | 0xF8]) + fills + data + b"\x00" * 7
 
     def encrypt(self, data: bytes) -> bytes:
         data = self._preprocess(data)
-        tr = b'\0' * 8
-        to = b'\0' * 8
+        tr = b"\0" * 8
+        to = b"\0" * 8
         result = bytearray()
         for i in range(0, len(data), 8):
-            o = _xor(data[i:i + 8], tr)
+            o = _xor(data[i : i + 8], tr)
             tr = _xor(_tea_code(o, self.secret_key), to)
             to = o
             result += tr
@@ -83,18 +80,30 @@ class _TEA:
         ret = plain
         precrypt = text[0:8]
         for i in range(8, data_len, 8):
-            x = _xor(_tea_decipher(_xor(text[i:i + 8], plain), self.secret_key), precrypt)  # 跳过了前8个字节
+            x = _xor(
+                _tea_decipher(_xor(text[i : i + 8], plain), self.secret_key), precrypt
+            )  # 跳过了前8个字节
             plain = _xor(x, precrypt)
-            precrypt = text[i:i + 8]
+            precrypt = text[i : i + 8]
             ret += x
-        if ret[-7:] != b'\0' * 7:
+        if ret[-7:] != b"\0" * 7:
             return None
-        return ret[pos + 1:-7]
+        return ret[pos + 1 : -7]
 
 
-def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
-    return _TEA(key).encrypt(data)
+try:
+    from ftea import TEA as _TEA
 
+    def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
+        return _TEA(key).encrypt_qq(data)
 
-def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
-    return _TEA(key).decrypt(data)
+    def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
+        return _TEA(key).decrypt_qq(data)
+
+except ImportError:
+
+    def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
+        return _TEA(key).encrypt(data)
+
+    def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
+        return _TEA(key).decrypt(data)

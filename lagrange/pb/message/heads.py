@@ -1,4 +1,4 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
 class ContentHead(ProtoStruct):
@@ -8,7 +8,7 @@ class ContentHead(ProtoStruct):
     seq: int = ProtoField(5)
     timestamp: int = ProtoField(6, 0)
     rand: int = ProtoField(7, 0)
-    #new_id: int = ProtoField(12)
+    # new_id: int = ProtoField(12)
 
 
 class Grp(ProtoStruct):

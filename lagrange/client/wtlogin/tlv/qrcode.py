@@ -1,17 +1,16 @@
-from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.client.packet import PacketBuilder
+from lagrange.utils.binary.protobuf import proto_encode
 
 
 class QrCodeTlvBuilder(PacketBuilder):
     @classmethod
     def t11(cls, unusual_sign: bytes) -> bytes:
-        return (
-            cls()
-            .write_bytes(unusual_sign)
-        ).pack(0x11)
+        return (cls().write_bytes(unusual_sign)).pack(0x11)
 
     @classmethod
-    def t16(cls, appid: int, sub_appid: int, guid: bytes, pt_version: str, package_name: str) -> bytes:
+    def t16(
+        cls, appid: int, sub_appid: int, guid: bytes, pt_version: str, package_name: str
+    ) -> bytes:
         return (
             cls()
             .write_u32(0)
@@ -29,13 +28,9 @@ class QrCodeTlvBuilder(PacketBuilder):
 
     @classmethod
     def t1d(cls, misc_bitmap: int) -> bytes:
-        return (
-            cls()
-            .write_u8(1)
-            .write_u32(misc_bitmap)
-            .write_u32(0)
-            .write_u8(0)
-        ).pack(0x1d)
+        return (cls().write_u8(1).write_u32(misc_bitmap).write_u32(0).write_u8(0)).pack(
+            0x1D
+        )
 
     @classmethod
     def t33(cls, guid: bytes) -> bytes:
@@ -51,10 +46,8 @@ class QrCodeTlvBuilder(PacketBuilder):
 
     @classmethod
     def td1(cls, app_os: str, device_name: str) -> bytes:
-        return cls().write_bytes(proto_encode({
-            1: {
-                1: app_os,
-                2: device_name
-            },
-            4: {6: 1}
-        })).pack(0xd1)
+        return (
+            cls()
+            .write_bytes(proto_encode({1: {1: app_os, 2: device_name}, 4: {6: 1}}))
+            .pack(0xD1)
+        )

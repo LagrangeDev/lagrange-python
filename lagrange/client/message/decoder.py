@@ -1,10 +1,11 @@
 import zlib
-from typing import Tuple, List, Dict, Union
+from typing import Dict, List, Tuple, Union
 
-from . import elems
 from lagrange.client.events.group import GroupMessage
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.rich_text import Elems, RichText
+
+from . import elems
 
 
 def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
@@ -20,16 +21,18 @@ def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
 def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
     if rich.ptt:
         ptt = rich.ptt
-        return [{
-            "type": "audio",
-            "text": f"[audio:{ptt.time}]",
-            "time": ptt.time,
-            "name": ptt.name,
-            "id": ptt.file_id,
-            "size": ptt.size,
-            "file_key": ptt.group_file_key,
-            "md5": ptt.md5
-        }]
+        return [
+            {
+                "type": "audio",
+                "text": f"[audio:{ptt.time}]",
+                "time": ptt.time,
+                "name": ptt.name,
+                "id": ptt.file_id,
+                "size": ptt.size,
+                "file_key": ptt.group_file_key,
+                "md5": ptt.md5,
+            }
+        ]
     elems: List[Elems] = rich.content
     msg_chain = []
     ignore_next = False
@@ -42,46 +45,44 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
         if raw.text:  # msg
             msg = raw.text
             if msg.string and not msg.attr6_buf:  # Text
-                msg_chain.append({
-                    "type": "text",
-                    "text": msg.string
-                })
+                msg_chain.append({"type": "text", "text": msg.string})
             elif msg.attr6_buf:  # At
                 buf3 = msg.attr6_buf
                 if buf3[6]:  # AtAll
                     msg_chain.append({"type": "atall", "text": msg.string})
                 else:  # At
-                    msg_chain.append({
-                        "type": "at",
-                        "text": msg.string,
-                        "uin": int.from_bytes(buf3[7:11], "big"),
-                        "uid": msg.pb_reserved.get(9)
-                    })
+                    msg_chain.append(
+                        {
+                            "type": "at",
+                            "text": msg.string,
+                            "uin": int.from_bytes(buf3[7:11], "big"),
+                            "uid": msg.pb_reserved.get(9),
+                        }
+                    )
             else:
                 raise AssertionError("Invalid message")
         elif raw.face:  # q emoji
             emo = raw.face
-            msg_chain.append({
-                "type": "emoji",
-                "id": emo.index
-            })
+            msg_chain.append({"type": "emoji", "id": emo.index})
         elif raw.market_face:  # qq大表情
             print(raw.market_face)
             pass
         elif raw.custom_face:  # gpic
             img = raw.custom_face
-            msg_chain.append({
-                "type": "image",
-                "text": img.args.display_name,
-                "url": "https://gchat.qpic.cn" + img.original_url,
-                "name": img.file_path,
-                "is_emoji": img.args.is_emoji,
-                "id": img.fileid,
-                "md5": img.md5,
-                "width": img.width,
-                "height": img.height,
-                "size": img.size
-            })
+            msg_chain.append(
+                {
+                    "type": "image",
+                    "text": img.args.display_name,
+                    "url": "https://gchat.qpic.cn" + img.original_url,
+                    "name": img.file_path,
+                    "is_emoji": img.args.is_emoji,
+                    "id": img.fileid,
+                    "md5": img.md5,
+                    "width": img.width,
+                    "height": img.height,
+                    "size": img.size,
+                }
+            )
         # elif 9 in raw:  # unknown
         #     pass
         elif raw.rich_msg:
@@ -93,12 +94,14 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
                     content = zlib.decompress(jr[1:])
                 else:
                     content = jr[1:]
-                msg_chain.append({
-                    "type": "service",
-                    "text": f"[service:{sid}]",
-                    "raw": content,
-                    "id": sid
-                })
+                msg_chain.append(
+                    {
+                        "type": "service",
+                        "text": f"[service:{sid}]",
+                        "raw": content,
+                        "id": sid,
+                    }
+                )
             ignore_next = True
         # elif 16 in raw:  # extra
         #     # nickname = unpack_dict(raw, "16.2", "")
@@ -118,11 +121,13 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
         # elif 37 in raw:  # unknown
         #     pass
         elif raw.open_data:
-            msg_chain.append({
-                "type": "raw",
-                "text": f"[raw:{len(raw.open_data.data)}]",
-                "data": raw.open_data.data
-            })
+            msg_chain.append(
+                {
+                    "type": "raw",
+                    "text": f"[raw:{len(raw.open_data.data)}]",
+                    "data": raw.open_data.data,
+                }
+            )
         elif raw.src_msg:  # msg source info
             src = raw.src_msg
             msg_text = ""
@@ -130,14 +135,16 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
             for v in src.elems:
                 msg_text += v.get(1, {1: b""})[1].decode()
             # src[10]: optional[grp_id]
-            msg_chain.append({
-                "type": "quote",
-                "text": f"[quote:{msg_text}]",
-                "seq": src.seq,
-                "uin": src.uin,
-                "timestamp": src.timestamp,
-                "uid": src.pb_reserved[6].decode()
-            })
+            msg_chain.append(
+                {
+                    "type": "quote",
+                    "text": f"[quote:{msg_text}]",
+                    "seq": src.seq,
+                    "uin": src.uin,
+                    "timestamp": src.timestamp,
+                    "uid": src.pb_reserved[6].decode(),
+                }
+            )
             ignore_next = True
         elif raw.mini_app:  # qq mini app or others
             service = raw.mini_app.template
@@ -146,11 +153,9 @@ def parse_msg(rich: RichText) -> List[Dict[str, Union[int, str]]]:
                 content = zlib.decompress(service[1:])
             else:
                 content = service[1:]
-            msg_chain.append({
-                "type": "json",
-                "text": f"[json:{len(content)}]",
-                "raw": content
-            })
+            msg_chain.append(
+                {"type": "json", "text": f"[json:{len(content)}]", "raw": content}
+            )
             ignore_next = True
         # elif 53 in raw:  # q emoji
         #     qe = raw[53]
@@ -203,9 +208,7 @@ def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
 
         obj_name = m.pop("type").capitalize()
         if hasattr(elems, obj_name):
-            msg_chain.append(
-                getattr(elems, obj_name)(**m)
-            )
+            msg_chain.append(getattr(elems, obj_name)(**m))
 
     msg = GroupMessage(
         uin=user_id,
@@ -218,7 +221,7 @@ def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
         grp_name=grp_name,
         sub_id=sub_id,
         msg=display_msg,
-        msg_chain=msg_chain
+        msg_chain=msg_chain,
     )
 
     return msg

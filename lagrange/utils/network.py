@@ -1,6 +1,6 @@
 import asyncio
-import socket
 import logging
+import socket
 import traceback
 from typing import Optional
 
@@ -60,9 +60,7 @@ class Connection:
         if self._stop_flag:
             raise RuntimeError("Connection already stopped")
         self._reader, self._writer = await asyncio.wait_for(
-            asyncio.open_connection(
-                self.host, self.port, ssl=self.ssl
-            ), self.timeout
+            asyncio.open_connection(self.host, self.port, ssl=self.ssl), self.timeout
         )
 
     async def close(self):
@@ -80,7 +78,10 @@ class Connection:
     async def _read_loop(self):
         try:
             while not self.closed:
-                length = int.from_bytes(await self.reader.readexactly(4), byteorder="big") - 4
+                length = (
+                    int.from_bytes(await self.reader.readexactly(4), byteorder="big")
+                    - 4
+                )
                 if length:
                     await self.on_message(length)
                 else:

@@ -1,12 +1,12 @@
 import struct
 import zlib
-from io import BytesIO
 from dataclasses import dataclass, field
+from io import BytesIO
 from typing import Tuple
 
 from lagrange.utils.binary.reader import Reader
-from lagrange.utils.crypto.tea import qqtea_decrypt
 from lagrange.utils.crypto.ecdh import ecdh
+from lagrange.utils.crypto.tea import qqtea_decrypt
 
 
 @dataclass
@@ -20,7 +20,7 @@ class SSOPacket:
 
 
 def parse_lv(buffer: BytesIO):  # u32 len only
-    length = struct.unpack('>I', buffer.read(4))[0]
+    length = struct.unpack(">I", buffer.read(4))[0]
     return buffer.read(length - 4)
 
 
@@ -42,10 +42,7 @@ def parse_sso_header(raw: bytes, d2_key: bytes) -> Tuple[int, str, bytes]:
     return flag, uin, dec
 
 
-def parse_sso_frame(
-        buffer: bytes,
-        is_oicq_body=False
-) -> SSOPacket:
+def parse_sso_frame(buffer: bytes, is_oicq_body=False) -> SSOPacket:
     reader = Reader(buffer)
     head_len, seq, ret_code = reader.read_struct("!I2i")
     extra = reader.read_string_with_length("u32")  # extra
@@ -78,13 +75,11 @@ def parse_sso_frame(
         session_id=session_id,
         extra=extra,
         cmd=cmd,
-        data=data
+        data=data,
     )
 
 
-def parse_oicq_body(
-        buffer: bytes
-) -> bytes:
+def parse_oicq_body(buffer: bytes) -> bytes:
     flag, enc_type = struct.unpack("!B12xHx", buffer[:16])
 
     if flag != 2:

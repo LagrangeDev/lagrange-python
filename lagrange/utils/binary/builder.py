@@ -1,6 +1,7 @@
 import struct
-from typing import NewType, Union, Literal
-from typing_extensions import Self, Optional
+from typing import Literal, NewType, Union
+
+from typing_extensions import Optional, Self
 
 from lagrange.utils.crypto.tea import qqtea_encrypt
 
@@ -16,9 +17,7 @@ class Builder:
         if isinstance(other, (bytes, bytearray, memoryview)):
             self._buffer += other
         else:
-            raise TypeError(
-                f"buffer must be bytes or bytearray, not {type(other)}"
-            )
+            raise TypeError(f"buffer must be bytes or bytearray, not {type(other)}")
 
     def __len__(self) -> int:
         return len(self._buffer)

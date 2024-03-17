@@ -1,5 +1,5 @@
-import math
 import hashlib
+import math
 import random
 
 from .curve import EllipticCurve, EllipticPoint
@@ -21,9 +21,9 @@ class ECDHProvider:
         if length != self._curve.size * 2 + 1 and length != self._curve.size + 1:
             raise AssertionError("Length of public key does not match")
 
-        x = bytes(1) + pub[1:self._curve.size + 1]
+        x = bytes(1) + pub[1 : self._curve.size + 1]
         if pub[0] == 0x04:  # uncompressed
-            y = bytes(1) + pub[self._curve.size + 1:self._curve.size * 2 + 1]
+            y = bytes(1) + pub[self._curve.size + 1 : self._curve.size * 2 + 1]
             return EllipticPoint(int.from_bytes(x, "big"), int.from_bytes(y, "big"))
 
         px = int.from_bytes(x, "big")
@@ -45,7 +45,11 @@ class ECDHProvider:
         if compress:
             result = bytearray(self._public.x.to_bytes(self._curve.size, "big"))
             result = bytearray(1) + result
-            result[0] = 0x02 if (((self._public.y % 2) == 0) ^ ((self._public.y > 0) < 0)) else 0x03
+            result[0] = (
+                0x02
+                if (((self._public.y % 2) == 0) ^ ((self._public.y > 0) < 0))
+                else 0x03
+            )
             return result
 
         x = self._public.x.to_bytes(self._curve.size, "big")
@@ -57,7 +61,7 @@ class ECDHProvider:
     def _pack_shared(self, shared: EllipticPoint, hashed: bool) -> bytes:
         x = shared.x.to_bytes(self._curve.size, "big")
         if hashed:
-            x = hashlib.md5(x[0:self._curve.pack_size]).digest()
+            x = hashlib.md5(x[0 : self._curve.pack_size]).digest()
         return x
 
     def _create_public(self, sec: int) -> EllipticPoint:
@@ -96,7 +100,9 @@ class ECDHProvider:
         return pr
 
 
-def _point_add(curve: EllipticCurve, p1: EllipticPoint, p2: EllipticPoint) -> EllipticPoint:
+def _point_add(
+    curve: EllipticCurve, p1: EllipticPoint, p2: EllipticPoint
+) -> EllipticPoint:
     if p1.is_default:
         return p2
     if p2.is_default:

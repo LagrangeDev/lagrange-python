@@ -1,22 +1,17 @@
 import hashlib
 import os
 
-from lagrange.info import DeviceInfo, AppInfo, SigInfo
+from lagrange.client.packet import PacketBuilder
+from lagrange.info import AppInfo, DeviceInfo, SigInfo
+from lagrange.utils.binary.protobuf import proto_decode, proto_encode
+from lagrange.utils.binary.reader import Reader
+from lagrange.utils.crypto.ecdh import ecdh
+from lagrange.utils.crypto.tea import qqtea_decrypt, qqtea_encrypt
 from lagrange.utils.log import logger
 from lagrange.utils.operator import timestamp
-from lagrange.utils.binary.protobuf import proto_encode, proto_decode
-from lagrange.utils.crypto.ecdh import ecdh
-from lagrange.utils.crypto.tea import qqtea_encrypt, qqtea_decrypt
-from lagrange.client.packet import PacketBuilder
-from lagrange.utils.binary.reader import Reader
 
 
-def build_code2d_packet(
-        uin: int,
-        cmd_id: int,
-        app_info: AppInfo,
-        body: bytes
-) -> bytes:
+def build_code2d_packet(uin: int, cmd_id: int, app_info: AppInfo, body: bytes) -> bytes:
     """need build_uni_packet function to wrapper"""
     return build_login_packet(
         uin,
@@ -31,7 +26,6 @@ def build_code2d_packet(
             .write_bytes(bytes(3))
             .write_u32(timestamp())
             .write_u8(2)
-
             .write_u16(len(body) + 49)
             .write_u16(cmd_id)
             .write_bytes(bytes(21))
@@ -40,16 +34,11 @@ def build_code2d_packet(
             .write_bytes(bytes(14))
             .write_u32(app_info.app_id)
             .write_bytes(body)
-        ).pack()
+        ).pack(),
     )
 
 
-def build_login_packet(
-        uin: int,
-        cmd: str,
-        app_info: AppInfo,
-        body: bytes
-) -> bytes:
+def build_login_packet(uin: int, cmd: str, app_info: AppInfo, body: bytes) -> bytes:
     enc_body = qqtea_encrypt(body, ecdh["secp192k1"].share_key)
 
     frame_body = (
@@ -86,26 +75,23 @@ def build_login_packet(
 
 
 def build_uni_packet(
-        uin: int,
-        seq: int,
-        cmd: str,
-        sign: dict,
-        app_info: AppInfo,
-        device_info: DeviceInfo,
-        sig_info: SigInfo,
-        body: bytes
+    uin: int,
+    seq: int,
+    cmd: str,
+    sign: dict,
+    app_info: AppInfo,
+    device_info: DeviceInfo,
+    sig_info: SigInfo,
+    body: bytes,
 ) -> bytes:
     trace = f"00-{os.urandom(16).hex()}-{os.urandom(8).hex()}-01"
 
-    head = {
-        15: trace,
-        16: sig_info.uid
-    }
+    head = {15: trace, 16: sig_info.uid}
     if sign:
         head[24] = {
             1: bytes.fromhex(sign["sign"]),
             2: bytes.fromhex(sign["token"]),
-            3: bytes.fromhex(sign["extra"])
+            3: bytes.fromhex(sign["extra"]),
         }
 
     sso_header = (
@@ -124,9 +110,7 @@ def build_uni_packet(
     ).pack()
 
     sso_packet = (
-        PacketBuilder()
-        .write_bytes(sso_header, "u32")
-        .write_bytes(body, "u32")
+        PacketBuilder().write_bytes(sso_header, "u32").write_bytes(body, "u32")
     ).pack()
 
     encrypted = qqtea_encrypt(sso_packet, sig_info.d2_key)
@@ -153,7 +137,7 @@ def decode_login_response(buf: bytes, sig: SigInfo):
     if typ == 0:
         reader = Reader(qqtea_decrypt(tlv[0x119], sig.tgtgt))
         tlv = reader.read_tlv()
-        sig.tgt = tlv.get(0x10a) or sig.tgt
+        sig.tgt = tlv.get(0x10A) or sig.tgt
         sig.d2 = tlv.get(0x143) or sig.d2
         sig.d2_key = tlv.get(0x305) or sig.d2_key
         sig.tgtgt = hashlib.md5(sig.d2_key).digest()
@@ -161,7 +145,7 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         sig.uid = proto_decode(tlv[0x543])[9][11][1].decode()
 
         logger.login.debug("SigInfo got")
-        logger.login.info("Login success, username: %s" % tlv[0x11a][5:].decode())
+        logger.login.info("Login success, username: %s" % tlv[0x11A][5:].decode())
 
         return True
     elif 0x146 in tlv:
@@ -178,8 +162,6 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         title = "未知错误"
         content = "无法解析错误原因，请将完整日志提交给开发者"
 
-    logger.login.error(
-        f"Login fail on oicq({hex(typ)}): [{title}]>{content}"
-    )
+    logger.login.error(f"Login fail on oicq({hex(typ)}): [{title}]>{content}")
 
     return False

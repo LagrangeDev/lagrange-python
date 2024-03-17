@@ -1,17 +1,16 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+
 from .comm import IPv4, MsgInfoBody
 
 
 def ipv4_to_network(ipv4: list[IPv4]) -> "NTHighwayNetwork":
     nets = []
     for v4 in ipv4:
-        ip = v4.out_ip.to_bytes(4, byteorder='little')
+        ip = v4.out_ip.to_bytes(4, byteorder="little")
         nets.append(
             NTHighwayIPv4(
-                domain=NTHighwayDomain(
-                    ip=f"{ip[0]}.{ip[1]}.{ip[2]}.{ip[3]}"
-                ),
-                port=v4.out_port
+                domain=NTHighwayDomain(ip=f"{ip[0]}.{ip[1]}.{ip[2]}.{ip[3]}"),
+                port=v4.out_port,
             )
         )
     return NTHighwayNetwork(v4_addrs=nets)
@@ -45,13 +44,13 @@ class NTV2RichMediaHighwayExt(ProtoStruct):
 
     @classmethod
     def build(
-            cls,
-            uuid: str,
-            ukey: str,
-            network: list[IPv4],
-            msg_info: list[MsgInfoBody],
-            blk_size: int,
-            hash: bytes
+        cls,
+        uuid: str,
+        ukey: str,
+        network: list[IPv4],
+        msg_info: list[MsgInfoBody],
+        blk_size: int,
+        hash: bytes,
     ) -> "NTV2RichMediaHighwayExt":
         return cls(
             uuid=uuid,
@@ -59,5 +58,5 @@ class NTV2RichMediaHighwayExt(ProtoStruct):
             network=ipv4_to_network(network),
             msg_info=msg_info,
             blk_size=blk_size,
-            hash=NTHighwayHash(sha1=hash)
+            hash=NTHighwayHash(sha1=hash),
         )

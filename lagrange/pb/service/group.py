@@ -1,4 +1,4 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
 class GetGrpMsgReqBody(ProtoStruct):
@@ -12,8 +12,13 @@ class PBGetGrpMsgRequest(ProtoStruct):
     direction: bool = ProtoField(2, True)
 
     @classmethod
-    def build(cls, grp_id: int, start_seq: int, end_seq: int, direction=True) -> 'PBGetGrpMsgRequest':
-        return cls(body=GetGrpMsgReqBody(grp_id=grp_id, start_seq=start_seq, end_seq=end_seq), direction=direction)
+    def build(
+        cls, grp_id: int, start_seq: int, end_seq: int, direction=True
+    ) -> "PBGetGrpMsgRequest":
+        return cls(
+            body=GetGrpMsgReqBody(grp_id=grp_id, start_seq=start_seq, end_seq=end_seq),
+            direction=direction,
+        )
 
 
 class RecallRequestF3(ProtoStruct):
@@ -29,13 +34,8 @@ class PBGroupRecallRequest(ProtoStruct):
     field4: dict = ProtoField(4, {1: 0})
 
     @classmethod
-    def build(cls, grp_id: int, seq: int) -> 'PBGroupRecallRequest':
-        return PBGroupRecallRequest(
-            grp_id=grp_id,
-            field3=RecallRequestF3(
-                seq=seq
-            )
-        )
+    def build(cls, grp_id: int, seq: int) -> "PBGroupRecallRequest":
+        return PBGroupRecallRequest(grp_id=grp_id, field3=RecallRequestF3(seq=seq))
 
 
 class RenameRequestF2(ProtoStruct):
@@ -47,7 +47,7 @@ class PBGroupRenameRequest(ProtoStruct):
     rename_f2: RenameRequestF2 = ProtoField(2)
 
     @classmethod
-    def build(cls, grp_id: int, name: str) -> 'PBGroupRenameRequest':
+    def build(cls, grp_id: int, name: str) -> "PBGroupRenameRequest":
         return cls(grp_id=grp_id, rename_f2=RenameRequestF2(name=name))
 
 
@@ -61,15 +61,17 @@ class PBRenameMemberRequest(ProtoStruct):
     rename_f3: RenameMemberRequestF3 = ProtoField(3)
 
     @classmethod
-    def build(cls, grp_id: int, target_uid: str, name: str) -> 'PBRenameMemberRequest':
-        return cls(grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, name=name))
+    def build(cls, grp_id: int, target_uid: str, name: str) -> "PBRenameMemberRequest":
+        return cls(
+            grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, name=name)
+        )
 
 
 class PBLeaveGroupRequest(ProtoStruct):
     grp_id: int = ProtoField(1)
 
     @classmethod
-    def build(cls, grp_id: int) -> 'PBLeaveGroupRequest':
+    def build(cls, grp_id: int) -> "PBLeaveGroupRequest":
         return cls(grp_id=grp_id)
 
 
@@ -152,19 +154,11 @@ class PBHandleGroupRequest(ProtoStruct):
 
     @classmethod
     def build(
-            cls,
-            action: int,
-            seq: int,
-            event_type: int,
-            grp_id: int,
-            message: str
+        cls, action: int, seq: int, event_type: int, grp_id: int, message: str
     ) -> "PBHandleGroupRequest":
         return cls(
             action=action,
             body=HandleGrpReqBody(
-                seq=seq,
-                event_type=event_type,
-                grp_id=grp_id,
-                message=message
-            )
+                seq=seq, event_type=event_type, grp_id=grp_id, message=message
+            ),
         )

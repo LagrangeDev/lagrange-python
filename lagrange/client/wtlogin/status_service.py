@@ -1,7 +1,7 @@
-from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.info import AppInfo, DeviceInfo
-from lagrange.utils.log import logger
 from lagrange.pb.wtlogin.register import PBRegisterRequest, PBRegisterResponse
+from lagrange.utils.binary.protobuf import proto_encode
+from lagrange.utils.log import logger
 
 
 # trpc.qq_new_tech.status_svc.StatusService.Register
