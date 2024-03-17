@@ -1,4 +1,4 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
 class DataHighwayHead(ProtoStruct):
@@ -51,4 +51,3 @@ class HighwayTransRespHead(ProtoStruct):
     timestamp: int = ProtoField(8, None)
     range: int = ProtoField(9, None)
     is_reset: int = ProtoField(10, None)
-

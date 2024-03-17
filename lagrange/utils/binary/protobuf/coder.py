@@ -1,12 +1,20 @@
-from typing import Union, List, Dict
-from typing_extensions import TypeAlias, Self
+from typing import Dict, List, Union
+
+from typing_extensions import Self, TypeAlias
 
 from lagrange.utils.binary.builder import Builder
 from lagrange.utils.binary.reader import Reader
 
 Proto: TypeAlias = Dict[int, "ProtoEncodable"]
 LengthDelimited: TypeAlias = Union[str, "Proto", bytes]
-ProtoEncodable: TypeAlias = Union[int, float, bool, LengthDelimited, List["ProtoEncodable"], Dict[int, "ProtoEncodable"]]
+ProtoEncodable: TypeAlias = Union[
+    int,
+    float,
+    bool,
+    LengthDelimited,
+    List["ProtoEncodable"],
+    Dict[int, "ProtoEncodable"],
+]
 
 
 class ProtoBuilder(Builder):
@@ -21,7 +29,7 @@ class ProtoBuilder(Builder):
                 length += 1
 
             buffer[length] = v
-            self.write_bytes(buffer[:length+1])
+            self.write_bytes(buffer[: length + 1])
         else:
             self.write_u8(v)
 

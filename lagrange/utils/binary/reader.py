@@ -1,5 +1,5 @@
 import struct
-from typing import Union, Tuple, Any, Literal, Dict
+from typing import Any, Dict, Literal, Tuple, Union
 
 from typing_extensions import NewType
 
@@ -26,28 +26,28 @@ class Reader:
         return v
 
     def read_u16(self) -> int:
-        v = self._buffer[self._pos:self._pos+2]
+        v = self._buffer[self._pos : self._pos + 2]
         self._pos += 2
         return struct.unpack(">H", v)[0]
 
     def read_u32(self) -> int:
-        v = self._buffer[self._pos:self._pos+4]
+        v = self._buffer[self._pos : self._pos + 4]
         self._pos += 4
         return struct.unpack(">I", v)[0]
 
     def read_u64(self) -> int:
-        v = self._buffer[self._pos:self._pos+8]
+        v = self._buffer[self._pos : self._pos + 8]
         self._pos += 8
         return struct.unpack(">Q", v)[0]
 
     def read_struct(self, format: str) -> Tuple[Any, ...]:
         size = struct.calcsize(format)
-        v = self._buffer[self._pos:self._pos+size]
+        v = self._buffer[self._pos : self._pos + size]
         self._pos += size
         return struct.unpack(format, v)
 
     def read_bytes(self, length: int) -> bytes:
-        v = self._buffer[self._pos:self._pos+length]
+        v = self._buffer[self._pos : self._pos + length]
         self._pos += length
         return v
 
@@ -73,7 +73,7 @@ class Reader:
                 length = self.read_u32()
             else:
                 length = self.read_u64()
-        v = self._buffer[self._pos:self._pos+length]
+        v = self._buffer[self._pos : self._pos + length]
         self._pos += length
         return v
 

@@ -1,5 +1,5 @@
-from .ecdh import ECDHProvider
 from .curve import CURVE
+from .ecdh import ECDHProvider
 
 ECDH_PRIME_PUBLIC = bytes.fromhex(
     "04"
@@ -47,9 +47,6 @@ class ECDHSecp(BaseECDH):  # login and others
         self._compress_key = True
 
 
-ecdh = {
-    "secp192k1": ECDHSecp(),
-    "prime256v1": ECDHPrime()
-}
+ecdh = {"secp192k1": ECDHSecp(), "prime256v1": ECDHPrime()}
 
 __all__ = ["ecdh"]

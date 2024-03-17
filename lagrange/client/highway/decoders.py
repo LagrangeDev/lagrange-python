@@ -1,10 +1,10 @@
-from typing import List, Tuple, Sequence
+from typing import List, Sequence, Tuple
+
+from .models import ImageUploadResponse, UploadResponse
+from .utils import itoa
 
 # from cai.pb.im.cs.cmd0x388 import RspBody, GetPttUrlRsp
 # from cai.pb.highway.ptt_center import RspBody as VideoUpRsp
-
-from .utils import itoa
-from .models import UploadResponse, ImageUploadResponse
 
 
 # def decode_upload_image_resp(data: bytes) -> ImageUploadResponse:
@@ -36,7 +36,9 @@ from .models import UploadResponse, ImageUploadResponse
 #     )
 
 
-def parse_addr(ip_list: Sequence[int], port_list: Sequence[int]) -> List[Tuple[str, int]]:
+def parse_addr(
+    ip_list: Sequence[int], port_list: Sequence[int]
+) -> List[Tuple[str, int]]:
     return [(itoa(a), p) for a, p in zip(ip_list, port_list)]
 
 

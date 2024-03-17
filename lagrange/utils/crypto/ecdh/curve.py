@@ -2,7 +2,17 @@ from .point import EllipticPoint
 
 
 class EllipticCurve:
-    def __init__(self, P: int, A: int, B: int, G: EllipticPoint, N: int, H: int, size: int, pack_size: int):
+    def __init__(
+        self,
+        P: int,
+        A: int,
+        B: int,
+        G: EllipticPoint,
+        N: int,
+        H: int,
+        size: int,
+        pack_size: int,
+    ):
         self._P = P
         self._A = A
         self._B = B
@@ -41,30 +51,36 @@ class EllipticCurve:
         return self._pack_size
 
     def check_on(self, point: EllipticPoint) -> bool:
-        return (pow(point.y, 2) - pow(point.x, 3) - self._A * point.x - self._B) % self._P == 0
+        return (
+            pow(point.y, 2) - pow(point.x, 3) - self._A * point.x - self._B
+        ) % self._P == 0
 
 
 CURVE = {
     "secp192k1": EllipticCurve(
-        0xfffffffffffffffffffffffffffffffffffffffeffffee37,
+        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFEE37,
         0,
         3,
-        EllipticPoint(0xdb4ff10ec057e9ae26b07d0280b7f4341da5d1b1eae06c7d,
-                      0x9b2f2f6d9c5628a7844163d015be86344082aa88d95e2f9d),
-        0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d,
+        EllipticPoint(
+            0xDB4FF10EC057E9AE26B07D0280B7F4341DA5D1B1EAE06C7D,
+            0x9B2F2F6D9C5628A7844163D015BE86344082AA88D95E2F9D,
+        ),
+        0xFFFFFFFFFFFFFFFFFFFFFFFE26F2FC170F69466A74DEFD8D,
         1,
         24,
-        24
+        24,
     ),
     "prime256v1": EllipticCurve(
-        0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff,
-        0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc,
-        0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b,
-        EllipticPoint(0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296,
-                      0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5),
-        0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551,
+        0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF,
+        0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC,
+        0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B,
+        EllipticPoint(
+            0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296,
+            0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5,
+        ),
+        0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551,
         1,
         32,
-        16
-    )
+        16,
+    ),
 }

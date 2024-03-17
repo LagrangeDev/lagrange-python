@@ -1,4 +1,5 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+
 from .rich_text import RichText
 
 

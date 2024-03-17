@@ -58,18 +58,13 @@ def sign_provider(upstream_url: str):
         if cmd not in SIGN_PKG_LIST:
             return
 
-        params = {
-            "cmd": cmd,
-            "seq": seq,
-            "src": buf.hex()
-        }
+        params = {"cmd": cmd, "seq": seq, "src": buf.hex()}
 
         start_time = time.time()
-        ret = await HttpCat.request(
-            "GET",
-            upstream_url + _pack_params(params)
+        ret = await HttpCat.request("GET", upstream_url + _pack_params(params))
+        _logger.debug(
+            f"signed for [{cmd}:{seq}]({round((time.time() - start_time) * 1000, 2)}ms)"
         )
-        _logger.debug(f"signed for [{cmd}:{seq}]({round((time.time() - start_time) * 1000, 2)}ms)")
         if ret.code != 200:
             raise ConnectionError(ret.code, ret.body)
 

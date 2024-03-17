@@ -1,21 +1,21 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
-from .elems import (
-    Ptt,
-    Text,
-    Face,
-    OnlineImage,
-    NotOnlineImage,
-    TransElem,
-    MarketFace,
-    CustomFace,
-    RichMsg,
-    ExtraInfo,
-    SrcMsg,
-    MiniApp,
-    OpenData,
-    CommonElem
-)
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
+from .elems import (
+    CommonElem,
+    CustomFace,
+    ExtraInfo,
+    Face,
+    MarketFace,
+    MiniApp,
+    NotOnlineImage,
+    OnlineImage,
+    OpenData,
+    Ptt,
+    RichMsg,
+    SrcMsg,
+    Text,
+    TransElem,
+)
 
 __all__ = ["Elems", "RichText"]
 
@@ -31,7 +31,7 @@ class Elems(ProtoStruct, debug=True):
     elem_flags2: bytes = ProtoField(9, None)
     rich_msg: RichMsg = ProtoField(12, None)
     extra_info: ExtraInfo = ProtoField(16, None)
-    #video_file: VideoFile = ProtoField(19, None)
+    # video_file: VideoFile = ProtoField(19, None)
     general_flags: bytes = ProtoField(37, None)
     open_data: OpenData = ProtoField(41, None)
     src_msg: SrcMsg = ProtoField(45, None)

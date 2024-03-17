@@ -1,10 +1,11 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
 class SendNudge(ProtoStruct):
     """
     retcode == 1005: no permission
     """
+
     to_dst1: int = ProtoField(1)
     to_grp: int = ProtoField(2)
     to_uin: int = ProtoField(5)

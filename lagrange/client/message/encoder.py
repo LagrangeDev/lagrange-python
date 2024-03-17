@@ -4,30 +4,31 @@ from typing import List, Optional
 
 from lagrange.pb.message.rich_text import Elems, RichText
 from lagrange.pb.message.rich_text.elems import (
-    Text as PBText,
-    Face,
-    MiniApp,
-    RichMsg,
-    SrcMsg,
     CustomFace,
     CustomFaceArgs,
+    Face,
+    MiniApp,
     OpenData,
-    Ptt
+    Ptt,
+    RichMsg,
+    SrcMsg,
 )
-from .types import T
+from lagrange.pb.message.rich_text.elems import Text as PBText
+
 from .elems import (
     At,
     AtAll,
-    Image,
-    Service,
-    Reaction,
-    Json,
-    Text,
-    Emoji,
     Audio,
+    Emoji,
+    Image,
+    Json,
+    Quote,
     Raw,
-    Quote
+    Reaction,
+    Service,
+    Text,
 )
+from .types import T
 
 
 def build_message(msg_chain: List[T], compatible=True) -> RichText:
@@ -38,78 +39,87 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
     if not isinstance(msg_chain[0], Audio):
         for msg in msg_chain:
             if isinstance(msg, AtAll):
-                msg_pb.append(Elems(
-                    text=PBText(
-                        string=msg.text,
-                        buf6=b"\x00\x01\x00\x00\x00\x05\x01\x00\x00\x00\x00\x00\x00"
+                msg_pb.append(
+                    Elems(
+                        text=PBText(
+                            string=msg.text,
+                            buf6=b"\x00\x01\x00\x00\x00\x05\x01\x00\x00\x00\x00\x00\x00",
+                        )
                     )
-                ))
+                )
             elif isinstance(msg, At):
-                msg_pb.append(Elems(
-                    text=PBText(
-                        string=msg.text,
-                        buf6=struct.pack("!xb3xbbI2x", 1, len(msg.text), 0, msg.uin),
-                        pb_reserved={3: 2, 4: 0, 5: 0, 9: msg.uid, 11: 0}
+                msg_pb.append(
+                    Elems(
+                        text=PBText(
+                            string=msg.text,
+                            buf6=struct.pack(
+                                "!xb3xbbI2x", 1, len(msg.text), 0, msg.uin
+                            ),
+                            pb_reserved={3: 2, 4: 0, 5: 0, 9: msg.uid, 11: 0},
+                        )
                     )
-                ))
+                )
             elif isinstance(msg, Quote):
-                msg_pb.append(Elems(
-                    src_msg=SrcMsg(
-                        seq=msg.seq,
-                        uin=msg.uin,
-                        timestamp=msg.timestamp,
-                        elems=[{1: {1: msg.msg}}],
-                        pb_reserved={6: msg.uid} if msg.uid else {}
+                msg_pb.append(
+                    Elems(
+                        src_msg=SrcMsg(
+                            seq=msg.seq,
+                            uin=msg.uin,
+                            timestamp=msg.timestamp,
+                            elems=[{1: {1: msg.msg}}],
+                            pb_reserved={6: msg.uid} if msg.uid else {},
+                        )
                     )
-                ))
+                )
                 if compatible:
                     text = f"@{msg.uin}"
-                    msg_pb.append(Elems(
-                        text=PBText(
-                            string=text,
-                            buf6=struct.pack("!xb3xbbI2x", 1, len(text), 0, msg.uin),
-                            pb_reserved={3: 2, 4: 0, 5: 0, 9: msg.uid, 11: 0}
+                    msg_pb.append(
+                        Elems(
+                            text=PBText(
+                                string=text,
+                                buf6=struct.pack(
+                                    "!xb3xbbI2x", 1, len(text), 0, msg.uin
+                                ),
+                                pb_reserved={3: 2, 4: 0, 5: 0, 9: msg.uid, 11: 0},
+                            )
                         )
-                    ))
+                    )
             elif isinstance(msg, Emoji):
-                msg_pb.append(Elems(
-                    face=Face(index=msg.id)
-                ))
+                msg_pb.append(Elems(face=Face(index=msg.id)))
             elif isinstance(msg, Json):
-                msg_pb.append(Elems(
-                    mini_app=MiniApp(
-                        template=b"\x01" + zlib.compress(msg.raw)
-                    )
-                ))
+                msg_pb.append(
+                    Elems(mini_app=MiniApp(template=b"\x01" + zlib.compress(msg.raw)))
+                )
             elif isinstance(msg, Image):
-                msg_pb.append(Elems(
-                    custom_face=CustomFace(
-                        file_path=msg.name,
-                        fileid=msg.id,
-                        file_type=4294967273,
-                        md5=msg.md5,
-                        original_url=msg.url[21:],
-                        image_type=1001,
-                        width=msg.width,
-                        height=msg.height,
-                        size=msg.size,
-                        args=CustomFaceArgs(
-                            is_emoji=msg.is_emoji,
-                            display_name="[动画表情]" if msg.is_emoji else "[图片]"
+                msg_pb.append(
+                    Elems(
+                        custom_face=CustomFace(
+                            file_path=msg.name,
+                            fileid=msg.id,
+                            file_type=4294967273,
+                            md5=msg.md5,
+                            original_url=msg.url[21:],
+                            image_type=1001,
+                            width=msg.width,
+                            height=msg.height,
+                            size=msg.size,
+                            args=CustomFaceArgs(
+                                is_emoji=msg.is_emoji,
+                                display_name="[动画表情]" if msg.is_emoji else "[图片]",
+                            ),
                         )
                     )
-                ))
+                )
             elif isinstance(msg, Service):
-                msg_pb.append(Elems(
-                    rich_msg=RichMsg(
-                        template=b"\x01" + zlib.compress(msg.raw),
-                        service_id=msg.id
+                msg_pb.append(
+                    Elems(
+                        rich_msg=RichMsg(
+                            template=b"\x01" + zlib.compress(msg.raw), service_id=msg.id
+                        )
                     )
-                ))
+                )
             elif isinstance(msg, Raw):
-                msg_pb.append(Elems(
-                    open_data=OpenData(msg.data)
-                ))
+                msg_pb.append(Elems(open_data=OpenData(msg.data)))
             elif isinstance(msg, Reaction):
                 pass
                 # if msg.show_type == 33:  # sm size
@@ -148,9 +158,6 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
             size=audio.size,
             file_id=audio.id,
             group_file_key=audio.file_key,
-            time=audio.time
+            time=audio.time,
         )
-    return RichText(
-        content=msg_pb,
-        ptt=msg_ptt
-    )
+    return RichText(content=msg_pb, ptt=msg_ptt)

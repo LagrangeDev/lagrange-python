@@ -1,5 +1,5 @@
 import struct
-from typing import Tuple, BinaryIO
+from typing import BinaryIO, Tuple
 
 from lagrange.pb.highway.head import HighwayTransRespHead
 
@@ -23,9 +23,7 @@ def read_frame(
     hl, bl = struct.unpack("!II", head[1:])
     try:
         return (
-            HighwayTransRespHead.decode(
-                reader.read(hl)
-            ),
+            HighwayTransRespHead.decode(reader.read(hl)),
             reader.read(bl),
         )
     finally:

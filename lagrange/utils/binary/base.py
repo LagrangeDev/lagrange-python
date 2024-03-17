@@ -1,5 +1,5 @@
 import struct
-from typing import TypeVar, Union, Type, Tuple, Any
+from typing import Any, Tuple, Type, TypeVar, Union
 
 from lagrange.utils.binary.types import *
 

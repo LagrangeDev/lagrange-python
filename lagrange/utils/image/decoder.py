@@ -1,7 +1,7 @@
-import struct
 import binascii
-from typing import BinaryIO
+import struct
 from dataclasses import dataclass
+from typing import BinaryIO
 
 from .enum import ImageType
 
@@ -33,9 +33,7 @@ class JPEGDecoder(BaseDecoder):
             if fio.read(1) != b"\xff":
                 raise ValueError("decoder fail")
             btype = fio.read(1)
-            data = fio.read(
-                int.from_bytes(fio.read(2), "big") - 2
-            )
+            data = fio.read(int.from_bytes(fio.read(2), "big") - 2)
             if btype[0] in (192, 193, 194):  # C0-C2
                 depth, height, width, _ = struct.unpack("!BHHB", data[:6])
                 return ImageInfo("jpg", width, height, depth)
@@ -54,7 +52,9 @@ class PNGDecoder(BaseDecoder):
                 raise ValueError("decoder fail")
             length, btype = struct.unpack("!I4s", raw_head)
             data = fio.read(length)
-            if binascii.crc32(raw_head[4:] + data) != int.from_bytes(fio.read(4), "big"):
+            if binascii.crc32(raw_head[4:] + data) != int.from_bytes(
+                fio.read(4), "big"
+            ):
                 raise ValueError("CRC not match")
             elif btype == b"IHDR":
                 width, height, depth, *_ = struct.unpack("!IIBBBBB", data)

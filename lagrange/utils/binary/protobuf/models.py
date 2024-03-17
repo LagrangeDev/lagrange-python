@@ -1,12 +1,13 @@
 import inspect
 from types import GenericAlias
-from typing import TypeVar, Tuple, Type, Dict, List, Union
-from typing_extensions import Self, TypeAlias, Optional, dataclass_transform
+from typing import Dict, List, Tuple, Type, TypeVar, Union
 
-from .coder import proto_encode, proto_decode
+from typing_extensions import Optional, Self, TypeAlias, dataclass_transform
 
-T = TypeVar('T', str, list, dict, bytes, int, float, bool, "ProtoStruct")
-V = TypeVar('V')
+from .coder import proto_decode, proto_encode
+
+T = TypeVar("T", str, list, dict, bytes, int, float, bool, "ProtoStruct")
+V = TypeVar("V")
 NT: TypeAlias = Dict[int, Union[T, "NT"]]
 
 
@@ -55,7 +56,9 @@ class ProtoStruct:
         setattr(self, name, value)
 
     @classmethod
-    def _get_annotations(cls) -> Dict[str, Tuple[Type[T], "ProtoField"]]:  # Name: (ReturnType, ProtoField)
+    def _get_annotations(
+        cls,
+    ) -> Dict[str, Tuple[Type[T], "ProtoField"]]:  # Name: (ReturnType, ProtoField)
         annotations: Dict[str, Tuple[Type[T], "ProtoField"]] = {}
         for obj in reversed(inspect.getmro(cls)):
             if obj in (ProtoStruct, object):  # base object, ignore
@@ -151,13 +154,8 @@ class ProtoStruct:
                     kwargs[name] = field.get_default()
                     continue
 
-                raise KeyError(
-                    f"tag {tag} not found in '{cls.__name__}'"
-                )
-            kwargs[name] = cls._decode(
-                typ,
-                pb_dict.pop(tag)
-            )
+                raise KeyError(f"tag {tag} not found in '{cls.__name__}'")
+            kwargs[name] = cls._decode(typ, pb_dict.pop(tag))
         if pb_dict and cls._proto_debug:  # unhandled tags
             print(f"unhandled tags on '{cls.__name__}': {pb_dict}")
 

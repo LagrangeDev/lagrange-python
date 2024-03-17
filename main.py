@@ -1,14 +1,15 @@
-import os
-import logging
 import asyncio
-from lagrange.utils.sign import sign_provider
+import logging
+import os
+
 from lagrange.client.client import Client
+from lagrange.client.events.group import GroupMessage
+from lagrange.client.events.service import ServerKick
+from lagrange.client.message.elems import At, Raw, Text
 from lagrange.info.app import app_list
 from lagrange.info.device import DeviceInfo
 from lagrange.info.sig import SigInfo
-from lagrange.client.events.service import ServerKick
-from lagrange.client.events.group import GroupMessage
-from lagrange.client.message.elems import Text, At, Raw
+from lagrange.utils.sign import sign_provider
 
 DEVICE_INFO_PATH = "./device.json"
 SIGINFO_PATH = "./sig.bin"
@@ -62,8 +63,7 @@ class InfoManager:
 
 
 logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s %(name)s[%(levelname)s]: %(message)s"
+    level=logging.DEBUG, format="%(asctime)s %(name)s[%(levelname)s]: %(message)s"
 )
 
 
@@ -81,9 +81,14 @@ async def msg_handler(client: Client, event: GroupMessage):
         await asyncio.sleep(5)
         await client.recall_grp_msg(event.grp_id, p)
     elif event.msg.startswith("imgs"):
-        await client.send_grp_msg([
-            await client.upload_grp_image(open("98416427_p0.jpg", "rb"), event.grp_id)
-        ], event.grp_id)
+        await client.send_grp_msg(
+            [
+                await client.upload_grp_image(
+                    open("98416427_p0.jpg", "rb"), event.grp_id
+                )
+            ],
+            event.grp_id,
+        )
     print(f"{event.nickname}({event.grp_name}): {event.msg}")
 
 
@@ -104,7 +109,7 @@ async def main():
             app,
             im.device,
             im.sig_info,
-            sign_provider(sign_url) if sign_url else None
+            sign_provider(sign_url) if sign_url else None,
         )
         client.events.subscribe(GroupMessage, msg_handler)
         client.events.subscribe(ServerKick, handle_kick)
@@ -119,5 +124,5 @@ async def main():
         await client.wait_closed()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

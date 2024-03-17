@@ -31,7 +31,6 @@ app_list = {
         os="Linux",
         kernel="Linux",
         vendor_os="linux",
-
         current_version="3.1.2-13107",
         build_version=13107,
         misc_bitmap=32764,
@@ -44,16 +43,14 @@ app_list = {
         sub_app_id=537146866,
         app_id_qrcode=13697054,
         app_client_version=13172,
-
         main_sigmap=169742560,
         sub_sigmap=0,
-        nt_login_type=1
+        nt_login_type=1,
     ),
     "macos": AppInfo(
         os="Mac",
         kernel="Darwin",
         vendor_os="mac",
-
         current_version="6.9.20-17153",
         build_version=17153,
         misc_bitmap=32764,
@@ -66,9 +63,8 @@ app_list = {
         sub_app_id=537162356,
         app_id_qrcode=537162356,
         app_client_version=13172,
-
         main_sigmap=169742560,
         sub_sigmap=0,
-        nt_login_type=5
-    )
+        nt_login_type=5,
+    ),
 }

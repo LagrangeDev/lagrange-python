@@ -1,12 +1,12 @@
 import asyncio
-from typing import Dict, Callable, TypeVar, Type, Coroutine, TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Callable, Coroutine, Dict, List, Type, TypeVar
 
 from lagrange.utils.log import logger
 
 if TYPE_CHECKING:
     from .client import Client
 
-T = TypeVar('T')
+T = TypeVar("T")
 EVENT_HANDLER = Callable[["Client", T], Coroutine[None, None, None]]
 
 
@@ -19,7 +19,9 @@ class Events:
         if event not in self._handle_map:
             self._handle_map[event] = handler
         else:
-            raise AssertionError("Event already subscribed to {}".format(self._handle_map[event]))
+            raise AssertionError(
+                "Event already subscribed to {}".format(self._handle_map[event])
+            )
 
     def unsubscribe(self, event: Type[T]):
         return self._handle_map.pop(event)
@@ -36,8 +38,8 @@ class Events:
             logger.root.debug(f"Unhandled event: {event}")
             return
 
-        t = asyncio.create_task(
-            self._task_exec(client, event, self._handle_map[typ])
-        )
+        t = asyncio.create_task(self._task_exec(client, event, self._handle_map[typ]))
         self._task_group.append(t)
-        t.add_done_callback(lambda _: self._task_group.remove(typ) if typ in self._task_group else None)
+        t.add_done_callback(
+            lambda _: self._task_group.remove(typ) if typ in self._task_group else None
+        )

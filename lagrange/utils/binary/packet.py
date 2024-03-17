@@ -1,5 +1,5 @@
 import struct
-from typing import Callable, Any, List
+from typing import Any, Callable, List
 
 from lagrange.utils.binary.base import BasePacket
 from lagrange.utils.binary.types import *
@@ -104,7 +104,8 @@ class Packet(BasePacket):
 
     def bytes_with_length(self, head_bytes: int, offset: int = 0):
         length = int.from_bytes(
-            self.read_bytes(head_bytes, self._get_position()), "big",
+            self.read_bytes(head_bytes, self._get_position()),
+            "big",
         )
         self._query += f"{head_bytes}x{length - offset}s"
         self._add_filter(BYTES)
@@ -112,7 +113,8 @@ class Packet(BasePacket):
 
     def string(self, head_bytes: int, offset: int = 0, encoding: str = "utf-8"):
         length = int.from_bytes(
-            self.read_bytes(head_bytes, self._get_position()), "big",
+            self.read_bytes(head_bytes, self._get_position()),
+            "big",
         )
         self._query += f"{head_bytes}x{length - offset}s"
         self._add_filter(lambda x: STRING(x.decode(encoding)))

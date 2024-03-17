@@ -2,7 +2,7 @@
 Push Events
 """
 
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
 class MemberChanged(ProtoStruct):
@@ -15,6 +15,7 @@ class MemberChanged(ProtoStruct):
 
 class MemberJoinRequest(ProtoStruct):
     """JoinType: Direct(scan qrcode or search grp_id)"""
+
     grp_id: int = ProtoField(1)
     uid: str = ProtoField(3)
     src: int = ProtoField(4)
@@ -34,6 +35,7 @@ class InviteInfo(ProtoStruct):
 
 class MemberInviteRequest(ProtoStruct):
     """JoinType: From Friends(share link or others)"""
+
     cmd: int = ProtoField(1)
     info: InviteInfo = ProtoField(2)
 

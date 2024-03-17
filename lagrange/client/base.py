@@ -1,21 +1,32 @@
 import asyncio
 import hashlib
 import time
-from typing import Optional, Tuple, Union, overload, Coroutine, Callable, Dict
+from typing import Callable, Coroutine, Dict, Optional, Tuple, Union, overload
+
 from typing_extensions import Literal
 
-from lagrange.utils.log import logger
-from lagrange.utils.binary.reader import Reader
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
-from .wtlogin.oicq import build_code2d_packet, build_uni_packet, build_login_packet, decode_login_response
-from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
-from .wtlogin.exchange import build_key_exchange_request, parse_key_exchange_response
-from .wtlogin.enum import QrCodeResult, LoginErrorCode
-from .wtlogin.sso import SSOPacket
-from .wtlogin.status_service import build_register_request, build_sso_heartbeat_request, parse_register_response
-from .packet import PacketBuilder
+from lagrange.utils.binary.reader import Reader
+from lagrange.utils.log import logger
+
 from .network import ClientNetwork
 from .ntlogin import build_ntlogin_request, parse_ntlogin_response
+from .packet import PacketBuilder
+from .wtlogin.enum import LoginErrorCode, QrCodeResult
+from .wtlogin.exchange import build_key_exchange_request, parse_key_exchange_response
+from .wtlogin.oicq import (
+    build_code2d_packet,
+    build_login_packet,
+    build_uni_packet,
+    decode_login_response,
+)
+from .wtlogin.sso import SSOPacket
+from .wtlogin.status_service import (
+    build_register_request,
+    build_sso_heartbeat_request,
+    parse_register_response,
+)
+from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 
 
 class BaseClient:
@@ -25,12 +36,12 @@ class BaseClient:
     """
 
     def __init__(
-            self,
-            uin: int,
-            app_info: AppInfo,
-            device_info: DeviceInfo,
-            sig_info: Optional[SigInfo] = None,
-            sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None
+        self,
+        uin: int,
+        app_info: AppInfo,
+        device_info: DeviceInfo,
+        sig_info: Optional[SigInfo] = None,
+        sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
     ):
         if uin and not sig_info.uin:
             sig_info.uin = uin
@@ -44,9 +55,11 @@ class BaseClient:
         self._server_push_queue: asyncio.Queue[SSOPacket] = asyncio.Queue()
         self._tasks: Dict[str, Optional[asyncio.Task]] = {
             "loop": None,
-            "push_handle": None
+            "push_handle": None,
         }
-        self._network = ClientNetwork(sig_info, self._server_push_queue, self.register, self._disconnect_cb)
+        self._network = ClientNetwork(
+            sig_info, self._server_push_queue, self.register, self._disconnect_cb
+        )
         self._sign_provider = sign_provider
 
         self._t106 = bytes()
@@ -122,11 +135,15 @@ class BaseClient:
         ...
 
     @overload
-    async def send_uni_packet(self, cmd: str, buf: bytes, send_only: Literal[False]) -> SSOPacket:
+    async def send_uni_packet(
+        self, cmd: str, buf: bytes, send_only: Literal[False]
+    ) -> SSOPacket:
         ...
 
     @overload
-    async def send_uni_packet(self, cmd: str, buf: bytes, send_only: Literal[True]) -> None:
+    async def send_uni_packet(
+        self, cmd: str, buf: bytes, send_only: Literal[True]
+    ) -> None:
         ...
 
     async def send_uni_packet(self, cmd, buf, send_only=False):
@@ -142,7 +159,7 @@ class BaseClient:
             app_info=self.app_info,
             device_info=self.device_info,
             sig_info=self._sig,
-            body=buf
+            body=buf,
         )
 
         return await self._network.send(packet, wait_seq=-1 if send_only else seq)
@@ -160,23 +177,19 @@ class BaseClient:
                     self.app_info.sub_app_id,
                     bytes.fromhex(self.device_info.guid),
                     self.app_info.pt_version,
-                    self.app_info.package_name
+                    self.app_info.package_name,
                 ),
                 tlv.t1b(),
                 tlv.t1d(self.app_info.misc_bitmap),
                 tlv.t33(bytes.fromhex(self.device_info.guid)),
                 tlv.t35(self.app_info.pt_os_version),
                 tlv.t66(self.app_info.pt_os_version),
-                tlv.td1(self.app_info.os, self.device_info.device_name)
-            ).write_u8(3)
+                tlv.td1(self.app_info.os, self.device_info.device_name),
+            )
+            .write_u8(3)
         ).pack()
 
-        packet = build_code2d_packet(
-            self.uin,
-            0x31,
-            self._app_info,
-            body
-        )
+        packet = build_code2d_packet(self.uin, 0x31, self._app_info, body)
 
         response = await self.send_uni_packet("wtlogin.trans_emp", packet)
 
@@ -207,12 +220,7 @@ class BaseClient:
 
         response = await self.send_uni_packet(
             "wtlogin.trans_emp",
-            build_code2d_packet(
-                0,  # self.uin
-                0x12,
-                self.app_info,
-                body
-            )
+            build_code2d_packet(0, 0x12, self.app_info, body),  # self.uin
         )
 
         reader = Reader(response.data)
@@ -230,17 +238,14 @@ class BaseClient:
             t = reader.read_tlv()
             self._t106 = t[0x18]
             self._t16a = t[0x19]
-            self._sig.tgtgt = t[0x1e]
+            self._sig.tgtgt = t[0x1E]
 
         return ret_code
 
     async def _key_exchange(self):
         packet = await self.send_uni_packet(
             "trpc.login.ecdh.EcdhService.SsoKeyExchange",
-            build_key_exchange_request(
-                self.uin,
-                self.device_info.guid
-            )
+            build_key_exchange_request(self.uin, self.device_info.guid),
         )
         parse_key_exchange_response(packet.data, self._sig)
 
@@ -257,11 +262,18 @@ class BaseClient:
             self.uin,
             md5_passwd,
             self.device_info.guid,
-            self._sig.tgtgt
+            self._sig.tgtgt,
         )[4:]
         packet = await self.send_uni_packet(
             "trpc.login.ecdh.EcdhService.SsoNTLoginPasswordLogin",
-            build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, self._captcha_info, cr)
+            build_ntlogin_request(
+                self.uin,
+                self.app_info,
+                self.device_info,
+                self._sig,
+                self._captcha_info,
+                cr,
+            ),
         )
 
         return parse_ntlogin_response(packet.data, self._sig, self._captcha_info)
@@ -269,7 +281,14 @@ class BaseClient:
     async def token_login(self, token: bytes) -> LoginErrorCode:
         packet = await self.send_uni_packet(
             "trpc.login.ecdh.EcdhService.SsoNTLoginEasyLogin",
-            build_ntlogin_request(self.uin, self.app_info, self.device_info, self._sig, self._captcha_info, token)
+            build_ntlogin_request(
+                self.uin,
+                self.app_info,
+                self.device_info,
+                self._sig,
+                self._captcha_info,
+                token,
+            ),
         )
 
         return parse_ntlogin_response(packet.data, self._sig, self._captcha_info)
@@ -283,7 +302,9 @@ class BaseClient:
             await asyncio.sleep(refresh_interval)
             ret_last = await self.get_qrcode_result()
             if ret_code != ret_last:
-                logger.login.info(f"qrcode state changed: {ret_code.name}->{ret_last.name}")
+                logger.login.info(
+                    f"qrcode state changed: {ret_code.name}->{ret_last.name}"
+                )
                 ret_code = ret_last
             if not ret_code.waitable:
                 if not ret_code.success:
@@ -303,26 +324,21 @@ class BaseClient:
                 tlv.t116(app.sub_sigmap),
                 tlv.t142(app.package_name),
                 tlv.t145(bytes.fromhex(device.guid)),
-                tlv.t18(
-                    0,
-                    app.app_client_version,
-                    self.uin
-                ),
+                tlv.t18(0, app.app_client_version, self.uin),
                 tlv.t141(b"Unknown"),
                 tlv.t177(app.wtlogin_sdk),
                 tlv.t191(),
                 tlv.t100(5, app.app_id, app.sub_app_id, 8001, app.main_sigmap),
                 tlv.t107(),
                 tlv.t318(),
-                PacketBuilder().write_bytes(self._t16a).pack(0x16a),
+                PacketBuilder().write_bytes(self._t16a).pack(0x16A),
                 tlv.t166(5),
                 tlv.t521(),
             )
         ).pack()
 
         response = await self.send_uni_packet(
-            "wtlogin.login",
-            build_login_packet(self.uin, "wtlogin.login", app, body)
+            "wtlogin.login", build_login_packet(self.uin, "wtlogin.login", app, body)
         )
 
         return decode_login_response(response.data, self._sig)
@@ -330,7 +346,7 @@ class BaseClient:
     async def register(self) -> bool:
         response = await self.send_uni_packet(
             "trpc.qq_new_tech.status_svc.StatusService.Register",
-            build_register_request(self.app_info, self.device_info)
+            build_register_request(self.app_info, self.device_info),
         )
         if parse_register_response(response.data):
             self._online.set()
@@ -343,7 +359,7 @@ class BaseClient:
         start_time = time.time()
         await self.send_uni_packet(
             "trpc.qq_new_tech.status_svc.StatusService.SsoHeartBeat",
-            build_sso_heartbeat_request()
+            build_sso_heartbeat_request(),
         )
         if calc_latency:
             return time.time() - start_time

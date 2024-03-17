@@ -1,4 +1,5 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+
 from .heads import ContentHead, ResponseHead
 from .msg import Message
 

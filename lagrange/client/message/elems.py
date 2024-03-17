@@ -49,7 +49,7 @@ class Quote(Text):
             uid=ev.uid,
             uin=ev.uin,
             timestamp=ev.time,
-            msg=ev.msg
+            msg=ev.msg,
         )
 
 
@@ -78,11 +78,7 @@ class At(Text):
 
     @classmethod
     def build(cls, ev: GroupMessage) -> "At":
-        return cls(
-            uin=ev.uin,
-            uid=ev.uid,
-            text=f"@{ev.nickname or ev.uin}"
-        )
+        return cls(uin=ev.uin, uid=ev.uid, text=f"@{ev.nickname or ev.uin}")
 
 
 @dataclass
@@ -119,5 +115,6 @@ class Emoji(BaseElem):
 @dataclass
 class Reaction(Emoji):
     """QQ: super emoji"""
+
     text: str
     show_type: int  # size - sm: 33, bg: 37
