@@ -13,7 +13,9 @@ class PushDeliver:
         ] = {}
 
     def subscribe(self, cmd: str):
-        def _decorator(func: Callable[[SSOPacket], Coroutine[None, None, Any]]) -> Callable[[SSOPacket], Coroutine[None, None, Any]]:
+        def _decorator(
+            func: Callable[[SSOPacket], Coroutine[None, None, Any]]
+        ) -> Callable[[SSOPacket], Coroutine[None, None, Any]]:
             @functools.wraps(func)
             async def _wrapper(packet: SSOPacket):
                 return await func(packet)
