@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional
 
+from . import BaseEvent
+
 if TYPE_CHECKING:
     from lagrange.client.message.types import T
 
@@ -16,7 +18,7 @@ class MessageInfo:
 
 
 @dataclass
-class GroupEvent:
+class GroupEvent(BaseEvent):
     grp_id: int
 
 

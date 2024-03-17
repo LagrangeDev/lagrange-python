@@ -2,8 +2,7 @@
 ClientNetwork Implement
 """
 import asyncio
-from typing import Callable, Coroutine, Dict, overload
-
+from typing import Dict, Callable, Coroutine, Tuple, overload
 from typing_extensions import Literal
 
 from lagrange.info import SigInfo
@@ -14,19 +13,23 @@ from .wtlogin.sso import SSOPacket, parse_sso_frame, parse_sso_header
 
 
 class ClientNetwork(Connection):
-    default_upstream = ("msfwifi.3g.qq.com", 8080)
+    V4UPSTREAM = ("msfwifi.3g.qq.com", 8080)
+    V6UPSTREAM = ("msfwifiv6.3g.qq.com", 8080)
 
     def __init__(
-        self,
-        sig_info: SigInfo,
-        push_store: asyncio.Queue[SSOPacket],
-        reconnect_cb: Callable[[], Coroutine],
-        disconnect_cb: Callable[[], Coroutine],
-        host: str = "",
-        port: int = 0,
+            self,
+            sig_info: SigInfo,
+            push_store: asyncio.Queue[SSOPacket],
+            reconnect_cb: Callable[[], Coroutine],
+            disconnect_cb: Callable[[bool], Coroutine],
+            use_v6=False,
+            *,
+            manual_address: Tuple[str, int] = None
     ):
-        if not (host and port):
-            host, port = self.default_upstream
+        if not manual_address:
+            host, port = self.V6UPSTREAM if use_v6 else self.V4UPSTREAM
+        else:
+            host, port = manual_address
         super().__init__(host, port)
 
         self.conn_event = asyncio.Event()
@@ -63,7 +66,7 @@ class ClientNetwork(Connection):
 
     async def on_connected(self):
         self.conn_event.set()
-        host, port = self.writer.get_extra_info("peername")
+        host, port = self.writer.get_extra_info('peername')[:2]  # for v6 ip
         logger.network.info(f"Connected to {host}:{port}")
         if self._connected and not self._stop_flag:
             t = asyncio.create_task(self._reconnect_cb(), name="reconnect_cb")
@@ -73,10 +76,11 @@ class ClientNetwork(Connection):
     async def on_disconnect(self):
         self.conn_event.clear()
         logger.network.warning("Connection lost")
-        t = asyncio.create_task(self._disconnect_cb(), name="disconnect_cb")
+        t = asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
 
     async def on_error(self) -> bool:
         logger.network.exception("Connection got an unexpected error:")
+        t = asyncio.create_task(self._disconnect_cb(True), name="disconnect_cb")
         return True
 
     async def on_message(self, msg_len: int):

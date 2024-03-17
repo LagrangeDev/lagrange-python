@@ -87,7 +87,6 @@ class Connection:
                 else:
                     await self.close()
         except asyncio.CancelledError:
-            await self.on_error()
             await self.stop()
         except Exception as e:
             if not await self.on_error():
@@ -101,7 +100,7 @@ class Connection:
                 fail = False
             except (ConnectionError, socket.error) as e:
                 if fail:
-                    _logger.debug(f"connect retry fail: {repr(e)}]")
+                    _logger.debug(f"connect retry fail: {repr(e)}")
                 else:
                     _logger.error("Connect fail, retying...")
                     fail = True
