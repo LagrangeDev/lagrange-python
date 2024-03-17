@@ -71,7 +71,7 @@ async def msg_push_handler(sso: SSOPacket):
                 grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid
             )
     elif typ == 0x210:  # frd event
-        print(210, pkg)
+        logger.debug("unhandled friend event: %s" % pkg)
     elif typ == 0x2DC:  # grp event, 732
         if sub_typ == 20:  # nudget(grp_id only)
             return

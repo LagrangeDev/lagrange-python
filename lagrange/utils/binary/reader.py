@@ -1,7 +1,7 @@
 import struct
-from typing import Any, Dict, Literal, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
-from typing_extensions import NewType
+from typing_extensions import NewType, Literal
 
 LENGTH_PREFIX = Literal["u8", "u16", "u32", "u64"]
 BYTES_LIKE = NewType("BYTES_LIKE", Union[bytes, bytearray, memoryview])

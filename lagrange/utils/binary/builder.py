@@ -1,5 +1,5 @@
 import struct
-from typing import Literal, NewType, Union
+from typing import NewType, Union
 
 from typing_extensions import Optional, Self
 

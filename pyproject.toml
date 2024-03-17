@@ -1,17 +1,32 @@
 [project]
 name = "lagrange-python"
-version = "0.0.1"
+version = "0.0.2"
 description = "An Python Implementation of NTQQ PC Protocol"
 authors = [
     {name="linwenxuan05"},
     {name="wyapx"},
 ]
 dependencies = [
-    "typing-extensions",
-    "cryptography",
-    "ftea>=0.1.5"
+    "typing-extensions>=4.7.0",
+    "cryptography>=40.0.0",
 ]
-requires-python = ">=3.8"
+keywords = ["QQ", "Tencent", "NTQQ", "Framework", "Bot", "asyncio"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GNU Lesser General Public License v2.1 (LGPLv2.1)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+faster = ["ftea>=0.1.5"]
 
 [tool.pdm]
 distribution = true

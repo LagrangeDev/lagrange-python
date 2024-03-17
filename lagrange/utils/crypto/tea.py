@@ -1,6 +1,8 @@
 import struct
 from typing import Optional
 
+__all__ = ["qqtea_encrypt", "qqtea_decrypt"]
+
 
 def _xor(a, b):
     op = 0xFFFFFFFF

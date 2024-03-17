@@ -1,12 +1,5 @@
-# from cai.pb.im.cs.cmd0x388 import ReqBody, TryUpImgReq, TryUpPttReq, GetPttUrlReq
-# from cai.pb.highway.ptt_center import (
-#     PttShortVideoUploadReq,
-#     PttShortVideoFileInfo,
-#     ExtensionReq,
-#     ReqBody as VideoReqBody
-# )
 import os
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 from lagrange.pb.highway.comm import (
     AudioExtInfo,
@@ -31,43 +24,9 @@ from lagrange.pb.highway.req import (
     UploadInfo,
     UploadReq,
 )
-from lagrange.utils.binary.protobuf import proto_encode
 
 if TYPE_CHECKING:
     from lagrange.utils.image.decoder import ImageInfo
-
-
-def encode_req_body(
-    seq: int,
-    uin: int,
-    sub_id: int,
-    cmd_id: int,
-    cmd: str = "PicUp.DataUp",
-    ver: int = 1,
-) -> dict:
-    # return ReqBody(
-    #     net_type=3,
-    #     subcmd=subcmd,
-    #     tryup_img_req=tryup_img,
-    #     tryup_ptt_req=tryup_ptt,
-    #     getptt_url_req=getptt_url_req,
-    # )
-    return {1: ver, 2: str(uin), 3: cmd, 4: seq, 6: sub_id, 7: 16, 8: cmd_id}
-
-
-def encode_seg_head(
-    size: int,
-    offset: int,
-    length: int,
-    ticket: bytes,
-    file_md5: bytes,
-    chunk_md5: bytes,
-) -> dict:
-    return {2: size, 3: offset, 4: length, 6: ticket, 8: chunk_md5, 9: file_md5}
-
-
-def encode_login_head(tgt: bytes, app_id: int, sig_type: int = 8) -> dict:
-    return {1: sig_type, 2: tgt, 3: app_id}
 
 
 def encode_highway_head(

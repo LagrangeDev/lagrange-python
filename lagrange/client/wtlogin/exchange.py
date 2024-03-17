@@ -1,5 +1,4 @@
 import hashlib
-import time
 
 from lagrange.info import SigInfo
 from lagrange.utils.binary.builder import Builder
