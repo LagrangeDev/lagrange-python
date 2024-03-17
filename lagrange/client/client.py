@@ -32,6 +32,7 @@ from .message.decoder import parse_grp_msg
 from .wtlogin.sso import SSOPacket
 from .server_push import push_handler
 from .events.group import GroupMessage
+from .events.service import ClientOnline, ClientOffline
 from .highway import HighWaySession
 
 
@@ -42,9 +43,10 @@ class Client(BaseClient):
             app_info: AppInfo,
             device_info: DeviceInfo,
             sig_info: Optional[SigInfo] = None,
-            sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None
+            sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
+            use_ipv6=False
     ):
-        super().__init__(uin, app_info, device_info, sig_info, sign_provider)
+        super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
 
         self._events = Events()
         self._highway = HighWaySession(self, logger.fork("highway"))
@@ -52,6 +54,17 @@ class Client(BaseClient):
     @property
     def events(self) -> Events:
         return self._events
+
+    async def register(self) -> bool:
+        if await super().register():
+            self._events.emit(ClientOnline(), self)
+            return True
+        self._events.emit(ClientOffline(recoverable=False), self)
+        return False
+
+    async def _disconnect_cb(self, from_err: bool):
+        await super()._disconnect_cb(from_err)
+        self._events.emit(ClientOffline(recoverable=from_err), self)
 
     async def login(self, password="", qrcode_path="./qrcode.png") -> bool:
         try:
@@ -154,8 +167,8 @@ class Client(BaseClient):
             img.is_emoji = True
         return img
 
-    async def upload_grp_audio(self, voice: BinaryIO, grp_id: int) -> Audio:
-        return await self._highway.upload_voice(voice, gid=grp_id)
+    async def upload_grp_audio(self, voice: BinaryIO, grp_id: int, time_sec=0) -> Audio:
+        return await self._highway.upload_voice(voice, gid=grp_id, _time=time_sec)
 
     async def get_grp_msg(self, grp_id: int, start: int, end: int = 0, filter_deleted_msg=True) -> List[GroupMessage]:
         if not end:

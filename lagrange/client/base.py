@@ -30,7 +30,8 @@ class BaseClient:
             app_info: AppInfo,
             device_info: DeviceInfo,
             sig_info: Optional[SigInfo] = None,
-            sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None
+            sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
+            use_ipv6=False
     ):
         if uin and not sig_info.uin:
             sig_info.uin = uin
@@ -46,15 +47,25 @@ class BaseClient:
             "loop": None,
             "push_handle": None
         }
-        self._network = ClientNetwork(sig_info, self._server_push_queue, self.register, self._disconnect_cb)
+        self._network = ClientNetwork(
+            sig_info,
+            self._server_push_queue,
+            self._reconnect_cb,
+            self._disconnect_cb,
+            use_v6=use_ipv6
+        )
         self._sign_provider = sign_provider
+        self._use_ipv6 = use_ipv6
 
         self._t106 = bytes()
         self._t16a = bytes()
 
         self._online = asyncio.Event()
 
-    async def _disconnect_cb(self):
+    async def _reconnect_cb(self):
+        await self.register()
+
+    async def _disconnect_cb(self, from_err: bool):
         self._online.clear()
 
     def get_seq(self) -> int:
