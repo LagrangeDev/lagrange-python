@@ -5,7 +5,7 @@ class ContentHead(ProtoStruct):
     type: int = ProtoField(1)
     sub_type: int = ProtoField(2, 0)
     msg_id: int = ProtoField(4, 0)
-    seq: int = ProtoField(5)
+    seq: int = ProtoField(5, 0)
     timestamp: int = ProtoField(6, 0)
     rand: int = ProtoField(7, 0)
     # new_id: int = ProtoField(12)

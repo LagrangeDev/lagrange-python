@@ -1,6 +1,7 @@
 """
 ClientNetwork Implement
 """
+
 import asyncio
 from typing import Dict, Callable, Coroutine, Tuple, overload
 from typing_extensions import Literal
@@ -17,14 +18,14 @@ class ClientNetwork(Connection):
     V6UPSTREAM = ("msfwifiv6.3g.qq.com", 8080)
 
     def __init__(
-            self,
-            sig_info: SigInfo,
-            push_store: asyncio.Queue[SSOPacket],
-            reconnect_cb: Callable[[], Coroutine],
-            disconnect_cb: Callable[[bool], Coroutine],
-            use_v6=False,
-            *,
-            manual_address: Tuple[str, int] = None
+        self,
+        sig_info: SigInfo,
+        push_store: asyncio.Queue[SSOPacket],
+        reconnect_cb: Callable[[], Coroutine],
+        disconnect_cb: Callable[[bool], Coroutine],
+        use_v6=False,
+        *,
+        manual_address: Tuple[str, int] = None,
     ):
         if not manual_address:
             host, port = self.V6UPSTREAM if use_v6 else self.V4UPSTREAM
@@ -40,18 +41,21 @@ class ClientNetwork(Connection):
         self._connected = False
         self._sig = sig_info
 
+    def destroy_connection(self):
+        self._writer.close()
+
     async def write(self, buf: bytes):
         await self.conn_event.wait()
         self.writer.write(buf)
         await self.writer.drain()
 
     @overload
-    async def send(self, buf: bytes, wait_seq: Literal["-1"] = -1, timeout=10) -> None:
-        ...
+    async def send(
+        self, buf: bytes, wait_seq: Literal["-1"] = -1, timeout=10
+    ) -> None: ...
 
     @overload
-    async def send(self, buf: bytes, wait_seq=-1, timeout=10) -> SSOPacket:
-        ...
+    async def send(self, buf: bytes, wait_seq=-1, timeout=10) -> SSOPacket: ...
 
     async def send(self, buf: bytes, wait_seq=-1, timeout=10):
         await self.write(buf)
@@ -66,7 +70,7 @@ class ClientNetwork(Connection):
 
     async def on_connected(self):
         self.conn_event.set()
-        host, port = self.writer.get_extra_info('peername')[:2]  # for v6 ip
+        host, port = self.writer.get_extra_info("peername")[:2]  # for v6 ip
         logger.network.info(f"Connected to {host}:{port}")
         if self._connected and not self._stop_flag:
             t = asyncio.create_task(self._reconnect_cb(), name="reconnect_cb")

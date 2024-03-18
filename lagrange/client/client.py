@@ -45,7 +45,7 @@ class Client(BaseClient):
         device_info: DeviceInfo,
         sig_info: Optional[SigInfo] = None,
         sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
-        use_ipv6=False,
+        use_ipv6=True,
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
 

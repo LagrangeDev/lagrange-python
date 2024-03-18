@@ -42,7 +42,7 @@ class BaseClient:
         device_info: DeviceInfo,
         sig_info: Optional[SigInfo] = None,
         sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
-        use_ipv6=False,
+        use_ipv6=True,
     ):
         if uin and not sig_info.uin:
             sig_info.uin = uin
@@ -78,6 +78,10 @@ class BaseClient:
 
     async def _disconnect_cb(self, from_err: bool):
         self._online.clear()
+
+    def destroy_network(self):
+        """force run reconnect logic"""
+        self._network.destroy_connection()
 
     def get_seq(self) -> int:
         try:
@@ -141,20 +145,20 @@ class BaseClient:
 
     @overload
     async def send_uni_packet(
-        self, cmd: str, buf: bytes, send_only=False
+        self, cmd: str, buf: bytes, send_only=False, timeout=10
     ) -> SSOPacket: ...
 
     @overload
     async def send_uni_packet(
-        self, cmd: str, buf: bytes, send_only: Literal[False]
+        self, cmd: str, buf: bytes, send_only: Literal[False], timeout=10
     ) -> SSOPacket: ...
 
     @overload
     async def send_uni_packet(
-        self, cmd: str, buf: bytes, send_only: Literal[True]
+        self, cmd: str, buf: bytes, send_only: Literal[True], timeout=10
     ) -> None: ...
 
-    async def send_uni_packet(self, cmd, buf, send_only=False):
+    async def send_uni_packet(self, cmd, buf, send_only=False, timeout=10):
         seq = self.get_seq()
         sign = None
         if self._sign_provider:
@@ -170,7 +174,9 @@ class BaseClient:
             body=buf,
         )
 
-        return await self._network.send(packet, wait_seq=-1 if send_only else seq)
+        return await self._network.send(
+            packet, wait_seq=-1 if send_only else seq, timeout=timeout
+        )
 
     async def fetch_qrcode(self) -> Union[int, Tuple[bytes, str]]:
         tlv = QrCodeTlvBuilder()
@@ -363,11 +369,12 @@ class BaseClient:
         logger.login.error("Register failure")
         return False
 
-    async def sso_heartbeat(self, calc_latency=False) -> float:
+    async def sso_heartbeat(self, calc_latency=False, timeout=10) -> float:
         start_time = time.time()
         await self.send_uni_packet(
             "trpc.qq_new_tech.status_svc.StatusService.SsoHeartBeat",
             build_sso_heartbeat_request(),
+            timeout=timeout,
         )
         if calc_latency:
             return time.time() - start_time
