@@ -63,7 +63,7 @@ class BaseClient:
             self._server_push_queue,
             self._reconnect_cb,
             self._disconnect_cb,
-            use_v6=use_ipv6
+            use_v6=use_ipv6,
         )
         self._sign_provider = sign_provider
         self._use_ipv6 = use_ipv6
@@ -109,8 +109,8 @@ class BaseClient:
             sso = await self._server_push_queue.get()
             try:
                 await self.push_handler(sso)
-            except:
-                logger.root.exception("Unhandled exception on push handler")
+            except Exception as e:
+                logger.root.error("Unhandled exception on push handler", exc_info=e)
 
     async def wait_closed(self) -> None:
         await self._network.wait_closed()
@@ -140,20 +140,19 @@ class BaseClient:
         return self._online
 
     @overload
-    async def send_uni_packet(self, cmd: str, buf: bytes, send_only=False) -> SSOPacket:
-        ...
+    async def send_uni_packet(
+        self, cmd: str, buf: bytes, send_only=False
+    ) -> SSOPacket: ...
 
     @overload
     async def send_uni_packet(
         self, cmd: str, buf: bytes, send_only: Literal[False]
-    ) -> SSOPacket:
-        ...
+    ) -> SSOPacket: ...
 
     @overload
     async def send_uni_packet(
         self, cmd: str, buf: bytes, send_only: Literal[True]
-    ) -> None:
-        ...
+    ) -> None: ...
 
     async def send_uni_packet(self, cmd, buf, send_only=False):
         seq = self.get_seq()

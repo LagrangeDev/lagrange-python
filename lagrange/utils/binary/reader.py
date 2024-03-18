@@ -9,15 +9,13 @@ BYTES_LIKE = NewType("BYTES_LIKE", Union[bytes, bytearray, memoryview])
 
 class Reader:
     def __init__(self, buffer: BYTES_LIKE):
+        if not isinstance(buffer, (bytes, bytearray, memoryview)):
+            raise TypeError("Invalid data: " + str(buffer))
         self._buffer: bytearray = buffer
         self._pos = 0
 
     @property
-    def remain(self):
-        return 0
-
-    @remain.getter
-    def get_remain(self) -> int:
+    def remain(self) -> int:
         return len(self._buffer) - self._pos
 
     def read_u8(self) -> int:

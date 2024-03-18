@@ -201,7 +201,7 @@ class HighWaySession:
 
         return Image(
             id=fileid,
-            text=f"[图片]" if info.pic_type.name != "gif" else "[动画表情]",
+            text="[图片]" if info.pic_type.name != "gif" else "[动画表情]",
             name=f"{fmd5.hex()}.{info.pic_type.name}",
             size=fl,
             width=w,

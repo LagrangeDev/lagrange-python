@@ -67,8 +67,7 @@ class Service(Json):
 
 
 @dataclass
-class AtAll(Text):
-    ...
+class AtAll(Text): ...
 
 
 @dataclass
@@ -93,7 +92,6 @@ class Image(Text, MediaInfo):
 class Video(Text, MediaInfo):
     width: int
     height: int
-    ...
 
 
 @dataclass

@@ -1,5 +1,4 @@
 import time
-import uuid
 from hashlib import md5, sha1
 from typing import Any, Awaitable, BinaryIO, Tuple
 

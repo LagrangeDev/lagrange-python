@@ -19,7 +19,7 @@ class HttpConn0x6ffReq(ProtoStruct):
     body: X501ReqBody = ProtoField(0x501)
 
     @classmethod
-    def build(cls, tgt: bytes) -> "HttpConn0x6ff":
+    def build(cls, tgt: bytes) -> "HttpConn0x6ffReq":
         return cls(body=X501ReqBody(tgt_hex=tgt.hex()))
 
 

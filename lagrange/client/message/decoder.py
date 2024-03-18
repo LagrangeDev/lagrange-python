@@ -6,6 +6,7 @@ from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.rich_text import Elems, RichText
 
 from . import elems
+from .types import T
 
 
 def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
@@ -201,7 +202,7 @@ def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
         grp_name = grp_name.decode("utf-8", errors="ignore")
 
     display_msg = ""
-    msg_chain: List[elems.T] = []
+    msg_chain: List[T] = []
     for m in parsed_msg:
         if "text" in m:
             display_msg += m["text"]

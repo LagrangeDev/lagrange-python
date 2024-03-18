@@ -29,8 +29,10 @@ class Events:
     async def _task_exec(self, client: "Client", event: T, handler: EVENT_HANDLER):
         try:
             await handler(client, event)
-        except:
-            logger.root.exception("Unhandled exception on task {}".format(event))
+        except Exception as e:
+            logger.root.error(
+                "Unhandled exception on task {}".format(event), exc_info=e
+            )
 
     def emit(self, event: T, client: "Client"):
         typ = type(event)

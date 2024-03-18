@@ -20,16 +20,14 @@ ProtoEncodable: TypeAlias = Union[
 class ProtoBuilder(Builder):
     def write_varint(self, v: int) -> Self:
         if v >= 127:
-            length = 0
-            buffer = bytearray(10)
+            buffer = bytearray()
 
             while v > 127:
-                buffer[length] = (v & 127) | 128
+                buffer.append((v & 127) | 128)
                 v >>= 7
-                length += 1
 
-            buffer[length] = v
-            self.write_bytes(buffer[: length + 1])
+            buffer.append(v)
+            self.write_bytes(buffer)
         else:
             self.write_u8(v)
 
@@ -52,10 +50,10 @@ class ProtoReader(Reader):
 
         while True:
             byte = self.read_u8()
-            value |= (byte & 0b01111111) << (count * 7)
+            value |= (byte & 127) << (count * 7)
             count += 1
 
-            if (byte & 0b10000000) <= 0:
+            if (byte & 128) <= 0:
                 break
 
         return value
@@ -93,9 +91,9 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         if value >= 0:
             builder.write_varint(value)
         else:
-            raise NotImplemented
+            raise NotImplementedError
     elif wire_type == 1:
-        raise NotImplemented
+        raise NotImplementedError
     elif wire_type == 2:
         if isinstance(value, dict):
             value = proto_encode(value)
@@ -108,13 +106,12 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
     reader = ProtoReader(data)
     proto = {}
 
-    while reader.get_remain > 0:
+    while reader.remain > 0:
         leaf = reader.read_varint()
         tag = leaf >> 3
         wire_type = leaf & 0b111
 
-        if tag < 0:
-            raise AssertionError("Invalid tag")
+        assert tag > 0, f"Invalid tag: {tag}"
 
         if wire_type == 0:
             value = reader.read_varint()
@@ -124,12 +121,12 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
             if max_layer > 0 or max_layer < 0 and len(value) > 1:
                 try:  # serialize nested
                     value = proto_decode(value, max_layer - 1)
-                except:
+                except Exception:
                     pass
         elif wire_type == 5:
             value = reader.read_u32()
         else:
-            raise AssertionError
+            raise AssertionError(wire_type)
 
         if tag in proto:  # repeated elem
             if not isinstance(proto[tag], list):

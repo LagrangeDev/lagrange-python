@@ -39,13 +39,13 @@ from .wtlogin.sso import SSOPacket
 
 class Client(BaseClient):
     def __init__(
-            self,
-            uin: int,
-            app_info: AppInfo,
-            device_info: DeviceInfo,
-            sig_info: Optional[SigInfo] = None,
-            sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
-            use_ipv6=False
+        self,
+        uin: int,
+        app_info: AppInfo,
+        device_info: DeviceInfo,
+        sig_info: Optional[SigInfo] = None,
+        sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
+        use_ipv6=False,
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
 
@@ -75,8 +75,8 @@ class Client(BaseClient):
                 rsp = await self.token_login(self._sig.temp_pwd)
                 if rsp.successful:
                     return await self.register()
-        except:
-            logger.login.exception("EasyLogin fail")
+        except Exception as e:
+            logger.login.error("EasyLogin fail", exc_info=e)
 
         if password:  # TODO: PasswordLogin, WIP
             await self._key_exchange()
