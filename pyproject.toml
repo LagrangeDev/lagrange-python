@@ -15,7 +15,7 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Framework :: AsyncIO",
     "Operating System :: OS Independent",
-    "License :: OSI Approved :: GNU Lesser General Public License v2.1 (LGPLv2.1)",
+    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -27,6 +27,7 @@ requires-python = ">=3.9"
 
 [project.optional-dependencies]
 faster = ["ftea>=0.1.5"]
+dev = ["pdm", "pdm-backend>=0.3.0"]
 
 [tool.pdm]
 distribution = true

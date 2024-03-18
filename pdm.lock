@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:f97c64ff0cbf024c770af7c9d6de7aeba092ea8a696c9b0a8d093a7477013ca1"
+content_hash = "sha256:13e819352949e77a2b412a5450d6163cbfb652ed8c99124e59155117bd0d13db"
 
 [[package]]
 name = "cffi"
@@ -114,15 +114,6 @@ files = [
     {file = "cryptography-42.0.4-pp39-pypy39_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:4e36685cb634af55e0677d435d425043967ac2f3790ec652b2b88ad03b85c27b"},
     {file = "cryptography-42.0.4-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:f47be41843200f7faec0683ad751e5ef11b9a56a220d57f300376cd8aba81660"},
     {file = "cryptography-42.0.4.tar.gz", hash = "sha256:831a4b37accef30cccd34fcb916a5d7b5be3cbbe27268a02832c3e450aea39cb"},
-]
-
-[[package]]
-name = "crytography"
-version = "1.0.0"
-summary = ""
-groups = ["default"]
-files = [
-    {file = "crytography-1.0.0.tar.gz", hash = "sha256:557311bf558b3be38dae79de7cebe27f6217ccdbd654085e44c688bb72339766"},
 ]
 
 [[package]]
