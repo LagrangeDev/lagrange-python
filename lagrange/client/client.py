@@ -167,8 +167,8 @@ class Client(BaseClient):
             img.is_emoji = True
         return img
 
-    async def upload_grp_audio(self, voice: BinaryIO, grp_id: int, time_sec=0) -> Audio:
-        return await self._highway.upload_voice(voice, gid=grp_id, _time=time_sec)
+    async def upload_grp_audio(self, voice: BinaryIO, grp_id: int) -> Audio:
+        return await self._highway.upload_voice(voice, gid=grp_id)
 
     async def get_grp_msg(
         self, grp_id: int, start: int, end: int = 0, filter_deleted_msg=True

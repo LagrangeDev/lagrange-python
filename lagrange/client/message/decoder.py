@@ -74,9 +74,18 @@ def parse_msg_new(rich: RichText) -> List[T]:
         elif raw.face:  # q emoji
             emo = raw.face
             msg_chain.append(elems.Emoji(id=emo.index))
-        elif raw.market_face:  # qq大表情
-            print(raw.market_face)
-            pass
+        elif raw.market_face:
+            mf = raw.market_face
+            msg_chain.append(
+                elems.MarketFace(
+                    text=mf.name,
+                    face_id=mf.face_id,
+                    tab_id=mf.tab_id,
+                    width=mf.width,
+                    height=mf.height,
+                )
+            )
+            ignore_next = True
         elif raw.custom_face:  # gpic
             img = raw.custom_face
             msg_chain.append(

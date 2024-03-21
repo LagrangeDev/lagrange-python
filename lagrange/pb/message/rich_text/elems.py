@@ -51,13 +51,13 @@ class TransElem(ProtoStruct):
     elem_value: bytes = ProtoField(2)
 
 
-class MarketFace(ProtoStruct):
-    # name: str = ProtoField(1)
-    item_type: int = ProtoField(2)
-    face_info: int = ProtoField(3)
+class MarketFace(ProtoStruct, debug=True):
+    name: str = ProtoField(1, "")
+    item_type: int = ProtoField(2)  # 6
+    face_info: int = ProtoField(3)  # 1
     face_id: bytes = ProtoField(4)
     tab_id: int = ProtoField(5)
-    sub_type: int = ProtoField(6)
+    sub_type: int = ProtoField(6)  # 3
     # media_type: int = ProtoField(9)
     width: int = ProtoField(10)
     height: int = ProtoField(11)

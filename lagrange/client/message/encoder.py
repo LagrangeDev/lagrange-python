@@ -13,6 +13,7 @@ from lagrange.pb.message.rich_text.elems import (
     RichMsg,
     SrcMsg,
     CommonElem,
+    MarketFace as PBMarketFace,
 )
 from lagrange.pb.message.rich_text.elems import Text as PBText
 
@@ -29,6 +30,7 @@ from .elems import (
     Service,
     Text,
     Poke,
+    MarketFace,
 )
 from .types import T
 
@@ -157,6 +159,22 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                             service_type=2,
                             pb_elem={1: msg.id, 7: msg.f7, 8: msg.f8},
                             bus_type=1,
+                        )
+                    )
+                )
+            elif isinstance(msg, MarketFace):
+                msg_pb.append(
+                    Elems(
+                        market_face=PBMarketFace(
+                            name=msg.text,
+                            item_type=6,
+                            face_info=1,
+                            face_id=msg.face_id,
+                            tab_id=msg.tab_id,
+                            sub_type=3,
+                            width=msg.width,
+                            height=msg.height,
+                            pb_reserved={1: {1: msg.width, 2: msg.height}, 8: 1},
                         )
                     )
                 )

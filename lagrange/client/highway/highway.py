@@ -11,7 +11,8 @@ from lagrange.pb.highway.rsp import NTV2RichMediaResp
 from lagrange.utils.binary.protobuf import proto_decode
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
-from lagrange.utils.image import decoder
+from lagrange.utils.image import decoder as decoder_img
+from lagrange.utils.audio import decoder as decoder_audio
 
 from .encoders import (
     encode_audio_upload_req,
@@ -161,7 +162,7 @@ class HighWaySession:
         if not self._session_addr_list:
             await self._get_bdh_session()
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
-        info = decoder.decode(file)
+        info = decoder_img.decode(file)
         ret = NTV2RichMediaResp.decode(
             (
                 await self._client.send_oidb_svc(
@@ -218,17 +219,21 @@ class HighWaySession:
             is_emoji=info.pic_type.name == "gif",
         )
 
-    async def upload_voice(self, file: BinaryIO, gid=0, uid="", _time=0) -> Audio:
+    async def upload_voice(self, file: BinaryIO, gid=0, uid="") -> Audio:
         if not self._session_addr_list:
             await self._get_bdh_session()
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
+        info = decoder_audio.decode(file)
+        self.logger.debug(f"audio info: {info.type.name}-{info.time}")
 
         ret = NTV2RichMediaResp.decode(
             (
                 await self._client.send_oidb_svc(
                     0x126E if gid else 0x126D,
                     100,
-                    encode_audio_upload_req(gid, uid, fmd5, fsha1, fl, _time).encode(),
+                    encode_audio_upload_req(
+                        gid, uid, fmd5, fsha1, fl, info.seconds
+                    ).encode(),
                 )
             ).data
         )
@@ -263,7 +268,7 @@ class HighWaySession:
 
         return Audio(
             text="[语音]",
-            time=_time,
+            time=info.seconds,
             name=f"{fmd5.hex()}.amr",
             id=compat[8],
             md5=fmd5,

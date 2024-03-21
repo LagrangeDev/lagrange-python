@@ -123,3 +123,11 @@ class Poke(Text):
     id: int
     f7: int = 0
     f8: int = 0
+
+
+@dataclass
+class MarketFace(Text):
+    face_id: bytes
+    tab_id: int
+    width: int
+    height: int
