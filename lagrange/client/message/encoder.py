@@ -12,6 +12,7 @@ from lagrange.pb.message.rich_text.elems import (
     Ptt,
     RichMsg,
     SrcMsg,
+    CommonElem,
 )
 from lagrange.pb.message.rich_text.elems import Text as PBText
 
@@ -27,6 +28,7 @@ from .elems import (
     Reaction,
     Service,
     Text,
+    Poke,
 )
 from .types import T
 
@@ -148,6 +150,16 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                 # })
             elif isinstance(msg, Text):
                 msg_pb.append(Elems(text=PBText(msg.text)))
+            elif isinstance(msg, Poke):
+                msg_pb.append(
+                    Elems(
+                        common_elem=CommonElem(
+                            service_type=2,
+                            pb_elem={1: msg.id, 7: msg.f7, 8: msg.f8},
+                            bus_type=1,
+                        )
+                    )
+                )
             else:
                 raise NotImplementedError
     else:

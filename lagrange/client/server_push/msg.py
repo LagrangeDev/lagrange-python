@@ -1,7 +1,7 @@
 import json
 import re
 
-from lagrange.client.message.decoder import parse_grp_msg
+from lagrange.client.message.decoder import parse_grp_msg, parse_friend_msg
 from lagrange.pb.message.msg_push import MsgPush
 from lagrange.pb.status.group import (
     GroupRenamedBody,
@@ -40,7 +40,7 @@ async def msg_push_handler(sso: SSOPacket):
     if typ == 82:  # grp msg
         return parse_grp_msg(pkg)
     elif typ == 166:  # frd msg
-        pass
+        return parse_friend_msg(pkg)
     elif typ == 33:  # member joined
         pb = MemberChanged.decode(pkg.message.buf2)
         return GroupMemberJoined(

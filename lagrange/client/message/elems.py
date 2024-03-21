@@ -116,3 +116,10 @@ class Reaction(Emoji):
 
     text: str
     show_type: int  # size - sm: 33, bg: 37
+
+
+@dataclass
+class Poke(Text):
+    id: int
+    f7: int = 0
+    f8: int = 0
