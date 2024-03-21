@@ -55,6 +55,7 @@ def parse_ntlogin_response(
         sig.d2 = cr[5]
         sig.d2_key = cr[6]
         sig.temp_pwd = cr[3]
+        sig.info_updated()
 
         logger.login.debug("SigInfo got")
 

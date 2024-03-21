@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from .serialize import BinarySerializer
+from ..utils.operator import timestamp
 
 
 @dataclass
@@ -21,6 +22,10 @@ class SigInfo(BinarySerializer):
     uin: int
     uid: str
     nickname: str
+    last_update: int
+
+    def info_updated(self):
+        self.last_update = timestamp()
 
     @classmethod
     def new(cls, seq=8830) -> "SigInfo":
@@ -39,4 +44,5 @@ class SigInfo(BinarySerializer):
             uin=0,
             uid="",
             nickname="",
+            last_update=0,
         )

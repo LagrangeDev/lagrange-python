@@ -116,7 +116,7 @@ class Client(BaseClient):
         )
         if rsp.ret_code:
             logger.network.error(
-                f"OidbSvc({hex(cmd)}_{sub_cmd}) return an error ({rsp.ret_code}):{rsp.err_msg}"
+                f"OidbSvc(0x{cmd:X}_{sub_cmd}) return an error: ({rsp.ret_code}){rsp.err_msg}"
             )
         return rsp
 

@@ -143,6 +143,7 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         sig.tgtgt = hashlib.md5(sig.d2_key).digest()
         sig.temp_pwd = tlv[0x106]
         sig.uid = proto_decode(tlv[0x543])[9][11][1].decode()
+        sig.info_updated()
 
         logger.login.debug("SigInfo got")
         logger.login.info("Login success, username: %s" % tlv[0x11A][5:].decode())

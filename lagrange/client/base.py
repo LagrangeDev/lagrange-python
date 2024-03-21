@@ -51,12 +51,14 @@ class BaseClient:
         self._sig = sig_info
         self._app_info = app_info
         self._device_info = device_info
+        self._heartbeat_interval = 120
         self._captcha_info = ["", "", ""]  # ticket, rand_str, aid
 
         self._server_push_queue: asyncio.Queue[SSOPacket] = asyncio.Queue()
         self._tasks: Dict[str, Optional[asyncio.Task]] = {
             "loop": None,
             "push_handle": None,
+            "heartbeat": None,
         }
         self._network = ClientNetwork(
             sig_info,
@@ -95,6 +97,7 @@ class BaseClient:
         if not self._tasks["loop"]:
             self._tasks["loop"] = asyncio.create_task(self._network.loop())
             self._tasks["push_handle"] = asyncio.create_task(self._push_handle_loop())
+            self._tasks["heartbeat"] = asyncio.create_task(self._heartbeat_task())
         else:
             raise RuntimeError("connect call twice")
 
@@ -107,6 +110,26 @@ class BaseClient:
         for _, task in self._tasks.items():
             if task:
                 task.cancel()
+
+    async def _heartbeat_task(self):
+        err_count = 0
+        while True:
+            await self.online.wait()
+            if not err_count:
+                await asyncio.sleep(self._heartbeat_interval)
+            try:
+                logger.network.info(
+                    f"{await self.sso_heartbeat(True, 5) * 1000:.2f}ms to server"
+                )
+            except TimeoutError:
+                if err_count < 3:
+                    logger.network.warning("heartbeat timeout")
+                    err_count += 1
+                    continue
+                else:
+                    logger.network.error("too many heartbeats fail, reconnecting...")
+                    self.destroy_network()
+            err_count = 0
 
     async def _push_handle_loop(self):
         while True:
