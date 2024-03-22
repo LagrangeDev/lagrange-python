@@ -121,7 +121,7 @@ class BaseClient:
                 logger.network.info(
                     f"{await self.sso_heartbeat(True, 5) * 1000:.2f}ms to server"
                 )
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 if err_count < 3:
                     logger.network.warning("heartbeat timeout")
                     err_count += 1
