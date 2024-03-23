@@ -8,6 +8,7 @@ from lagrange.pb.message.rich_text import Elems, RichText
 
 from . import elems
 from .types import T
+from ...utils.binary.protobuf import proto_encode
 
 
 def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
@@ -153,7 +154,11 @@ def parse_msg_new(rich: RichText) -> List[T]:
             msg_text = ""
 
             for v in src.elems:
-                msg_text += v.get(1, {1: b""})[1].decode()
+                elem = v.get(1, {1: b""})[1]
+                if isinstance(elem, dict):
+                    msg_text += proto_encode(elem).decode()
+                else:
+                    msg_text += elem.decode()
             # src[10]: optional[grp_id]
             msg_chain.append(
                 elems.Quote(
