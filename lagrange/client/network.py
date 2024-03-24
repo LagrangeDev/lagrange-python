@@ -3,6 +3,7 @@ ClientNetwork Implement
 """
 
 import asyncio
+import ipaddress
 from typing import Dict, Callable, Coroutine, Tuple, overload
 from typing_extensions import Literal
 
@@ -34,12 +35,19 @@ class ClientNetwork(Connection):
         super().__init__(host, port)
 
         self.conn_event = asyncio.Event()
+        self._using_v6 = use_v6
         self._push_store = push_store
         self._reconnect_cb = reconnect_cb
         self._disconnect_cb = disconnect_cb
         self._wait_fut_map: Dict[int, asyncio.Future[SSOPacket]] = {}
         self._connected = False
         self._sig = sig_info
+
+    @property
+    def using_v6(self) -> bool:
+        if not self.closed:
+            return self.using_v6
+        raise RuntimeError("Network not connect, execute 'connect' first")
 
     def destroy_connection(self):
         self._writer.close()
@@ -71,6 +79,9 @@ class ClientNetwork(Connection):
     async def on_connected(self):
         self.conn_event.set()
         host, port = self.writer.get_extra_info("peername")[:2]  # for v6 ip
+        if ipaddress.ip_address(host).version != 6 and self._using_v6:
+            logger.network.debug("using v4 address, disable v6 support")
+            self._using_v6 = False
         logger.network.info(f"Connected to {host}:{port}")
         if self._connected and not self._stop_flag:
             t = asyncio.create_task(self._reconnect_cb(), name="reconnect_cb")

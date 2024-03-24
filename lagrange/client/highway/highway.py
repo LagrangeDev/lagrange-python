@@ -20,7 +20,7 @@ from .encoders import (
     encode_upload_img_req,
 )
 from .frame import read_frame, write_frame
-from .utils import calc_file_hash_and_length, itoa, timeit
+from .utils import calc_file_hash_and_length, timeit
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -47,8 +47,11 @@ class HighWaySession:
         self._session_sig = pb.body.sig_session
         self._session_key = pb.body.sig_key
         for iplist in pb.body.servers:
-            for ip in iplist.server_addrs:
-                self._session_addr_list.append((itoa(ip.ip), ip.port))
+            if self._client.using_ipv6:
+                for v6 in iplist.v6_addr:
+                    self._session_addr_list.append((v6.ip, v6.port))
+            for v4 in iplist.v4_addr:
+                self._session_addr_list.append((v4.ip, v4.port))
 
     def _encrypt_ext(self, ext: bytes) -> bytes:
         if not self._session_key:
@@ -224,7 +227,7 @@ class HighWaySession:
             await self._get_bdh_session()
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
         info = decoder_audio.decode(file)
-        self.logger.debug(f"audio info: {info.type.name}-{info.time}")
+        self.logger.debug(f"audio info: {info.type.name}-{info.time:.2f}s")
 
         ret = NTV2RichMediaResp.decode(
             (

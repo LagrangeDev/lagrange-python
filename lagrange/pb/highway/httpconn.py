@@ -1,3 +1,4 @@
+import ipaddress
 from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
@@ -23,16 +24,36 @@ class HttpConn0x6ffReq(ProtoStruct):
         return cls(body=X501ReqBody(tgt_hex=tgt.hex()))
 
 
-class ServerAddress(ProtoStruct):
+class BaseAddress(ProtoStruct):
     type: int = ProtoField(1)
-    ip: int = ProtoField(2)
     port: int = ProtoField(3)
     area: int = ProtoField(4, None)
+
+    @property
+    def ip(self) -> str:
+        raise NotImplementedError
+
+
+class ServerV4Address(BaseAddress):
+    ip_int: int = ProtoField(2)
+
+    @property
+    def ip(self) -> str:
+        return ipaddress.ip_address(self.ip_int).compressed
+
+
+class ServerV6Address(BaseAddress):
+    ip_bytes: bytes = ProtoField(2)  # 16 bytes v6_address
+
+    @property
+    def ip(self) -> str:
+        return ipaddress.ip_address(self.ip_bytes).compressed
 
 
 class ServerInfo(ProtoStruct):
     service_type: int = ProtoField(1)
-    server_addrs: list[ServerAddress] = ProtoField(2, [])
+    v4_addr: list[ServerV4Address] = ProtoField(2, [])
+    v6_addr: list[ServerV6Address] = ProtoField(5, [])
 
 
 class X501RspBody(ProtoStruct):

@@ -68,7 +68,6 @@ class BaseClient:
             use_v6=use_ipv6,
         )
         self._sign_provider = sign_provider
-        self._use_ipv6 = use_ipv6
 
         self._t106 = bytes()
         self._t16a = bytes()
@@ -165,6 +164,10 @@ class BaseClient:
     @property
     def online(self) -> asyncio.Event:
         return self._online
+
+    @property
+    def using_ipv6(self) -> bool:
+        return self._network.using_v6
 
     @overload
     async def send_uni_packet(

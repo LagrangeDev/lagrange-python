@@ -109,7 +109,8 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                             size=msg.size,
                             args=CustomFaceArgs(
                                 is_emoji=msg.is_emoji,
-                                display_name="[动画表情]" if msg.is_emoji else "[图片]",
+                                display_name=msg.text
+                                or ("[动画表情]" if msg.is_emoji else "[图片]"),
                             ),
                         )
                     )
