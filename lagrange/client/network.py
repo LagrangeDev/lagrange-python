@@ -46,7 +46,7 @@ class ClientNetwork(Connection):
     @property
     def using_v6(self) -> bool:
         if not self.closed:
-            return self.using_v6
+            return self._using_v6
         raise RuntimeError("Network not connect, execute 'connect' first")
 
     def destroy_connection(self):

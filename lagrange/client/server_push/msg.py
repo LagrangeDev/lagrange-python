@@ -105,7 +105,7 @@ async def msg_push_handler(sso: SSOPacket):
                     operator_uid=pb.operator_uid,
                 )
             else:
-                raise ValueError(f"Unknown subtype_12 flag: {pb.flag}")
+                raise ValueError(f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex()}")
         elif sub_typ == 17:  # recall
             reader = Reader(pkg.message.buf2)
             grp_id = reader.read_u32()
