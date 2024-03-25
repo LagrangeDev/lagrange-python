@@ -14,6 +14,7 @@ from lagrange.pb.message.rich_text.elems import (
     SrcMsg,
     CommonElem,
     MarketFace as PBMarketFace,
+    NotOnlineImage,
 )
 from lagrange.pb.message.rich_text.elems import Text as PBText
 
@@ -95,26 +96,31 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                     Elems(mini_app=MiniApp(template=b"\x01" + zlib.compress(msg.raw)))
                 )
             elif isinstance(msg, Image):
-                msg_pb.append(
-                    Elems(
-                        custom_face=CustomFace(
-                            file_path=msg.name,
-                            fileid=msg.id,
-                            file_type=4294967273,
-                            md5=msg.md5,
-                            original_url=msg.url[21:],
-                            image_type=1001,
-                            width=msg.width,
-                            height=msg.height,
-                            size=msg.size,
-                            args=ImageReserveArgs(
-                                is_emoji=msg.is_emoji,
-                                display_name=msg.text
-                                or ("[动画表情]" if msg.is_emoji else "[图片]"),
-                            ),
+                if msg.id:  # customface
+                    msg_pb.append(
+                        Elems(
+                            custom_face=CustomFace(
+                                file_path=msg.name,
+                                fileid=msg.id,
+                                file_type=4294967273,
+                                md5=msg.md5,
+                                original_url=msg.url[21:],
+                                image_type=1001,
+                                width=msg.width,
+                                height=msg.height,
+                                size=msg.size,
+                                args=ImageReserveArgs(
+                                    is_emoji=msg.is_emoji,
+                                    display_name=msg.text
+                                    or ("[动画表情]" if msg.is_emoji else "[图片]"),
+                                ),
+                            )
                         )
                     )
-                )
+                else:
+                    msg_pb.append(
+                        Elems(not_online_image=NotOnlineImage.decode(msg.qmsg))
+                    )
             elif isinstance(msg, Service):
                 msg_pb.append(
                     Elems(

@@ -201,7 +201,20 @@ class HighWaySession:
             )
 
         w, h = info.width, info.height
-        fileid = proto_decode(ret.upload.compat_qmsg)[7]
+        if gid:
+            fileid = proto_decode(ret.upload.compat_qmsg)[7]
+            url = "https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
+                uin=self._client.uin,
+                gid=gid,
+                file_id=fileid.hex().upper()
+                if isinstance(fileid, bytes)
+                else file,  # test required
+                fmd5=fmd5.hex().upper(),
+            )
+        else:
+            path = proto_decode(ret.upload.compat_qmsg)[29][30]
+            fileid = 0
+            url = "https://multimedia.nt.qq.com.cn/" + path
 
         return Image(
             id=fileid,
@@ -211,15 +224,9 @@ class HighWaySession:
             width=w,
             height=h,
             md5=fmd5,
-            url="https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
-                uin=self._client.uin,
-                gid=gid,
-                file_id=fileid.hex().upper()
-                if isinstance(fileid, bytes)
-                else file,  # test required
-                fmd5=fmd5.hex().upper(),
-            ),
+            url=url,
             is_emoji=info.pic_type.name == "gif",
+            qmsg=None if gid else ret.upload.compat_qmsg,
         )
 
     async def upload_voice(self, file: BinaryIO, gid=0, uid="") -> Audio:

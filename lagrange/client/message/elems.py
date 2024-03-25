@@ -86,6 +86,7 @@ class Image(Text, MediaInfo):
     height: int
     url: str
     is_emoji: bool
+    qmsg: bytes = field(default=None, repr=False)  # not online image
 
 
 @dataclass

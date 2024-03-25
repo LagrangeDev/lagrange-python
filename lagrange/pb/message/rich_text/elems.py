@@ -1,7 +1,7 @@
 from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
-class ImageReserveArgs(ProtoStruct, debug=True):
+class ImageReserveArgs(ProtoStruct):
     is_emoji: bool = ProtoField(1, False)
     display_name: str = ProtoField(9, "[图片]")
 
@@ -38,7 +38,7 @@ class OnlineImage(ProtoStruct):
     file_path: bytes = ProtoField(2)
 
 
-class NotOnlineImage(ProtoStruct, debug=True):
+class NotOnlineImage(ProtoStruct):
     file_path: str = ProtoField(1)
     file_len: int = ProtoField(2)
     download_path: str = ProtoField(3)
@@ -57,7 +57,7 @@ class TransElem(ProtoStruct):
     elem_value: bytes = ProtoField(2)
 
 
-class MarketFace(ProtoStruct, debug=True):
+class MarketFace(ProtoStruct):
     name: str = ProtoField(1, "")
     item_type: int = ProtoField(2)  # 6
     face_info: int = ProtoField(3)  # 1
