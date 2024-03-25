@@ -214,7 +214,7 @@ class HighWaySession:
         else:
             path = proto_decode(ret.upload.compat_qmsg)[29][30]
             fileid = 0
-            url = "https://multimedia.nt.qq.com.cn/" + path
+            url = "https://multimedia.nt.qq.com.cn/" + path.decode()
 
         return Image(
             id=fileid,
