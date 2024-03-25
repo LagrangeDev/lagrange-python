@@ -132,7 +132,7 @@ class Client(BaseClient):
             assert uid, "uid must be set"
             sendto[1] = {2: uid}
         elif grp_id:  # grp
-            sendto[1] = {1: grp_id}
+            sendto[2] = {1: grp_id}
         elif uid and grp_id:  # temp msg, untest
             assert uid or grp_id, "uid and grp_id"
             sendto[3] = {1: grp_id, 2: uid}

@@ -5,7 +5,7 @@ class SendMsgRsp(ProtoStruct):
     ret_code: int = ProtoField(1)
     err_msg: str = ProtoField(2, "")
     grp_seq: int = ProtoField(11, 0)
-    timestamp: int = ProtoField(12)
+    timestamp: int = ProtoField(12, None)
     private_seq: int = ProtoField(14, 0)
 
     @property
