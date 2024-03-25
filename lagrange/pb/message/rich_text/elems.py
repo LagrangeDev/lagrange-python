@@ -8,13 +8,15 @@ class ImageReserveArgs(ProtoStruct):
 
 class Ptt(ProtoStruct):
     type: int = ProtoField(1, 4)
+    to_uin: int = ProtoField(2, None)
+    friend_file_key: bytes = ProtoField(3, None)
     md5: bytes = ProtoField(4)
     name: str = ProtoField(5)
     size: int = ProtoField(6)
     reserved: bytes = ProtoField(7, None)
-    file_id: int = ProtoField(8)
+    file_id: int = ProtoField(8, None)  # available on grp msg
     is_valid: bool = ProtoField(11, True)
-    group_file_key: bytes = ProtoField(18)
+    group_file_key: bytes = ProtoField(18, None)
     time: int = ProtoField(19)
     format: int = ProtoField(29, 1)
     pb_reserved: dict = ProtoField(30, {1: 0})

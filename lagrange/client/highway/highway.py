@@ -273,17 +273,25 @@ class HighWaySession:
                 bs=1048576,
             )
 
-        compat = proto_decode(ret.upload.compat_qmsg)[4]
+        compat = proto_decode(ret.upload.compat_qmsg, 0)[4]
+        if gid:
+            pd = proto_decode(compat, 0)
+            file_id = pd[8]
+            file_key = pd[18]
+        else:
+            file_id = 0
+            file_key = proto_decode(compat, 0)[3]
         # print(f"https://grouptalk.c2c.qq.com/?ver=0&rkey={compat[18].hex()}&filetype=4%voice_codec=0")
 
         return Audio(
             text="[语音]",
             time=info.seconds,
             name=f"{fmd5.hex()}.amr",
-            id=compat[8],
+            id=file_id,
             md5=fmd5,
             size=fl,
-            file_key=compat[18],
+            file_key=file_key,
+            qmsg=None if gid else compat,
         )
 
     #

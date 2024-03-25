@@ -43,6 +43,7 @@ def parse_msg_new(rich: RichText) -> List[T]:
                 text=f"[audio:{ptt.name}]",
                 time=ptt.time,
                 file_key=ptt.group_file_key,
+                qmsg=None,
             )
         ]
     el: List[Elems] = rich.content
@@ -100,6 +101,7 @@ def parse_msg_new(rich: RichText) -> List[T]:
                     height=img.height,
                     url="https://gchat.qpic.cn" + img.original_url,
                     is_emoji=img.args.is_emoji,
+                    qmsg=None,
                 )
             )
         elif raw.not_online_image:
@@ -115,6 +117,7 @@ def parse_msg_new(rich: RichText) -> List[T]:
                     height=img.height,
                     url="https://gchat.qpic.cn" + img.origin_path,
                     is_emoji=img.args.is_emoji,
+                    qmsg=None,
                 )
             )
         elif raw.common_elem:

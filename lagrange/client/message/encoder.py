@@ -189,12 +189,15 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                 raise NotImplementedError
     else:
         audio = msg_chain[0]  # type: Audio
-        msg_ptt = Ptt(
-            md5=audio.md5,
-            name=audio.name,
-            size=audio.size,
-            file_id=audio.id,
-            group_file_key=audio.file_key,
-            time=audio.time,
-        )
+        if audio.id:  # grp
+            msg_ptt = Ptt(
+                md5=audio.md5,
+                name=audio.name,
+                size=audio.size,
+                file_id=audio.id,
+                group_file_key=audio.file_key,
+                time=audio.time,
+            )
+        else:  # friend
+            msg_ptt = Ptt.decode(audio.qmsg)
     return RichText(content=msg_pb, ptt=msg_ptt)

@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass, field
+from typing import Optional
 
 from lagrange.client.events.group import GroupMessage
 from lagrange.info.serialize import JsonSerializer
@@ -22,6 +23,7 @@ class MediaInfo:
     size: int
     id: int = field(repr=False)
     md5: bytes = field(repr=False)
+    qmsg: Optional[bytes] = field(repr=False)  # not online image
 
 
 @dataclass
@@ -86,7 +88,6 @@ class Image(Text, MediaInfo):
     height: int
     url: str
     is_emoji: bool
-    qmsg: bytes = field(default=None, repr=False)  # not online image
 
 
 @dataclass
