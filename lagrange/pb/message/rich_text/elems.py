@@ -48,7 +48,7 @@ class NotOnlineImage(ProtoStruct):
     height: int = ProtoField(8)
     width: int = ProtoField(9)
     res_id: str = ProtoField(10)
-    origin_path: str = ProtoField(15)
+    origin_path: str = ProtoField(15, None)
     args: ImageReserveArgs = ProtoField(34, ImageReserveArgs())
 
 

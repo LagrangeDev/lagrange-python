@@ -175,6 +175,14 @@ class Client(BaseClient):
             img.is_emoji = True
         return img
 
+    async def upload_friend_image(
+        self, image: BinaryIO, uid: str, is_emoji=False
+    ) -> Image:
+        img = await self._highway.upload_image(image, uid=uid)
+        if is_emoji:
+            img.is_emoji = True
+        return img
+
     async def upload_grp_audio(self, voice: BinaryIO, grp_id: int) -> Audio:
         return await self._highway.upload_voice(voice, gid=grp_id)
 
