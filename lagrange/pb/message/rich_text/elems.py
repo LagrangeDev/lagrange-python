@@ -1,6 +1,11 @@
 from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
+class ImageReserveArgs(ProtoStruct, debug=True):
+    is_emoji: bool = ProtoField(1, False)
+    display_name: str = ProtoField(9, "[图片]")
+
+
 class Ptt(ProtoStruct):
     type: int = ProtoField(1, 4)
     md5: bytes = ProtoField(4)
@@ -33,7 +38,7 @@ class OnlineImage(ProtoStruct):
     file_path: bytes = ProtoField(2)
 
 
-class NotOnlineImage(ProtoStruct):
+class NotOnlineImage(ProtoStruct, debug=True):
     file_path: str = ProtoField(1)
     file_len: int = ProtoField(2)
     download_path: str = ProtoField(3)
@@ -44,6 +49,7 @@ class NotOnlineImage(ProtoStruct):
     width: int = ProtoField(9)
     res_id: str = ProtoField(10)
     origin_path: str = ProtoField(15)
+    args: ImageReserveArgs = ProtoField(34, ImageReserveArgs())
 
 
 class TransElem(ProtoStruct):
@@ -64,11 +70,6 @@ class MarketFace(ProtoStruct, debug=True):
     pb_reserved: dict = ProtoField(13)
 
 
-class CustomFaceArgs(ProtoStruct):
-    is_emoji: bool = ProtoField(1, False)
-    display_name: str = ProtoField(9, "[图片]")
-
-
 class CustomFace(ProtoStruct):
     # guid: str = ProtoField(1)
     file_path: str = ProtoField(2)
@@ -84,7 +85,7 @@ class CustomFace(ProtoStruct):
     width: int = ProtoField(22)
     height: int = ProtoField(23)
     size: int = ProtoField(25)
-    args: CustomFaceArgs = ProtoField(34, CustomFaceArgs())
+    args: ImageReserveArgs = ProtoField(34, ImageReserveArgs())
 
 
 class ExtraInfo(ProtoStruct):

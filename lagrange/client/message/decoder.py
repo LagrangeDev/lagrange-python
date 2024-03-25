@@ -102,6 +102,21 @@ def parse_msg_new(rich: RichText) -> List[T]:
                     is_emoji=img.args.is_emoji,
                 )
             )
+        elif raw.not_online_image:
+            img = raw.not_online_image
+            msg_chain.append(
+                elems.Image(
+                    name=img.file_path,
+                    size=img.file_len,
+                    id=int(img.download_path.split("-")[1]),
+                    md5=img.file_md5,
+                    text=img.args.display_name,
+                    width=img.width,
+                    height=img.height,
+                    url="https://gchat.qpic.cn" + img.origin_path,
+                    is_emoji=img.args.is_emoji,
+                )
+            )
         elif raw.common_elem:
             common = raw.common_elem
             if common.service_type == 2:

@@ -5,7 +5,7 @@ from typing import List, Optional
 from lagrange.pb.message.rich_text import Elems, RichText
 from lagrange.pb.message.rich_text.elems import (
     CustomFace,
-    CustomFaceArgs,
+    ImageReserveArgs,
     Face,
     MiniApp,
     OpenData,
@@ -107,7 +107,7 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                             width=msg.width,
                             height=msg.height,
                             size=msg.size,
-                            args=CustomFaceArgs(
+                            args=ImageReserveArgs(
                                 is_emoji=msg.is_emoji,
                                 display_name=msg.text
                                 or ("[动画表情]" if msg.is_emoji else "[图片]"),
