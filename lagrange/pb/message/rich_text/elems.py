@@ -6,7 +6,7 @@ class Ptt(ProtoStruct):
     md5: bytes = ProtoField(4)
     name: str = ProtoField(5)
     size: int = ProtoField(6)
-    reserved: bytes = ProtoField(7, bytes())
+    reserved: bytes = ProtoField(7, None)
     file_id: int = ProtoField(8)
     is_valid: bool = ProtoField(11, True)
     group_file_key: bytes = ProtoField(18)
@@ -18,10 +18,10 @@ class Ptt(ProtoStruct):
 class Text(ProtoStruct):
     string: str = ProtoField(1, "")
     # link: str = ProtoField(2, "")
-    attr6_buf: bytes = ProtoField(3, bytes())
+    attr6_buf: bytes = ProtoField(3, None)
     # attr7_buf: bytes = ProtoField(4, bytes())
     # buf: bytes = ProtoField(11, bytes())
-    pb_reserved: dict = ProtoField(12, {})
+    pb_reserved: dict = ProtoField(12, None)
 
 
 class Face(ProtoStruct):

@@ -125,17 +125,17 @@ class Client(BaseClient):
         if rsp:
             self._events.emit(rsp, self)
 
-    async def _send_msg_raw(self, pb: dict, *, uin=0, grp_id=0, uid="") -> SendMsgRsp:
-        assert uin or grp_id, "uin and grp_id"
+    async def _send_msg_raw(self, pb: dict, *, grp_id=0, uid="") -> SendMsgRsp:
         seq = self.seq + 1
         sendto = {}
         if not grp_id:  # friend
-            assert uin and uid, "uin and uid must be filled"
-            sendto[1] = {1: uin, 2: uid}
+            assert uid, "uid must be set"
+            sendto[1] = {2: uid}
         elif grp_id:  # grp
-            sendto[2] = {1: grp_id}
-        elif uin and grp_id:  # temp msg
-            sendto[3] = {1: grp_id, 2: uin}
+            sendto[1] = {1: grp_id}
+        elif uid and grp_id:  # temp msg, untest
+            assert uid or grp_id, "uid and grp_id"
+            sendto[3] = {1: grp_id, 2: uid}
         else:
             assert False
         body = {
@@ -146,7 +146,7 @@ class Client(BaseClient):
             5: int.from_bytes(os.urandom(4), byteorder="big", signed=False),
         }
         if not grp_id:
-            body[12] = {1: timestamp()}
+            body[6] = {1: timestamp()}
 
         packet = await self.send_uni_packet("MessageSvc.PbSendMsg", proto_encode(body))
         return SendMsgRsp.decode(packet.data)
@@ -154,6 +154,14 @@ class Client(BaseClient):
     async def send_grp_msg(self, msg_chain: List[T], grp_id: int) -> int:
         result = await self._send_msg_raw(
             {1: build_message(msg_chain).encode()}, grp_id=grp_id
+        )
+        if result.ret_code:
+            raise AssertionError(result.ret_code, result.err_msg)
+        return result.seq
+
+    async def send_friend_msg(self, msg_chain: List[T], uid: str) -> int:
+        result = await self._send_msg_raw(
+            {1: build_message(msg_chain).encode()}, uid=uid
         )
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
