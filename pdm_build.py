@@ -1,5 +1,6 @@
 """
 PDM Build Script
+auto bump version
 2024/3/18
 """
 
@@ -28,7 +29,7 @@ def pdm_build_hook_enabled(_context: Context) -> bool:
 
 def pdm_build_initialize(context: Context):
     ver = context.config.metadata.get("version")
-    with open("lagrange/__init__.py", "w") as f:
+    with open("lagrange/version.py", "w") as f:
         if ver is None:
             ver = "0.0.0"
         f.write(f"__version__ = '{ver}-{rev}'\n")
@@ -36,7 +37,7 @@ def pdm_build_initialize(context: Context):
 
 def pdm_build_finalize(context: Context, _files) -> None:
     ver = context.config.metadata.get("version")
-    with open("lagrange/__init__.py", "w") as f:
+    with open("lagrange/version.py", "w") as f:
         if ver is None:
             ver = "0.0.0"
         f.write(f"__version__ = '{ver}'")
