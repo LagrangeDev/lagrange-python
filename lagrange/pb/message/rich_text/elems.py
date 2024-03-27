@@ -98,12 +98,17 @@ class ExtraInfo(ProtoStruct):
     # uin: int = ProtoField(9)
 
 
+class SrcMsgArgs(ProtoStruct):
+    # new_id: int = ProtoField(3, None)
+    uid: str = ProtoField(6, None)
+
+
 class SrcMsg(ProtoStruct):
     seq: int = ProtoField(1)
     uin: int = ProtoField(2, 0)
     timestamp: int = ProtoField(3)
     elems: list[dict] = ProtoField(5, [{}])
-    pb_reserved: dict = ProtoField(8, {})
+    pb_reserved: SrcMsgArgs = ProtoField(8, None)
     to_uin: int = ProtoField(10, 0)
 
 

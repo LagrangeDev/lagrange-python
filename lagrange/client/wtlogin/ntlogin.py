@@ -3,7 +3,8 @@ from lagrange.utils.binary.protobuf import proto_decode, proto_encode
 from lagrange.utils.crypto.aes import aes_gcm_decrypt, aes_gcm_encrypt
 from lagrange.utils.log import logger
 
-from .wtlogin.enum import LoginErrorCode
+from lagrange.client.wtlogin.enum import LoginErrorCode
+from lagrange.pb.login.ntlogin import NTLoginRsp
 
 
 def build_ntlogin_captcha_submit(ticket: str, rand_str: str, aid: str):
@@ -47,35 +48,33 @@ def parse_ntlogin_response(
     response: bytes, sig: SigInfo, captcha: list
 ) -> LoginErrorCode:
     frame = proto_decode(response, 0)
-    body = proto_decode(aes_gcm_decrypt(frame[3], sig.exchange_key), 2)
+    rsp = NTLoginRsp.decode(aes_gcm_decrypt(frame[3], sig.exchange_key))
 
-    if 1 in body.get(2, {}):
-        cr = body[2][1]
-        sig.tgt = cr[4]
-        sig.d2 = cr[5]
-        sig.d2_key = cr[6]
-        sig.temp_pwd = cr[3]
+    if not rsp.head.error and rsp.body.credentials:
+        cr = rsp.body.credentials
+        sig.tgt = cr.tgt
+        sig.d2 = cr.d2
+        sig.d2_key = cr.d2_key
+        sig.temp_pwd = cr.temp_pwd
         sig.info_updated()
 
         logger.login.debug("SigInfo got")
 
         return LoginErrorCode.success
     else:
-        ret = LoginErrorCode(body[1][4][1])
+        ret = LoginErrorCode(rsp.head.error.code)
         if ret == LoginErrorCode.captcha_verify:
-            sig.cookies = body[1][5][1]
-            verify_url: str = body[2][2][3]
+            sig.cookies = rsp.head.cookies.str
+            verify_url = rsp.body.verify.url
             aid = verify_url.split("&sid=")[1].split("&")[0]
             captcha[2] = aid
             logger.login.waring("need captcha verify: " + verify_url)
-        elif 2 in body[1][4]:
-            stat = body[1][4]
-            title = stat[2].decode()
-            content = stat[3].decode()
+        else:
+            stat = rsp.head.error
+            title = stat.title
+            content = stat.message
             logger.login.error(
                 f"Login fail on ntlogin({ret.name}): [{title}]>{content}"
             )
-        else:
-            logger.login.error(f"Login fail: {ret.name}")
 
     return ret

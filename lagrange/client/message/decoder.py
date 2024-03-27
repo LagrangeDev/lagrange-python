@@ -184,7 +184,7 @@ def parse_msg_new(rich: RichText) -> List[T]:
                     seq=src.seq,
                     uin=src.uin,
                     timestamp=src.timestamp,
-                    uid=src.pb_reserved[6].decode(),
+                    uid=src.pb_reserved.uid,
                     msg=msg_text,
                 )
             )

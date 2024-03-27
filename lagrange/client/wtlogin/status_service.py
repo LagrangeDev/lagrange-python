@@ -1,5 +1,5 @@
 from lagrange.info import AppInfo, DeviceInfo
-from lagrange.pb.wtlogin.register import PBRegisterRequest, PBRegisterResponse
+from lagrange.pb.login.register import PBRegisterRequest, PBRegisterResponse
 from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.utils.log import logger
 

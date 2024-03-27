@@ -8,9 +8,12 @@ from typing_extensions import Literal
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.log import logger
+from lagrange.client.wtlogin.ntlogin import (
+    build_ntlogin_request,
+    parse_ntlogin_response,
+)
 
 from .network import ClientNetwork
-from .ntlogin import build_ntlogin_request, parse_ntlogin_response
 from .packet import PacketBuilder
 from .wtlogin.enum import LoginErrorCode, QrCodeResult
 from .wtlogin.exchange import build_key_exchange_request, parse_key_exchange_response
