@@ -111,13 +111,17 @@ class Raw(Text):
 class Emoji(BaseElem):
     id: int
 
+    @property
+    def text(self) -> str:
+        return f"[emoji:{self.id}]"
+
 
 @dataclass
 class Reaction(Emoji):
     """QQ: super emoji"""
 
-    text: str
-    show_type: int  # size - sm: 33, bg: 37
+    # text: str
+    # show_type: int  # size - sm: 33, bg: 37
 
 
 @dataclass
