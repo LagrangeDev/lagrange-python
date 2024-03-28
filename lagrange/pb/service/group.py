@@ -1,3 +1,5 @@
+from typing import Union
+
 from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
 
@@ -161,4 +163,24 @@ class PBHandleGroupRequest(ProtoStruct):
             body=HandleGrpReqBody(
                 seq=seq, event_type=event_type, grp_id=grp_id, message=message
             ),
+        )
+
+
+class PBSendGrpReactionReq(ProtoStruct):
+    grp_id: int = ProtoField(2)
+    seq: int = ProtoField(3)
+    content: str = ProtoField(4)
+    type: int = ProtoField(5)
+    f6: int = ProtoField(6, 0)
+    f7: int = ProtoField(7, 0)
+
+    @classmethod
+    def build(
+        cls, grp_id: int, seq: int, content: Union[str, int]
+    ) -> "PBSendGrpReactionReq":
+        return cls(
+            grp_id=grp_id,
+            seq=seq,
+            content=str(content) if isinstance(content, int) else str(ord(content)),
+            type=1 if isinstance(content, int) else 2,
         )

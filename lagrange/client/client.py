@@ -1,5 +1,5 @@
 import os
-from typing import BinaryIO, Callable, Coroutine, List, Optional
+from typing import BinaryIO, Callable, Coroutine, List, Optional, Union
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
@@ -16,6 +16,7 @@ from lagrange.pb.service.group import (
     PBHandleGroupRequest,
     PBLeaveGroupRequest,
     PBRenameMemberRequest,
+    PBSendGrpReactionReq,
     PBSetEssence,
     SetEssenceRsp,
 )
@@ -246,6 +247,19 @@ class Client(BaseClient):
                 0x1097, 1, PBLeaveGroupRequest.build(grp_id).encode()
             )
         ).ret_code
+
+    async def send_grp_reaction(
+        self, grp_id: int, msg_seq: int, content: Union[str, int], is_cancel=False
+    ) -> None:
+        if isinstance(content, str):
+            assert len(content) == 1, "content must be a emoji"
+        rsp = await self.send_oidb_svc(
+            0x9082,
+            1 + is_cancel,
+            PBSendGrpReactionReq.build(grp_id, msg_seq, content).encode(),
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, str(rsp.err_msg))
 
     async def send_nudge(self, uin: int, grp_id: int = 0) -> int:
         """grp_id=0 when send to friend"""

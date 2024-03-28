@@ -75,37 +75,40 @@ async def msg_push_handler(sso: SSOPacket):
     elif typ == 0x2DC:  # grp event, 732
         if sub_typ == 20:  # nudget(grp_id only)
             return
-        elif sub_typ == 16:  # rename and special_title
-            reader = Reader(pkg.message.buf2)
-            grp_id = reader.read_u32()
-            reader.read_u8()  # reserve
-            pb = GroupSub16Head.decode(reader.read_bytes_with_length("u16", False))
-            if pb.flag == 6:  # special_title
-                body = MemberGotTitleBody.decode(pb.body)
-                for el in re.findall(r"<(\{.*?})>", body.string):
-                    el = json.loads(el)
-                    if el["cmd"] == 1:
-                        title = el["text"]
-                        url = el["data"]
-                        break
+        elif sub_typ == 16:  # rename and special_title and reaction(server not impl)
+            if pkg.message:  # rename and special_title
+                reader = Reader(pkg.message.buf2)
+                grp_id = reader.read_u32()
+                reader.read_u8()  # reserve
+                pb = GroupSub16Head.decode(reader.read_bytes_with_length("u16", False))
+                if pb.flag == 6:  # special_title
+                    body = MemberGotTitleBody.decode(pb.body)
+                    for el in re.findall(r"<(\{.*?})>", body.string):
+                        el = json.loads(el)
+                        if el["cmd"] == 1:
+                            title = el["text"]
+                            url = el["data"]
+                            break
+                    else:
+                        raise ValueError("cannot find special_title and url")
+                    return GroupMemberGotSpecialTitle(
+                        grp_id=grp_id,
+                        member_uin=body.member_uin,
+                        special_title=title,
+                        _detail_url=url,
+                    )
+                elif pb.flag == 12:  # renamed
+                    body = GroupRenamedBody.decode(pb.body)
+                    return GroupNameChanged(
+                        grp_id=grp_id,
+                        name_new=body.grp_name,
+                        timestamp=pb.timestamp,
+                        operator_uid=pb.operator_uid,
+                    )
                 else:
-                    raise ValueError("cannot find special_title and url")
-                return GroupMemberGotSpecialTitle(
-                    grp_id=grp_id,
-                    member_uin=body.member_uin,
-                    special_title=title,
-                    _detail_url=url,
-                )
-            elif pb.flag == 12:  # renamed
-                body = GroupRenamedBody.decode(pb.body)
-                return GroupNameChanged(
-                    grp_id=grp_id,
-                    name_new=body.grp_name,
-                    timestamp=pb.timestamp,
-                    operator_uid=pb.operator_uid,
-                )
-            else:
-                raise ValueError(f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex()}")
+                    raise ValueError(
+                        f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex()}"
+                    )
         elif sub_typ == 17:  # recall
             reader = Reader(pkg.message.buf2)
             grp_id = reader.read_u32()
