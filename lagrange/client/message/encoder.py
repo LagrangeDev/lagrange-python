@@ -15,6 +15,7 @@ from lagrange.pb.message.rich_text.elems import (
     CommonElem,
     MarketFace as PBMarketFace,
     NotOnlineImage,
+    SrcMsgArgs,
 )
 from lagrange.pb.message.rich_text.elems import Text as PBText
 
@@ -72,7 +73,7 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                             uin=msg.uin,
                             timestamp=msg.timestamp,
                             elems=[{1: {1: msg.msg}}],
-                            pb_reserved={6: msg.uid} if msg.uid else {},
+                            pb_reserved=SrcMsgArgs(uid=msg.uid) if msg.uid else None,
                         )
                     )
                 )
