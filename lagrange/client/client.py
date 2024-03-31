@@ -1,4 +1,5 @@
 import os
+import struct
 from typing import BinaryIO, Callable, Coroutine, List, Optional, Union
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
@@ -18,6 +19,11 @@ from lagrange.pb.service.group import (
     PBRenameMemberRequest,
     PBSendGrpReactionReq,
     PBSetEssence,
+    PBGroupKickMemberRequest,
+    # PBGetMemberCardReq,
+    # GetMemberCardRsp,
+    PBGetGrpMemberInfoReq,
+    GetGrpMemberInfoRsp,
     SetEssenceRsp,
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
@@ -190,6 +196,26 @@ class Client(BaseClient):
     async def upload_friend_audio(self, voice: BinaryIO, uid: str) -> Audio:
         return await self._highway.upload_voice(voice, uid=uid)
 
+    # RIP: server not impl
+    # async def get_grp_member_card(self, grp_id: int, uin: int) -> GetMemberCardRsp:
+    #     return GetMemberCardRsp.decode(
+    #         (
+    #             await self.send_uni_packet(
+    #                 "group_member_card.get_group_member_card_info",
+    #                 PBGetMemberCardReq.build(grp_id, uin).encode(),
+    #             )
+    #         ).data
+    #     )
+
+    async def get_grp_member_info(self, grp_id: int, uid: str) -> GetGrpMemberInfoRsp:
+        return GetGrpMemberInfoRsp.decode(
+            (
+                await self.send_oidb_svc(
+                    0xFE7, 4, PBGetGrpMemberInfoReq.build(grp_id, uid).encode()
+                )
+            ).data
+        )
+
     async def get_grp_msg(
         self, grp_id: int, start: int, end: int = 0, filter_deleted_msg=True
     ) -> List[GroupMessage]:
@@ -248,6 +274,16 @@ class Client(BaseClient):
             )
         ).ret_code
 
+    async def kick_grp_member(self, grp_id: int, uin: int, permanent=False):
+        rsp = await self.send_oidb_svc(
+            0x8A0,
+            0,
+            PBGroupKickMemberRequest.build(grp_id, uin, permanent).encode(),
+            True,
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, str(rsp.err_msg))
+
     async def send_grp_reaction(
         self, grp_id: int, msg_seq: int, content: Union[str, int], is_cancel=False
     ) -> None:
@@ -293,6 +329,23 @@ class Client(BaseClient):
             0x89A,
             0,
             PBGroupMuteRequest.build(grp_id, 0xFFFFFFFF if enable else 0).encode(),
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
+
+    # async def set_mute_member(self, grp_id: int, uin: int, duration: int):
+    #     rsp = await self.send_oidb_svc(
+    #         0x1253,
+    #         1,
+    #         PBGroupMuteMemberRequest.build(grp_id, uid, duration).encode(),
+    #         True
+    #     )
+    #     if rsp.ret_code:
+    #         raise AssertionError(rsp.ret_code, rsp.err_msg)
+
+    async def set_mute_member(self, grp_id: int, uin: int, duration: int):
+        rsp = await self.send_oidb_svc(
+            0x570, 8, struct.pack(">IBHII", grp_id, 0x20, 1, uin, duration)
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)

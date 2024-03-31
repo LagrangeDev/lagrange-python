@@ -184,3 +184,137 @@ class PBSendGrpReactionReq(ProtoStruct):
             content=str(content) if isinstance(content, int) else str(ord(content)),
             type=1 if isinstance(content, int) else 2,
         )
+
+
+class GroupMuteMemberReqBody(ProtoStruct):
+    uid: str = ProtoField(1)
+    duration: int = ProtoField(2)
+
+
+class PBGroupMuteMemberRequest(ProtoStruct):
+    grp_id: int = ProtoField(1)
+    type: int = ProtoField(2, 1)
+    body: GroupMuteMemberReqBody = ProtoField(3)
+
+    @classmethod
+    def build(cls, grp_id: int, uid: str, duration: int) -> "PBGroupMuteMemberRequest":
+        return cls(
+            grp_id=grp_id, body=GroupMuteMemberReqBody(uid=uid, duration=duration)
+        )
+
+
+# class PBGroupKickMemberRequest(ProtoStruct):
+#     grp_id: int = ProtoField(1)
+#     target_uid: str = ProtoField(3)
+#     permanent: bool = ProtoField(4)
+#     f5: str = ProtoField(5, "")
+#
+#     @classmethod
+#     def build(
+#             cls, grp_id: int, target_uid: str, permanent: bool
+#     ) -> "PBGroupKickMemberRequest":
+#         return cls(
+#             grp_id=grp_id,
+#             target_uid=target_uid,
+#             permanent=permanent
+#         )
+
+
+class GroupKickMemberReqBody(ProtoStruct):
+    f1: int = ProtoField(1, 5)
+    uin: int = ProtoField(2)
+    permanent: bool = ProtoField(3)
+
+
+class PBGroupKickMemberRequest(ProtoStruct):
+    grp_id: int = ProtoField(1)
+    body: GroupKickMemberReqBody = ProtoField(2)
+
+    @classmethod
+    def build(
+        cls, grp_id: int, uin: int, permanent: bool
+    ) -> "PBGroupKickMemberRequest":
+        return cls(
+            grp_id=grp_id, body=GroupKickMemberReqBody(uin=uin, permanent=permanent)
+        )
+
+
+# # group_member_card.get_group_member_card_info
+# class PBGetMemberCardReq(ProtoStruct):
+#     grp_id: int = ProtoField(1)
+#     uin: int = ProtoField(2)
+#     f3: int = ProtoField(3, 1)
+#     f4: int = ProtoField(4, 1)
+#     f5: int = ProtoField(5, 1)
+#
+#     @classmethod
+#     def build(cls, grp_id: int, uin: int) -> "PBGetMemberCardReq":
+#         return cls(
+#             grp_id=grp_id,
+#             uin=uin,
+#         )
+#
+#
+# class GetMemberCardRspBody(ProtoStruct, debug=True):
+#     uin: int = ProtoField(1)
+#     nickname: str = ProtoField(8)
+#     region_name: str = ProtoField(10)
+#     name: str = ProtoField(11)
+#     age: int = ProtoField(12)
+#     level_name: str = ProtoField(13)
+#     joined_time: int = ProtoField(14)
+#     timestamp: int = ProtoField(15)  # ?
+#     level: dict = ProtoField(41, {})  # level_num: level[2]
+#
+#
+# class GetMemberCardRsp(ProtoStruct):
+#     grp_id: int = ProtoField(1)
+#     f2: int = ProtoField(2)  # 2
+#     body: GetMemberCardRspBody = ProtoField(3)
+
+
+class AccountInfo(ProtoStruct):
+    uid: str = ProtoField(2)
+    uin: int = ProtoField(4, None)
+
+
+class PBGetGrpMemberInfoReq(ProtoStruct):
+    grp_id: int = ProtoField(1)
+    f2: int = ProtoField(2, 3)
+    f3: int = ProtoField(3, 0)
+    fetch_list: bytes = ProtoField(4)  # dict[int, 1]
+    account: AccountInfo = ProtoField(5)
+
+    @classmethod
+    def build(cls, grp_id: int, uid: str) -> "PBGetGrpMemberInfoReq":
+        return cls(
+            grp_id=grp_id,
+            fetch_list=bytes.fromhex(
+                "500158016001680170017801800101a00101a00601a80601"  # 10-16, 20, 100, 101
+            ),
+            account=AccountInfo(uid=uid),
+        )
+
+
+class MemberInfoName(ProtoStruct):
+    string: str = ProtoField(2)
+
+
+class MemberInfoLevel(ProtoStruct):
+    num: int = ProtoField(2)
+
+
+class GetGrpMemberInfoRspBody(ProtoStruct, debug=True):
+    account: AccountInfo = ProtoField(1)
+    nickname: str = ProtoField(10)
+    name: MemberInfoName = ProtoField(11, None)  # if none? not set
+    level: MemberInfoLevel = ProtoField(12, None)  # if none? retry
+    permission: int = ProtoField(13)  # ?
+    is_admin: int = ProtoField(20)
+    joined_time: int = ProtoField(100)
+    last_seen: int = ProtoField(101)
+
+
+class GetGrpMemberInfoRsp(ProtoStruct):
+    grp_id: int = ProtoField(1)
+    body: GetGrpMemberInfoRspBody = ProtoField(2)
