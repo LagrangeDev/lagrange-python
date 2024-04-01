@@ -206,9 +206,7 @@ class HighWaySession:
             url = "https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
                 uin=self._client.uin,
                 gid=gid,
-                file_id=fileid.hex().upper()
-                if isinstance(fileid, bytes)
-                else file,  # test required
+                file_id=fileid,
                 fmd5=fmd5.hex().upper(),
             )
         else:
