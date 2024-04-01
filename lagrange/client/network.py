@@ -4,6 +4,7 @@ ClientNetwork Implement
 
 import asyncio
 import ipaddress
+import sys
 from typing import Dict, Callable, Coroutine, Tuple, overload
 from typing_extensions import Literal
 
@@ -94,7 +95,8 @@ class ClientNetwork(Connection):
         t = asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
 
     async def on_error(self) -> bool:
-        logger.network.exception("Connection got an unexpected error:")
+        err = sys.exception()
+        logger.network.error(f"Connection got an unexpected error: {repr(err)}")
         t = asyncio.create_task(self._disconnect_cb(True), name="disconnect_cb")
         return True
 
