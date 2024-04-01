@@ -22,6 +22,8 @@ from lagrange.pb.service.group import (
     PBGroupKickMemberRequest,
     # PBGetMemberCardReq,
     # GetMemberCardRsp,
+    PBGetGrpListRequest,
+    GetGrpListResponse,
     PBGetGrpMemberInfoReq,
     GetGrpMemberInfoRsp,
     SetEssenceRsp,
@@ -195,6 +197,12 @@ class Client(BaseClient):
 
     async def upload_friend_audio(self, voice: BinaryIO, uid: str) -> Audio:
         return await self._highway.upload_voice(voice, uid=uid)
+
+    async def get_grp_list(self) -> GetGrpListResponse:
+        rsp = await self.send_oidb_svc(0xFE5, 2, PBGetGrpListRequest.build().encode())
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
+        return GetGrpListResponse.decode(rsp.data)
 
     # RIP: server not impl
     # async def get_grp_member_card(self, grp_id: int, uin: int) -> GetMemberCardRsp:

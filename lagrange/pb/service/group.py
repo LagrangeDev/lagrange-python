@@ -318,3 +318,54 @@ class GetGrpMemberInfoRspBody(ProtoStruct, debug=True):
 class GetGrpMemberInfoRsp(ProtoStruct):
     grp_id: int = ProtoField(1)
     body: GetGrpMemberInfoRspBody = ProtoField(2)
+
+
+class GetGrpListReqBody(ProtoStruct):
+    cfg1: bytes = ProtoField(1)
+    cfg2: bytes = ProtoField(2)
+    cfg3: bytes = ProtoField(3)
+
+
+class PBGetGrpListRequest(ProtoStruct):
+    body: GetGrpListReqBody = ProtoField(1)
+
+    @classmethod
+    def build(cls) -> "PBGetGrpListRequest":
+        return cls(
+            body=GetGrpListReqBody(
+                cfg1=bytes.fromhex(
+                    "0801100118012001280140014801500158016001680170017801800101"
+                    "880101900101980101a00101b00101b80101c00101c80101d00101d801"
+                    "01e00101e80101f00101f80101800201c8b80201d0b80201d8b80201"
+                ),  # 1-5, 8-20, 22-32, 5001-5003
+                cfg2=bytes.fromhex("08011001180120012801300138014001"),  # 1-8
+                cfg3=bytes.fromhex("28013001"),  # 5-6
+            )
+        )
+
+
+class GrpInfoBasic(ProtoStruct):
+    owner: AccountInfo = ProtoField(1)  # uid only
+    create_time: int = ProtoField(2)
+    max_members: int = ProtoField(3)
+    now_members: int = ProtoField(4)
+    grp_name: str = ProtoField(5)
+    introduce: str = ProtoField(18, None)
+    question: str = ProtoField(19, None)
+    recent_notice: str = ProtoField(30, None)  # 30 chars
+
+
+class GrpInfoOther(ProtoStruct):
+    create_time: int = ProtoField(1)  # ?
+    upgrade_time: int = ProtoField(4, None)  # when upgrade grp size?
+    f5: int = ProtoField(5, None)  # unknown
+
+
+class GrpInfo(ProtoStruct):
+    grp_id: int = ProtoField(3)
+    info: GrpInfoBasic = ProtoField(4)
+    other: GrpInfoOther = ProtoField(5)
+
+
+class GetGrpListResponse(ProtoStruct):
+    grp_list: list[GrpInfo] = ProtoField(2, [])
