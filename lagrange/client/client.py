@@ -76,14 +76,23 @@ class Client(BaseClient):
         await super()._disconnect_cb(from_err)
         self._events.emit(ClientOffline(recoverable=from_err), self)
 
+    async def easy_login(self) -> bool:
+        if self._sig.temp_pwd:  # EasyLogin
+            await self._key_exchange()
+
+            rsp = await self.token_login(self._sig.temp_pwd)
+            if rsp.successful:
+                return await self.register()
+            return False
+        else:
+            raise AssertionError("siginfo not found, you must login first")
+
     async def login(self, password="", qrcode_path="./qrcode.png") -> bool:
         try:
-            if self._sig.temp_pwd:  # EasyLogin
-                await self._key_exchange()
-
-                rsp = await self.token_login(self._sig.temp_pwd)
-                if rsp.successful:
-                    return await self.register()
+            if self._sig.temp_pwd:
+                rsp = await self.easy_login()
+                if rsp:
+                    return True
         except Exception as e:
             logger.login.error("EasyLogin fail", exc_info=e)
 
