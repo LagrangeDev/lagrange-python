@@ -68,7 +68,7 @@ def parse_msg_new(rich: RichText) -> List[T]:
                         elems.At(
                             text=msg.string,
                             uin=int.from_bytes(buf3[7:11], "big"),
-                            uid=msg.pb_reserved.get(9),
+                            uid=msg.pb_reserved.get(9) if msg.pb_reserved else None,
                         )
                     )
             else:
