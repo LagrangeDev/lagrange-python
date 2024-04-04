@@ -105,11 +105,15 @@ class HttpCat:
         if header.get("Transfer-Encoding") == "chunked":
             bs = bytearray()
             while True:
-                length = int(await cls._read_line(reader) or "0", 16)
-                if length:
-                    bs += await reader.readexactly(length)
+                len_hex = await cls._read_line(reader)
+                if len_hex:
+                    length = int(len_hex, 16)
+                    if length:
+                        bs += await reader.readexactly(length)
+                    else:
+                        break
                 else:
-                    break
+                    raise ConnectionResetError("Connection reset by peer")
             return bytes(bs)
         elif "Content-Length" in header:
             return await reader.readexactly(int(header["Content-Length"]))
