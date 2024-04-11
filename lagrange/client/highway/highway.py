@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from hashlib import md5
@@ -84,7 +85,7 @@ class HighWaySession:
                 )
                 self.logger.info("upload complete, use %.2fms" % (sec * 1000))
                 return data
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 self.logger.error(f"server {addr[0]}:{addr[1]} timeout")
                 continue
             finally:
