@@ -16,7 +16,7 @@ class Sex(IntEnum):
 class UserInfo:
     name: str = ""
     country: str = ""
-    region: str = ""
+    province: str = ""
     city: str = ""
     email: str = ""
     school: str = ""
@@ -36,7 +36,7 @@ class UserInfo:
             elif str_field.type == 20003:
                 rsp.country = str_field.to_str
             elif str_field.type == 20004:
-                rsp.region = str_field.to_str
+                rsp.province = str_field.to_str
             elif str_field.type == 20011:
                 rsp.email = str_field.to_str
             elif str_field.type == 20020:
