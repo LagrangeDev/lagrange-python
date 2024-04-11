@@ -369,3 +369,42 @@ class GrpInfo(ProtoStruct):
 
 class GetGrpListResponse(ProtoStruct):
     grp_list: list[GrpInfo] = ProtoField(2, [])
+
+
+class PBGetInfoFromUidReq(ProtoStruct):
+    uid: list[str] = ProtoField(1)
+    cfg: bytes = ProtoField(
+        3,
+        bytes.fromhex(
+            "08a29c0108a39c0108a49c0108a59c0108a69c0108a79c0108a99c"
+            "0108ab9c0108b49c0108b59c0108ba9c0108bf9c0108c59c011802"
+        ),
+    )
+
+
+class GetInfoRspF1(ProtoStruct):
+    type: int = ProtoField(1)
+    value: int = ProtoField(2)
+
+
+class GetInfoRspF2(ProtoStruct):
+    type: int = ProtoField(1)
+    value: bytes = ProtoField(2)
+
+    @property
+    def to_str(self) -> str:
+        return self.value.decode()
+
+
+class GetInfoRspField(ProtoStruct, debug=True):
+    int_t: list[GetInfoRspF1] = ProtoField(1, [])
+    str_t: list[GetInfoRspF2] = ProtoField(2, [])
+
+
+class GetInfoRspBody(ProtoStruct):
+    uid: str = ProtoField(1)
+    fields: GetInfoRspField = ProtoField(2)
+
+
+class GetInfoFromUidRsp(ProtoStruct):
+    body: list[GetInfoRspBody] = ProtoField(1)

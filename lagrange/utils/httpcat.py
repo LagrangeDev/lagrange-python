@@ -113,6 +113,8 @@ class HttpCat:
                     else:
                         break
                 else:
+                    if header.get("Connection") == "close":  # cloudflare?
+                        break
                     raise ConnectionResetError("Connection reset by peer")
             return bytes(bs)
         elif "Content-Length" in header:

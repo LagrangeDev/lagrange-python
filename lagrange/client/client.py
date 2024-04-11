@@ -1,6 +1,6 @@
 import os
 import struct
-from typing import BinaryIO, Callable, Coroutine, List, Optional, Union
+from typing import BinaryIO, Callable, Coroutine, List, Optional, Union, overload
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
@@ -27,6 +27,8 @@ from lagrange.pb.service.group import (
     PBGetGrpMemberInfoReq,
     GetGrpMemberInfoRsp,
     SetEssenceRsp,
+    GetInfoFromUidRsp,
+    PBGetInfoFromUidReq,
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.utils.binary.protobuf import proto_decode, proto_encode
@@ -42,6 +44,7 @@ from .message.decoder import parse_grp_msg
 from .message.elems import Audio, Image
 from .message.encoder import build_message
 from .message.types import T
+from .models import UserInfo
 from .server_push import push_handler
 from .wtlogin.sso import SSOPacket
 
@@ -393,3 +396,28 @@ class Client(BaseClient):
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
+
+    @overload
+    async def get_user_info(self, uid: str) -> UserInfo: ...
+
+    @overload
+    async def get_user_info(self, uid: List[str]) -> List[UserInfo]: ...
+
+    async def get_user_info(
+        self, uid: Union[str, List[str]]
+    ) -> Union[UserInfo, List[UserInfo]]:
+        if isinstance(uid, str):
+            uid = [uid]
+        rsp = GetInfoFromUidRsp.decode(
+            (
+                await self.send_oidb_svc(
+                    0xFE1, 8, PBGetInfoFromUidReq(uid=uid).encode()
+                )
+            ).data
+        )
+        if not rsp.body:
+            raise AssertionError("Empty response")
+        elif len(rsp.body) == 1:
+            return UserInfo.from_pb(rsp.body[0])
+        else:
+            return [UserInfo.from_pb(body) for body in rsp.body]
