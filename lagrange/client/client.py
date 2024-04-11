@@ -231,7 +231,24 @@ class Client(BaseClient):
         return GetGrpMemberInfoRsp.decode(
             (
                 await self.send_oidb_svc(
-                    0xFE7, 4, PBGetGrpMemberInfoReq.build(grp_id, uid).encode()
+                    0xFE7, 4, PBGetGrpMemberInfoReq.build(grp_id, uid=uid).encode()
+                )
+            ).data
+        )
+
+    async def get_grp_members(
+        self, grp_id: int, next_key: str = None
+    ) -> GetGrpMemberInfoRsp:
+        """
+        500 members per request,
+        get next page: fill 'next_key' from GetGrpMemberInfoRsp.next_key
+        """
+        return GetGrpMemberInfoRsp.decode(
+            (
+                await self.send_oidb_svc(
+                    0xFE7,
+                    4,
+                    PBGetGrpMemberInfoReq.build(grp_id, next_key=next_key).encode(),
                 )
             ).data
         )

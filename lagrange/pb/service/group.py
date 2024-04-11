@@ -280,19 +280,32 @@ class AccountInfo(ProtoStruct):
 
 class PBGetGrpMemberInfoReq(ProtoStruct):
     grp_id: int = ProtoField(1)
-    f2: int = ProtoField(2, 3)
-    f3: int = ProtoField(3, 0)
+    f2: int = ProtoField(2)
+    f3: int = ProtoField(3)
     fetch_list: bytes = ProtoField(4)  # dict[int, 1]
-    account: AccountInfo = ProtoField(5)
+    account: AccountInfo = ProtoField(5, None)
+    next_key: bytes = ProtoField(15, None)  # base64(pb)
 
     @classmethod
-    def build(cls, grp_id: int, uid: str) -> "PBGetGrpMemberInfoReq":
+    def build(cls, grp_id: int, uid="", next_key=None) -> "PBGetGrpMemberInfoReq":
+        assert not (uid and next_key), "invalid arguments"
+        if uid:
+            account = AccountInfo(uid=uid)
+            f2 = 3
+            f3 = 0
+        else:  # member_list
+            account = None
+            f2 = 5
+            f3 = 2
         return cls(
             grp_id=grp_id,
+            f2=f2,
+            f3=f3,
             fetch_list=bytes.fromhex(
-                "500158016001680170017801800101a00101a00601a80601"  # 10-16, 20, 100, 101
-            ),
-            account=AccountInfo(uid=uid),
+                "500158016001680170017801800101a00" "101a00601a80601c00601c80601c00c01"
+            ),  # 10-16, 20, 100, 101, 104, 105, 200
+            account=account,
+            next_key=next_key,
         )
 
 
@@ -306,7 +319,7 @@ class MemberInfoLevel(ProtoStruct):
 
 class GetGrpMemberInfoRspBody(ProtoStruct, debug=True):
     account: AccountInfo = ProtoField(1)
-    nickname: str = ProtoField(10)
+    nickname: str = ProtoField(10, "")
     name: MemberInfoName = ProtoField(11, None)  # if none? not set
     level: MemberInfoLevel = ProtoField(12, None)  # if none? retry
     permission: int = ProtoField(13)  # ?
@@ -314,10 +327,15 @@ class GetGrpMemberInfoRspBody(ProtoStruct, debug=True):
     joined_time: int = ProtoField(100)
     last_seen: int = ProtoField(101)
 
+    f104: int = ProtoField(104, None)
+    f105: int = ProtoField(105, None)
+    f200: int = ProtoField(200, None)
+
 
 class GetGrpMemberInfoRsp(ProtoStruct):
     grp_id: int = ProtoField(1)
-    body: GetGrpMemberInfoRspBody = ProtoField(2)
+    body: list[GetGrpMemberInfoRspBody] = ProtoField(2)
+    next_key: bytes = ProtoField(15, None)  # base64(pb)
 
 
 class GetGrpListReqBody(ProtoStruct):
