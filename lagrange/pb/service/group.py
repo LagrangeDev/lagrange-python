@@ -317,7 +317,7 @@ class MemberInfoLevel(ProtoStruct):
     num: int = ProtoField(2)
 
 
-class GetGrpMemberInfoRspBody(ProtoStruct, debug=True):
+class GetGrpMemberInfoRspBody(ProtoStruct):
     account: AccountInfo = ProtoField(1)
     nickname: str = ProtoField(10, "")
     name: MemberInfoName = ProtoField(11, None)  # if none? not set
