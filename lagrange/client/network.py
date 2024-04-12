@@ -101,8 +101,9 @@ class ClientNetwork(Connection):
 
     async def on_error(self) -> bool:
         err = sys.exception()
-        if isinstance(err, asyncio.IncompleteReadError):
+        if isinstance(err, (asyncio.IncompleteReadError, ConnectionError)):
             logger.network.warning("Connection lost, reconnecting...")
+            logger.network.debug(f"{repr(err)}")
             recover = True
         else:
             logger.network.error(f"Connection got an unexpected error: {repr(err)}")
@@ -137,7 +138,7 @@ class ClientNetwork(Connection):
             else:
                 self._wait_fut_map[packet.seq].set_result(packet)
         elif packet.seq == 0:
-            raise ConnectionError(packet.ret_code, packet.extra)
+            raise AssertionError(packet.ret_code, packet.extra)
         else:  # server pushed
             logger.network.debug(
                 f"{packet.seq}({packet.ret_code})<- {packet.cmd or packet.extra}"
