@@ -77,6 +77,10 @@ class ClientNetwork(Connection):
             finally:
                 self._wait_fut_map.pop(wait_seq)  # noqa
 
+    def _cancel_all_task(self):
+        for _, fut in self._wait_fut_map.items():
+            fut.cancel("connection closed")
+
     async def on_connected(self):
         self.conn_event.set()
         host, port = self.writer.get_extra_info("peername")[:2]  # for v6 ip
@@ -89,16 +93,23 @@ class ClientNetwork(Connection):
         else:
             self._connected = True
 
-    async def on_disconnect(self):
+    async def on_close(self):
         self.conn_event.clear()
-        logger.network.warning("Connection lost")
+        logger.network.warning("Connection close")
+        self._cancel_all_task()
         t = asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
 
     async def on_error(self) -> bool:
         err = sys.exception()
-        logger.network.error(f"Connection got an unexpected error: {repr(err)}")
-        t = asyncio.create_task(self._disconnect_cb(True), name="disconnect_cb")
-        return True
+        if isinstance(err, asyncio.IncompleteReadError):
+            logger.network.warning("Connection lost, reconnecting...")
+            recover = True
+        else:
+            logger.network.error(f"Connection got an unexpected error: {repr(err)}")
+            recover = False
+        self._cancel_all_task()
+        t = asyncio.create_task(self._disconnect_cb(recover), name="disconnect_cb")
+        return recover
 
     async def on_message(self, msg_len: int):
         raw = await self.reader.readexactly(msg_len)
@@ -125,6 +136,8 @@ class ClientNetwork(Connection):
                 )
             else:
                 self._wait_fut_map[packet.seq].set_result(packet)
+        elif packet.seq == 0:
+            raise ConnectionError(packet.ret_code, packet.extra)
         else:  # server pushed
             logger.network.debug(
                 f"{packet.seq}({packet.ret_code})<- {packet.cmd or packet.extra}"

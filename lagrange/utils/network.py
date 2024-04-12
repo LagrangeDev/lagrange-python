@@ -64,11 +64,12 @@ class Connection:
         )
 
     async def close(self):
-        await self.on_disconnect()
-        self._writer.close()
-        await self.writer.wait_closed()
-        self._reader = None
-        self._writer = None
+        if not self._stop_flag:
+            await self.on_close()
+            self._writer.close()
+            await self.writer.wait_closed()
+            self._reader = None
+            self._writer = None
 
     async def stop(self):
         self._stop_flag = True
@@ -102,21 +103,18 @@ class Connection:
                 if fail:
                     _logger.debug(f"connect retry fail: {repr(e)}")
                 else:
-                    _logger.error("Connect fail, retying...")
+                    _logger.error("Connect fail, retrying...")
                     fail = True
                 await asyncio.sleep(1 if not fail else 5)
                 continue
             await self.on_connected()
             await self._read_loop()
 
-    async def on_connected(self):
-        ...
+    async def on_connected(self): ...
 
-    async def on_disconnect(self):
-        ...
+    async def on_close(self): ...
 
-    async def on_message(self, message_length: int):
-        ...
+    async def on_message(self, message_length: int): ...
 
     async def on_error(self) -> bool:
         """use sys.exc_info() to catch exceptions"""

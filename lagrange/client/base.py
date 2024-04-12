@@ -80,8 +80,10 @@ class BaseClient:
     async def _reconnect_cb(self):
         await self.register()
 
-    async def _disconnect_cb(self, from_err: bool):
+    async def _disconnect_cb(self, recover: bool):
         self._online.clear()
+        if not recover:
+            await self.stop()
 
     def destroy_network(self):
         """force run reconnect logic"""

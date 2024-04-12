@@ -75,9 +75,9 @@ class Client(BaseClient):
         self._events.emit(ClientOffline(recoverable=False), self)
         return False
 
-    async def _disconnect_cb(self, from_err: bool):
-        await super()._disconnect_cb(from_err)
-        self._events.emit(ClientOffline(recoverable=from_err), self)
+    async def _disconnect_cb(self, recover: bool):
+        self._events.emit(ClientOffline(recoverable=recover), self)
+        await super()._disconnect_cb(recover)
 
     async def easy_login(self) -> bool:
         if self._sig.temp_pwd:  # EasyLogin
