@@ -100,7 +100,8 @@ class ClientNetwork(Connection):
         t = asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
 
     async def on_error(self) -> bool:
-        err = sys.exception()
+        _, err, _ = sys.exc_info()  # type: _, BaseException, _
+
         if isinstance(err, (asyncio.IncompleteReadError, ConnectionError)):
             logger.network.warning("Connection lost, reconnecting...")
             logger.network.debug(f"{repr(err)}")
