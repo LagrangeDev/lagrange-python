@@ -137,3 +137,8 @@ class MarketFace(Text):
     tab_id: int
     width: int
     height: int
+
+    @property
+    def url(self) -> str:
+        pic_id = self.face_id.hex()
+        return f"https://i.gtimg.cn/club/item/parcel/item/{pic_id[:2]}/{pic_id}/{self.width}x{self.height}.png"
