@@ -102,7 +102,8 @@ class ClientNetwork(Connection):
     async def on_error(self) -> bool:
         _, err, _ = sys.exc_info()  # type: _, BaseException, _
 
-        if isinstance(err, (asyncio.IncompleteReadError, ConnectionError)):
+        # OSError: timeout
+        if isinstance(err, (asyncio.IncompleteReadError, ConnectionError, OSError)):
             logger.network.warning("Connection lost, reconnecting...")
             logger.network.debug(f"{repr(err)}")
             recover = True
