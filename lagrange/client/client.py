@@ -1,5 +1,6 @@
 import os
 import struct
+from io import BytesIO
 from typing import BinaryIO, Callable, Coroutine, List, Optional, Union, overload
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
@@ -209,6 +210,12 @@ class Client(BaseClient):
 
     async def upload_friend_audio(self, voice: BinaryIO, uid: str) -> Audio:
         return await self._highway.upload_voice(voice, uid=uid)
+
+    async def down_grp_audio(self, audio: Audio, grp_id: int) -> BytesIO:
+        return await self._highway.download_audio(audio, gid=grp_id)
+
+    async def down_friend_audio(self, audio: Audio) -> BytesIO:
+        return await self._highway.download_audio(audio, uid=self.uid)
 
     async def get_grp_list(self) -> GetGrpListResponse:
         rsp = await self.send_oidb_svc(0xFE5, 2, PBGetGrpListRequest.build().encode())

@@ -1,6 +1,6 @@
 from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
-from .comm import CommonHead, ExtBizInfo, FileInfo, MsgInfo
+from .comm import CommonHead, ExtBizInfo, FileInfo, MsgInfo, IndexNode
 
 
 class C2CUserInfo(ProtoStruct):
@@ -53,8 +53,26 @@ class UploadCompletedReq(ProtoStruct):
     client_seq: int = ProtoField(4)
 
 
+class DownloadVideoExt(ProtoStruct):
+    busi_type: int = ProtoField(1, 0)
+    scene_type: int = ProtoField(2, 0)
+    sub_busi_type: int = ProtoField(3, None)
+
+
+class DownloadExt(ProtoStruct):
+    pic_ext: bytes = ProtoField(1, None)
+    video_ext: DownloadVideoExt = ProtoField(2, DownloadVideoExt())
+    ptt_ext: bytes = ProtoField(3, None)
+
+
+class DownloadReq(ProtoStruct):
+    node: IndexNode = ProtoField(1)
+    ext: DownloadExt = ProtoField(2, DownloadExt())
+
+
 class NTV2RichMediaReq(ProtoStruct):
     req_head: MultiMediaReqHead = ProtoField(1)
     upload: UploadReq = ProtoField(2, None)
+    download: DownloadReq = ProtoField(3, None)
     upload_completed: UploadCompletedReq = ProtoField(6, None)
     ext: bytes = ProtoField(99, None)

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+import uuid
 from hashlib import md5
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO, List, Optional, Tuple
@@ -8,7 +9,7 @@ from typing import TYPE_CHECKING, BinaryIO, List, Optional, Tuple
 from lagrange.client.message.elems import Audio, Image
 from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
 from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
-from lagrange.pb.highway.rsp import NTV2RichMediaResp
+from lagrange.pb.highway.rsp import NTV2RichMediaResp, DownloadInfo, DownloadRsp
 from lagrange.utils.binary.protobuf import proto_decode
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
@@ -19,6 +20,7 @@ from .encoders import (
     encode_audio_upload_req,
     encode_highway_head,
     encode_upload_img_req,
+    encode_audio_down_req,
 )
 from .frame import read_frame, write_frame
 from .utils import calc_file_hash_and_length, timeit
@@ -53,6 +55,15 @@ class HighWaySession:
                     self._session_addr_list.append((v6.ip, v6.port))
             for v4 in iplist.v4_addr:
                 self._session_addr_list.append((v4.ip, v4.port))
+
+    @classmethod
+    def _down_url(cls, info: DownloadRsp) -> str:
+        rsp = info.info
+        return (
+            f"http{'s' if rsp.https_port == 443 else ''}://"
+            f"{rsp.domain}{f':{rsp.https_port}' if rsp.https_port not in (80, 443) else ''}"
+            f"{rsp.url_path}{info.rkey}"
+        )
 
     def _encrypt_ext(self, ext: bytes) -> bytes:
         if not self._session_key:
@@ -173,6 +184,7 @@ class HighWaySession:
                     0x11C4 if gid else 0x11C5,
                     100,
                     encode_upload_img_req(gid, uid, fmd5, fsha1, fl, info).encode(),
+                    True
                 )
             ).data
         )
@@ -242,7 +254,7 @@ class HighWaySession:
                     100,
                     encode_audio_upload_req(
                         gid, uid, fmd5, fsha1, fl, info.seconds
-                    ).encode(),
+                    ).encode(), True
                 )
             ).data
         )
@@ -289,11 +301,42 @@ class HighWaySession:
             id=file_id,
             md5=fmd5,
             size=fl,
-            file_key=file_key,
+            file_key=file_key.decode(),
             qmsg=None if gid else compat,
         )
 
-    #
+    async def get_audio_down_url(self, audio: Audio, gid=0, uid="") -> str:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+
+        ret = NTV2RichMediaResp.decode(
+            (
+                await self._client.send_oidb_svc(
+                    0x126E if gid else 0x126D,
+                    200,
+                    encode_audio_down_req(
+                        audio.file_key, gid, uid
+                    ).encode(), True
+                )
+            ).data
+        )
+
+        if not ret:
+            raise ConnectionError("Internal error, check log for more detail")
+
+        return self._down_url(ret.download)
+
+    async def download_audio(self, audio: Audio, gid=0, uid="") -> BytesIO:
+        url = await self.get_audio_down_url(audio, gid, uid)
+
+        # SSLV3_ALERT_HANDSHAKE_FAILURE on ssl env
+        http = await HttpCat.request("GET", url.replace("https", "http"))
+        if http.code != 200:
+            raise ConnectionError(http.code, http.status)
+
+        return BytesIO(http.decompressed_body)
+
+
     # async def upload_video(self, file: BinaryIO, thumb: BinaryIO, gid: int) -> VideoElement:
     #     thumb_md5, thumb_size = calc_file_md5_and_length(thumb)
     #     video_md5, video_size = calc_file_md5_and_length(file)

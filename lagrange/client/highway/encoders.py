@@ -8,6 +8,7 @@ from lagrange.pb.highway.comm import (
     FileInfo,
     FileType,
     PicExtInfo,
+    IndexNode,
 )
 from lagrange.pb.highway.head import (
     DataHighwayHead,
@@ -23,6 +24,7 @@ from lagrange.pb.highway.req import (
     SceneInfo,
     UploadInfo,
     UploadReq,
+    DownloadReq,
 )
 
 if TYPE_CHECKING:
@@ -146,7 +148,10 @@ def encode_audio_upload_req(
         c2c_info = C2CUserInfo(uid=uid)
     return NTV2RichMediaReq(
         req_head=MultiMediaReqHead(
-            common=CommonHead(req_id=1 if grp_id else 4, cmd=100),
+            common=CommonHead(
+                req_id=4 if grp_id else 1,
+                cmd=100
+            ),
             scene=SceneInfo(
                 req_type=2,
                 bus_type=3,
@@ -183,6 +188,39 @@ def encode_audio_upload_req(
                     else b"\x9a\x01\x0b\xaa\x03\x08\x08\x04\x12\x04\x00\x00\x00\x00",
                 )
             ),
+        ),
+    )
+
+
+def encode_audio_down_req(uuid: str, grp_id: int, uid: str):
+    assert not (grp_id and uid)
+    c2c_info = None
+    grp_info = None
+    if grp_id:
+        scene_type = 2
+        grp_info = GroupInfo(grp_id=grp_id)
+    else:
+        scene_type = 1
+        c2c_info = C2CUserInfo(uid=uid)
+
+    return NTV2RichMediaReq(
+        req_head=MultiMediaReqHead(
+            common=CommonHead(
+                req_id=4 if grp_id else 1,
+                cmd=200
+            ),
+            scene=SceneInfo(
+                req_type=1,
+                bus_type=3,
+                scene_type=scene_type,
+                c2c=c2c_info,
+                grp=grp_info
+            ),
+        ),
+        download=DownloadReq(
+            node=IndexNode(
+                file_uuid=uuid
+            )
         ),
     )
 

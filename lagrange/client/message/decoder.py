@@ -8,7 +8,7 @@ from lagrange.pb.message.rich_text import Elems, RichText
 
 from . import elems
 from .types import T
-from ...utils.binary.protobuf import proto_encode
+from lagrange.utils.binary.protobuf import proto_encode
 
 
 def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
@@ -42,7 +42,7 @@ def parse_msg_new(rich: RichText) -> List[T]:
                 md5=ptt.md5,
                 text=f"[audio:{ptt.name}]",
                 time=ptt.time,
-                file_key=ptt.group_file_key,
+                file_key=ptt.group_file_key if not ptt.to_uin else ptt.friend_file_key,
                 qmsg=None,
             )
         ]
@@ -51,6 +51,9 @@ def parse_msg_new(rich: RichText) -> List[T]:
     ignore_next = False
     for raw in el:
         if not raw or raw == Elems():
+            continue
+        elif raw.elem_flags2 or raw.general_flags or raw.extra_info:
+            # unused flags
             continue
         elif ignore_next:
             ignore_next = False

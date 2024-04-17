@@ -1,6 +1,6 @@
 from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
 
-from .comm import CommonHead, IPv4, IPv6, MsgInfo
+from .comm import CommonHead, IPv4, IPv6, MsgInfo, PicUrlExtInfo, VideoExtInfo
 
 
 class MultiMediaRspHead(ProtoStruct):
@@ -35,6 +35,24 @@ class UploadRsp(ProtoStruct):
     sub_file_info: list[SubFileInfo] = ProtoField(10, [])
 
 
+class DownloadInfo(ProtoStruct):
+    domain: str = ProtoField(1)
+    url_path: str = ProtoField(2)
+    https_port: int = ProtoField(3, None)
+    v4_addrs: list[IPv4] = ProtoField(4, [])
+    v6_addrs: list[IPv6] = ProtoField(5, [])
+    pic_info: PicUrlExtInfo = ProtoField(6, None)
+    video_info: VideoExtInfo = ProtoField(7, None)
+
+
+class DownloadRsp(ProtoStruct):
+    rkey: str = ProtoField(1)
+    rkey_ttl: int = ProtoField(2, None)
+    info: DownloadInfo = ProtoField(3)
+    rkey_created_at: int = ProtoField(4, None)
+
+
 class NTV2RichMediaResp(ProtoStruct):
     rsp_head: MultiMediaRspHead = ProtoField(1)
     upload: UploadRsp = ProtoField(2, None)
+    download: DownloadRsp = ProtoField(3, None)

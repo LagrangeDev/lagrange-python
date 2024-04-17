@@ -99,7 +99,7 @@ class Video(Text, MediaInfo):
 @dataclass
 class Audio(Text, MediaInfo):
     time: int
-    file_key: bytes = field(repr=False)
+    file_key: str = field(repr=True)
 
 
 @dataclass

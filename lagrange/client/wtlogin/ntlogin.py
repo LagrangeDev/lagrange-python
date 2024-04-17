@@ -68,7 +68,7 @@ def parse_ntlogin_response(
             verify_url = rsp.body.verify.url
             aid = verify_url.split("&sid=")[1].split("&")[0]
             captcha[2] = aid
-            logger.login.waring("need captcha verify: " + verify_url)
+            logger.login.warning("need captcha verify: " + verify_url)
         else:
             stat = rsp.head.error
             title = stat.title

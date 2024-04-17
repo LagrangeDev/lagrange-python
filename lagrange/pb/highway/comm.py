@@ -70,12 +70,12 @@ class FileInfo(ProtoStruct):
 
 
 class IndexNode(ProtoStruct):
-    info: FileInfo = ProtoField(1)
+    info: FileInfo = ProtoField(1, None)
     file_uuid: str = ProtoField(2)
-    store_id: int = ProtoField(3, 1)
-    upload_time: int = ProtoField(4, 0)
-    ttl: int = ProtoField(5, 0)
-    sub_type: int = ProtoField(6, 0)
+    store_id: int = ProtoField(3, None)
+    upload_time: int = ProtoField(4, None)
+    ttl: int = ProtoField(5, None)
+    sub_type: int = ProtoField(6, None)
 
 
 class MsgInfoBody(ProtoStruct):
