@@ -256,6 +256,7 @@ def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
     grp_name = pkg.response_head.rsp_grp.grp_name
     sub_id = pkg.response_head.sigmap  # some client may not report it, old pcqq?
     sender_name = pkg.response_head.rsp_grp.sender_name
+    sender_type = pkg.response_head.type
 
     if isinstance(grp_name, bytes):  # unexpected end of data
         grp_name = grp_name.decode("utf-8", errors="ignore")
@@ -273,6 +274,7 @@ def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
         grp_id=grp_id,
         grp_name=grp_name,
         sub_id=sub_id,
+        sender_type=sender_type,
         msg=msg_text,
         msg_chain=parsed_msg,
     )

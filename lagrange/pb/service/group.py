@@ -302,7 +302,7 @@ class PBGetGrpMemberInfoReq(ProtoStruct):
             f2=f2,
             f3=f3,
             fetch_list=bytes.fromhex(
-                "500158016001680170017801800101a00" "101a00601a80601c00601c80601c00c01"
+                "500158016001680170017801800101a00101a00601a80601c00601c80601c00c01"
             ),  # 10-16, 20, 100, 101, 104, 105, 200
             account=account,
             next_key=next_key,
@@ -322,14 +322,22 @@ class GetGrpMemberInfoRspBody(ProtoStruct):
     nickname: str = ProtoField(10, "")
     name: MemberInfoName = ProtoField(11, None)  # if none? not set
     level: MemberInfoLevel = ProtoField(12, None)  # if none? retry
-    permission: int = ProtoField(13)  # ?
-    is_admin: int = ProtoField(20)
+    permission: int = ProtoField(13)  # 2: owner, 1: others
+    f14: int = ProtoField(14, None)
+    f15: int = ProtoField(15, None)
+    f16: int = ProtoField(16, None)
+    # f20: int = ProtoField(20)  # always 1
     joined_time: int = ProtoField(100)
     last_seen: int = ProtoField(101)
 
+    is_admin: bool = ProtoField(103, False)  # not owner
     f104: int = ProtoField(104, None)
     f105: int = ProtoField(105, None)
     f200: int = ProtoField(200, None)
+
+    @property
+    def is_owner(self) -> bool:
+        return not self.is_admin and self.permission == 2
 
 
 class GetGrpMemberInfoRsp(ProtoStruct):

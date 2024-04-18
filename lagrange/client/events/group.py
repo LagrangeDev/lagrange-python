@@ -28,8 +28,13 @@ class GroupMessage(GroupEvent, MessageInfo):
     grp_name: str
     nickname: str
     sub_id: int = field(repr=False)  # client ver identify
+    sender_type: int = field(repr=False)
     msg: str
     msg_chain: List[T]
+
+    @property
+    def is_bot(self) -> bool:
+        return self.sender_type == 3091
 
 
 @dataclass
