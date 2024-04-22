@@ -66,6 +66,7 @@ class MarketFace(ProtoStruct):
     face_id: bytes = ProtoField(4)
     tab_id: int = ProtoField(5)
     sub_type: int = ProtoField(6)  # 3
+    key: str = ProtoField(7)  # hex, length=16
     # media_type: int = ProtoField(9)
     width: int = ProtoField(10)
     height: int = ProtoField(11)

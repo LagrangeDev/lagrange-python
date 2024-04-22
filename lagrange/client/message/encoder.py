@@ -158,6 +158,23 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                 #         3: 1
                 #     }
                 # })
+            elif isinstance(msg, MarketFace):
+                msg_pb.append(
+                    Elems(
+                        market_face=PBMarketFace(
+                            name=msg.text,
+                            item_type=6,
+                            face_info=1,
+                            face_id=msg.face_id,
+                            tab_id=msg.tab_id,
+                            sub_type=3,
+                            key="0000000000000000",
+                            width=msg.width,
+                            height=msg.height,
+                            pb_reserved={1: {1: msg.width, 2: msg.height}, 8: 1},
+                        )
+                    )
+                )
             elif isinstance(msg, Text):
                 msg_pb.append(Elems(text=PBText(msg.text)))
             elif isinstance(msg, Poke):
@@ -170,22 +187,7 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                         )
                     )
                 )
-            elif isinstance(msg, MarketFace):
-                msg_pb.append(
-                    Elems(
-                        market_face=PBMarketFace(
-                            name=msg.text,
-                            item_type=6,
-                            face_info=1,
-                            face_id=msg.face_id,
-                            tab_id=msg.tab_id,
-                            sub_type=3,
-                            width=msg.width,
-                            height=msg.height,
-                            pb_reserved={1: {1: msg.width, 2: msg.height}, 8: 1},
-                        )
-                    )
-                )
+
             else:
                 raise NotImplementedError
     else:
