@@ -246,7 +246,9 @@ class BaseClient:
 
         if not ret_code and tlvs[0x17]:
             self._sig.qrsig = qrsig
-            return tlvs[0x17], Reader(tlvs[209]).read_bytes_with_length("u16").decode()
+            urlreader = Reader(tlvs[209])
+            urlreader.read_u8()
+            return tlvs[0x17], urlreader.read_bytes_with_length("u8", False).decode()
 
         return ret_code
 
