@@ -1,108 +1,110 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from typing import Optional
+
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
 class CommonHead(ProtoStruct):
-    req_id: int = ProtoField(1, 1)
-    cmd: int = ProtoField(2)
+    req_id: int = proto_field(1, default=1)
+    cmd: int = proto_field(2)
 
 
 class PicExtInfo(ProtoStruct):
-    biz_type: int = ProtoField(1, None)
-    summary: str = ProtoField(2, None)
-    c2c_reserved: bytes = ProtoField(11, bytes())
-    troop_reserved: bytes = ProtoField(12, bytes())
+    biz_type: Optional[int] = proto_field(1, default=None)
+    summary: Optional[str] = proto_field(2, default=None)
+    c2c_reserved: bytes = proto_field(11, default=bytes())
+    troop_reserved: bytes = proto_field(12, default=bytes())
 
 
 class VideoExtInfo(ProtoStruct):
-    from_scene: int = ProtoField(1, None)
-    to_scene: int = ProtoField(2, None)
-    pb_reserved: bytes = ProtoField(3, bytes())
+    from_scene: Optional[int] = proto_field(1, default=None)
+    to_scene: Optional[int] = proto_field(2, default=None)
+    pb_reserved: bytes = proto_field(3, default=bytes())
 
 
 class AudioExtInfo(ProtoStruct):
-    src_uin: int = ProtoField(1, None)
-    ptt_scene: int = ProtoField(2, None)
-    ptt_type: int = ProtoField(3, None)
-    change_voice: int = ProtoField(4, None)
-    waveform: bytes = ProtoField(5, None)
-    audio_convert_text: int = ProtoField(6, None)
-    bytes_reserved: bytes = ProtoField(11, bytes())
-    pb_reserved: bytes = ProtoField(12, bytes())
-    general_flags: bytes = ProtoField(13, bytes())
+    src_uin: Optional[int] = proto_field(1, default=None)
+    ptt_scene: Optional[int] = proto_field(2, default=None)
+    ptt_type: Optional[int] = proto_field(3, default=None)
+    change_voice: Optional[int] = proto_field(4, default=None)
+    waveform: Optional[bytes] = proto_field(5, default=None)
+    audio_convert_text: Optional[int] = proto_field(6, default=None)
+    bytes_reserved: bytes = proto_field(11, default=bytes())
+    pb_reserved: bytes = proto_field(12, default=bytes())
+    general_flags: bytes = proto_field(13, default=bytes())
 
 
 class ExtBizInfo(ProtoStruct):
-    pic: PicExtInfo = ProtoField(1, PicExtInfo())
-    video: VideoExtInfo = ProtoField(2, VideoExtInfo())
-    audio: AudioExtInfo = ProtoField(3, AudioExtInfo())
-    bus_type: int = ProtoField(4, None)
+    pic: PicExtInfo = proto_field(1, default=PicExtInfo())
+    video: VideoExtInfo = proto_field(2, default=VideoExtInfo())
+    audio: AudioExtInfo = proto_field(3, default=AudioExtInfo())
+    bus_type: Optional[int] = proto_field(4, default=None)
 
 
 class PicUrlExtInfo(ProtoStruct):
-    origin_params: str = ProtoField(1)
-    big_params: str = ProtoField(2)
-    thumb_params: str = ProtoField(3)
+    origin_params: str = proto_field(1)
+    big_params: str = proto_field(2)
+    thumb_params: str = proto_field(3)
 
 
 class PicInfo(ProtoStruct):
-    url_path: str = ProtoField(1)
-    ext: PicUrlExtInfo = ProtoField(2)
-    domain: str = ProtoField(3)
+    url_path: str = proto_field(1)
+    ext: PicUrlExtInfo = proto_field(2)
+    domain: str = proto_field(3)
 
 
 class FileType(ProtoStruct):
-    type: int = ProtoField(1)
-    pic_format: int = ProtoField(2, 0)
-    video_format: int = ProtoField(3, 0)
-    audio_format: int = ProtoField(4, 0)
+    type: int = proto_field(1)
+    pic_format: int = proto_field(2, default=0)
+    video_format: int = proto_field(3, default=0)
+    audio_format: int = proto_field(4, default=0)
 
 
 class FileInfo(ProtoStruct):
-    size: int = ProtoField(1, 0)
-    hash: str = ProtoField(2)
-    sha1: str = ProtoField(3)
-    name: str = ProtoField(4)
-    type: FileType = ProtoField(5)
-    width: int = ProtoField(6, 0)
-    height: int = ProtoField(7, 0)
-    time: int = ProtoField(8, 0)
-    is_origin: bool = ProtoField(9, True)
+    size: int = proto_field(1, default=0)
+    hash: str = proto_field(2)
+    sha1: str = proto_field(3)
+    name: str = proto_field(4)
+    type: FileType = proto_field(5)
+    width: int = proto_field(6, default=0)
+    height: int = proto_field(7, default=0)
+    time: int = proto_field(8, default=0)
+    is_origin: bool = proto_field(9, default=True)
 
 
 class IndexNode(ProtoStruct):
-    info: FileInfo = ProtoField(1, None)
-    file_uuid: str = ProtoField(2)
-    store_id: int = ProtoField(3, None)
-    upload_time: int = ProtoField(4, None)
-    ttl: int = ProtoField(5, None)
-    sub_type: int = ProtoField(6, None)
+    info: Optional[FileInfo] = proto_field(1, default=None)
+    file_uuid: str = proto_field(2)
+    store_id: Optional[int] = proto_field(3, default=None)
+    upload_time: Optional[int] = proto_field(4, default=None)
+    ttl: Optional[int] = proto_field(5, default=None)
+    sub_type: Optional[int] = proto_field(6, default=None)
 
 
 class MsgInfoBody(ProtoStruct):
-    index: IndexNode = ProtoField(1)
-    pic: PicInfo = ProtoField(2, None)
-    video: dict = ProtoField(3, None)
-    audio: dict = ProtoField(4, None)
-    file_exists: bool = ProtoField(5, None)
-    hashsum: bytes = ProtoField(6, b"")
+    index: IndexNode = proto_field(1)
+    pic: Optional[PicInfo] = proto_field(2, default=None)
+    video: Optional[dict] = proto_field(3, default=None)
+    audio: Optional[dict] = proto_field(4, default=None)
+    file_exists: Optional[bool] = proto_field(5, default=None)
+    hashsum: bytes = proto_field(6, default=b"")
 
 
 class MsgInfo(ProtoStruct):
-    body: list[MsgInfoBody] = ProtoField(1)
-    biz_info: ExtBizInfo = ProtoField(2)
+    body: list[MsgInfoBody] = proto_field(1)
+    biz_info: ExtBizInfo = proto_field(2)
 
 
 class IPv4(ProtoStruct):
-    out_ip: int = ProtoField(1)
-    out_port: int = ProtoField(2)
-    in_ip: int = ProtoField(3)
-    in_port: int = ProtoField(4)
-    ip_type: int = ProtoField(5)
+    out_ip: int = proto_field(1)
+    out_port: int = proto_field(2)
+    in_ip: int = proto_field(3)
+    in_port: int = proto_field(4)
+    ip_type: int = proto_field(5)
 
 
 class IPv6(ProtoStruct):
-    out_ip: bytes = ProtoField(1)
-    out_port: int = ProtoField(2)
-    in_ip: bytes = ProtoField(3, None)
-    in_port: int = ProtoField(4, None)
-    ip_type: int = ProtoField(5)
+    out_ip: bytes = proto_field(1)
+    out_port: int = proto_field(2)
+    in_ip: Optional[bytes] = proto_field(3, default=None)
+    in_port: Optional[int] = proto_field(4, default=None)
+    ip_type: int = proto_field(5)

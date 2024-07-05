@@ -1,17 +1,17 @@
-from typing import Union
+from typing import Union, Optional
 
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from lagrange.utils.binary.protobuf import ProtoStruct, proto_field
 
 
 class GetGrpMsgReqBody(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    start_seq: int = ProtoField(2)
-    end_seq: int = ProtoField(3)
+    grp_id: int = proto_field(1)
+    start_seq: int = proto_field(2)
+    end_seq: int = proto_field(3)
 
 
 class PBGetGrpMsgRequest(ProtoStruct):
-    body: GetGrpMsgReqBody = ProtoField(1)
-    direction: bool = ProtoField(2, True)
+    body: GetGrpMsgReqBody = proto_field(1)
+    direction: bool = proto_field(2, default=True)
 
     @classmethod
     def build(
@@ -24,16 +24,16 @@ class PBGetGrpMsgRequest(ProtoStruct):
 
 
 class RecallRequestF3(ProtoStruct):
-    seq: int = ProtoField(1)
-    # rand: int = ProtoField(2)
-    field3: int = ProtoField(3, 0)
+    seq: int = proto_field(1)
+    # rand: int = proto_field(2)
+    field3: int = proto_field(3, default=0)
 
 
 class PBGroupRecallRequest(ProtoStruct):
-    type: int = ProtoField(1, 1)
-    grp_id: int = ProtoField(2)
-    field3: RecallRequestF3 = ProtoField(3)
-    field4: dict = ProtoField(4, {1: 0})
+    type: int = proto_field(1, default=1)
+    grp_id: int = proto_field(2)
+    field3: RecallRequestF3 = proto_field(3)
+    field4: dict = proto_field(4, default={1: 0})
 
     @classmethod
     def build(cls, grp_id: int, seq: int) -> "PBGroupRecallRequest":
@@ -41,12 +41,12 @@ class PBGroupRecallRequest(ProtoStruct):
 
 
 class RenameRequestF2(ProtoStruct):
-    name: str = ProtoField(3)
+    name: str = proto_field(3)
 
 
 class PBGroupRenameRequest(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    rename_f2: RenameRequestF2 = ProtoField(2)
+    grp_id: int = proto_field(1)
+    rename_f2: RenameRequestF2 = proto_field(2)
 
     @classmethod
     def build(cls, grp_id: int, name: str) -> "PBGroupRenameRequest":
@@ -54,13 +54,13 @@ class PBGroupRenameRequest(ProtoStruct):
 
 
 class RenameMemberRequestF3(ProtoStruct):
-    uid: str = ProtoField(1)
-    name: str = ProtoField(8)
+    uid: str = proto_field(1)
+    name: str = proto_field(8)
 
 
 class PBRenameMemberRequest(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    rename_f3: RenameMemberRequestF3 = ProtoField(3)
+    grp_id: int = proto_field(1)
+    rename_f3: RenameMemberRequestF3 = proto_field(3)
 
     @classmethod
     def build(cls, grp_id: int, target_uid: str, name: str) -> "PBRenameMemberRequest":
@@ -70,7 +70,7 @@ class PBRenameMemberRequest(ProtoStruct):
 
 
 class PBLeaveGroupRequest(ProtoStruct):
-    grp_id: int = ProtoField(1)
+    grp_id: int = proto_field(1)
 
     @classmethod
     def build(cls, grp_id: int) -> "PBLeaveGroupRequest":
@@ -78,34 +78,34 @@ class PBLeaveGroupRequest(ProtoStruct):
 
 
 class GetGrpMsgRspBody(ProtoStruct):
-    grp_id: int = ProtoField(3)
-    start_seq: int = ProtoField(4)
-    end_seq: int = ProtoField(5)
-    elems: list[bytes] = ProtoField(6, [])
+    grp_id: int = proto_field(3)
+    start_seq: int = proto_field(4)
+    end_seq: int = proto_field(5)
+    elems: list[bytes] = proto_field(6, default=[])
 
 
 class GetGrpMsgRsp(ProtoStruct):
-    body: GetGrpMsgRspBody = ProtoField(3)
+    body: GetGrpMsgRspBody = proto_field(3)
 
 
 class PBSetEssence(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    seq: int = ProtoField(2)
-    rand: int = ProtoField(3)
+    grp_id: int = proto_field(1)
+    seq: int = proto_field(2)
+    rand: int = proto_field(3)
 
 
 class SetEssenceRsp(ProtoStruct):
-    msg: str = ProtoField(1)
-    code: int = ProtoField(10)
+    msg: str = proto_field(1)
+    code: int = proto_field(10)
 
 
 class GroupMuteBody(ProtoStruct):
-    duration: int = ProtoField(17)
+    duration: int = proto_field(17)
 
 
 class PBGroupMuteRequest(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    body: GroupMuteBody = ProtoField(2)
+    grp_id: int = proto_field(1)
+    body: GroupMuteBody = proto_field(2)
 
     @classmethod
     def build(cls, grp_id: int, duration: int) -> "PBGroupMuteRequest":
@@ -113,46 +113,46 @@ class PBGroupMuteRequest(ProtoStruct):
 
 
 class PBFetchGroupRequest(ProtoStruct):
-    count: int = ProtoField(1, 20)
-    f2: int = ProtoField(2, 0)
+    count: int = proto_field(1, default=20)
+    f2: int = proto_field(2, default=0)
 
 
 class RspGroup(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    grp_name: str = ProtoField(2)
+    grp_id: int = proto_field(1)
+    grp_name: str = proto_field(2)
 
 
 class RspUser(ProtoStruct):
-    uid: str = ProtoField(1)
-    name: str = ProtoField(2)
+    uid: str = proto_field(1)
+    name: str = proto_field(2)
 
 
 class FetchGrpRspBody(ProtoStruct):
-    seq: int = ProtoField(1)
-    event_type: int = ProtoField(2)
-    state: int = ProtoField(3, None)
-    group: RspGroup = ProtoField(4)
-    target: RspUser = ProtoField(5)
-    invitor: RspUser = ProtoField(6, None)
-    operator: RspUser = ProtoField(7, None)
-    comment: str = ProtoField(9, "")
+    seq: int = proto_field(1)
+    event_type: int = proto_field(2)
+    state: Optional[int] = proto_field(3, default=None)
+    group: RspGroup = proto_field(4)
+    target: RspUser = proto_field(5)
+    invitor: Optional[RspUser] = proto_field(6, default=None)
+    operator: Optional[RspUser] = proto_field(7, default=None)
+    comment: str = proto_field(9, default="")
 
 
 class FetchGroupResponse(ProtoStruct):
-    requests: list[FetchGrpRspBody] = ProtoField(1)
-    latest_seq: int = ProtoField(3)
+    requests: list[FetchGrpRspBody] = proto_field(1)
+    latest_seq: int = proto_field(3)
 
 
 class HandleGrpReqBody(ProtoStruct):
-    seq: int = ProtoField(1)
-    event_type: int = ProtoField(2)
-    grp_id: int = ProtoField(3)
-    message: str = ProtoField(4)
+    seq: int = proto_field(1)
+    event_type: int = proto_field(2)
+    grp_id: int = proto_field(3)
+    message: str = proto_field(4)
 
 
 class PBHandleGroupRequest(ProtoStruct):
-    action: int = ProtoField(1)
-    body: HandleGrpReqBody = ProtoField(2)
+    action: int = proto_field(1)
+    body: HandleGrpReqBody = proto_field(2)
 
     @classmethod
     def build(
@@ -167,12 +167,12 @@ class PBHandleGroupRequest(ProtoStruct):
 
 
 class PBSendGrpReactionReq(ProtoStruct):
-    grp_id: int = ProtoField(2)
-    seq: int = ProtoField(3)
-    content: str = ProtoField(4)
-    type: int = ProtoField(5)
-    f6: int = ProtoField(6, 0)
-    f7: int = ProtoField(7, 0)
+    grp_id: int = proto_field(2)
+    seq: int = proto_field(3)
+    content: str = proto_field(4)
+    type: int = proto_field(5)
+    f6: int = proto_field(6, default=0)
+    f7: int = proto_field(7, default=0)
 
     @classmethod
     def build(
@@ -187,14 +187,14 @@ class PBSendGrpReactionReq(ProtoStruct):
 
 
 class GroupMuteMemberReqBody(ProtoStruct):
-    uid: str = ProtoField(1)
-    duration: int = ProtoField(2)
+    uid: str = proto_field(1)
+    duration: int = proto_field(2)
 
 
 class PBGroupMuteMemberRequest(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    type: int = ProtoField(2, 1)
-    body: GroupMuteMemberReqBody = ProtoField(3)
+    grp_id: int = proto_field(1)
+    type: int = proto_field(2, default=1)
+    body: GroupMuteMemberReqBody = proto_field(3)
 
     @classmethod
     def build(cls, grp_id: int, uid: str, duration: int) -> "PBGroupMuteMemberRequest":
@@ -204,10 +204,10 @@ class PBGroupMuteMemberRequest(ProtoStruct):
 
 
 # class PBGroupKickMemberRequest(ProtoStruct):
-#     grp_id: int = ProtoField(1)
-#     target_uid: str = ProtoField(3)
-#     permanent: bool = ProtoField(4)
-#     f5: str = ProtoField(5, "")
+#     grp_id: int = proto_field(1)
+#     target_uid: str = proto_field(3)
+#     permanent: bool = proto_field(4)
+#     f5: str = proto_field(5, default="")
 #
 #     @classmethod
 #     def build(
@@ -221,14 +221,14 @@ class PBGroupMuteMemberRequest(ProtoStruct):
 
 
 class GroupKickMemberReqBody(ProtoStruct):
-    f1: int = ProtoField(1, 5)
-    uin: int = ProtoField(2)
-    permanent: bool = ProtoField(3)
+    f1: int = proto_field(1, default=5)
+    uin: int = proto_field(2)
+    permanent: bool = proto_field(3)
 
 
 class PBGroupKickMemberRequest(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    body: GroupKickMemberReqBody = ProtoField(2)
+    grp_id: int = proto_field(1)
+    body: GroupKickMemberReqBody = proto_field(2)
 
     @classmethod
     def build(
@@ -241,11 +241,11 @@ class PBGroupKickMemberRequest(ProtoStruct):
 
 # # group_member_card.get_group_member_card_info
 # class PBGetMemberCardReq(ProtoStruct):
-#     grp_id: int = ProtoField(1)
-#     uin: int = ProtoField(2)
-#     f3: int = ProtoField(3, 1)
-#     f4: int = ProtoField(4, 1)
-#     f5: int = ProtoField(5, 1)
+#     grp_id: int = proto_field(1)
+#     uin: int = proto_field(2)
+#     f3: int = proto_field(3, default=1)
+#     f4: int = proto_field(4, default=1)
+#     f5: int = proto_field(5, default=1)
 #
 #     @classmethod
 #     def build(cls, grp_id: int, uin: int) -> "PBGetMemberCardReq":
@@ -256,38 +256,38 @@ class PBGroupKickMemberRequest(ProtoStruct):
 #
 #
 # class GetMemberCardRspBody(ProtoStruct, debug=True):
-#     uin: int = ProtoField(1)
-#     nickname: str = ProtoField(8)
-#     region_name: str = ProtoField(10)
-#     name: str = ProtoField(11)
-#     age: int = ProtoField(12)
-#     level_name: str = ProtoField(13)
-#     joined_time: int = ProtoField(14)
-#     timestamp: int = ProtoField(15)  # ?
-#     level: dict = ProtoField(41, {})  # level_num: level[2]
+#     uin: int = proto_field(1)
+#     nickname: str = proto_field(8)
+#     region_name: str = proto_field(10)
+#     name: str = proto_field(11)
+#     age: int = proto_field(12)
+#     level_name: str = proto_field(13)
+#     joined_time: int = proto_field(14)
+#     timestamp: int = proto_field(15)  # ?
+#     level: dict = proto_field(41, default={})  # level_num: level[2]
 #
 #
 # class GetMemberCardRsp(ProtoStruct):
-#     grp_id: int = ProtoField(1)
-#     f2: int = ProtoField(2)  # 2
-#     body: GetMemberCardRspBody = ProtoField(3)
+#     grp_id: int = proto_field(1)
+#     f2: int = proto_field(2)  # 2
+#     body: GetMemberCardRspBody = proto_field(3)
 
 
 class AccountInfo(ProtoStruct):
-    uid: str = ProtoField(2)
-    uin: int = ProtoField(4, None)
+    uid: str = proto_field(2)
+    uin: Optional[int] = proto_field(4, default=None)
 
 
 class PBGetGrpMemberInfoReq(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    f2: int = ProtoField(2)
-    f3: int = ProtoField(3)
-    fetch_list: bytes = ProtoField(4)  # dict[int, 1]
-    account: AccountInfo = ProtoField(5, None)
-    next_key: bytes = ProtoField(15, None)  # base64(pb)
+    grp_id: int = proto_field(1)
+    f2: int = proto_field(2)
+    f3: int = proto_field(3)
+    fetch_list: bytes = proto_field(4)  # dict[int, 1]
+    account: Optional[AccountInfo] = proto_field(5, default=None)
+    next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
 
     @classmethod
-    def build(cls, grp_id: int, uid="", next_key=None) -> "PBGetGrpMemberInfoReq":
+    def build(cls, grp_id: int, uid="", next_key: Optional[str] = None) -> "PBGetGrpMemberInfoReq":
         assert not (uid and next_key), "invalid arguments"
         if uid:
             account = AccountInfo(uid=uid)
@@ -310,30 +310,30 @@ class PBGetGrpMemberInfoReq(ProtoStruct):
 
 
 class MemberInfoName(ProtoStruct):
-    string: str = ProtoField(2)
+    string: str = proto_field(2)
 
 
 class MemberInfoLevel(ProtoStruct):
-    num: int = ProtoField(2)
+    num: int = proto_field(2)
 
 
 class GetGrpMemberInfoRspBody(ProtoStruct):
-    account: AccountInfo = ProtoField(1)
-    nickname: str = ProtoField(10, "")
-    name: MemberInfoName = ProtoField(11, None)  # if none? not set
-    level: MemberInfoLevel = ProtoField(12, None)  # if none? retry
-    permission: int = ProtoField(13)  # 2: owner, 1: others
-    f14: int = ProtoField(14, None)
-    f15: int = ProtoField(15, None)
-    f16: int = ProtoField(16, None)
-    # f20: int = ProtoField(20)  # always 1
-    joined_time: int = ProtoField(100)
-    last_seen: int = ProtoField(101)
+    account: AccountInfo = proto_field(1)
+    nickname: str = proto_field(10, default="")
+    name: Optional[MemberInfoName] = proto_field(11, default=None)  # if none? not set
+    level: Optional[MemberInfoLevel] = proto_field(12, default=None)  # if none? retry
+    permission: int = proto_field(13)  # 2: owner, 1: others
+    f14: Optional[int] = proto_field(14, default=None)
+    f15: Optional[int] = proto_field(15, default=None)
+    f16: Optional[int] = proto_field(16, default=None)
+    # f20: int = proto_field(20)  # always 1
+    joined_time: int = proto_field(100)
+    last_seen: int = proto_field(101)
 
-    is_admin: bool = ProtoField(103, False)  # not owner
-    f104: int = ProtoField(104, None)
-    f105: int = ProtoField(105, None)
-    f200: int = ProtoField(200, None)
+    is_admin: bool = proto_field(103, default=False)  # not owner
+    f104: Optional[int] = proto_field(104, default=None)
+    f105: Optional[int] = proto_field(105, default=None)
+    f200: Optional[int] = proto_field(200, default=None)
 
     @property
     def is_owner(self) -> bool:
@@ -341,19 +341,19 @@ class GetGrpMemberInfoRspBody(ProtoStruct):
 
 
 class GetGrpMemberInfoRsp(ProtoStruct):
-    grp_id: int = ProtoField(1)
-    body: list[GetGrpMemberInfoRspBody] = ProtoField(2)
-    next_key: bytes = ProtoField(15, None)  # base64(pb)
+    grp_id: int = proto_field(1)
+    body: list[GetGrpMemberInfoRspBody] = proto_field(2)
+    next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
 
 
 class GetGrpListReqBody(ProtoStruct):
-    cfg1: bytes = ProtoField(1)
-    cfg2: bytes = ProtoField(2)
-    cfg3: bytes = ProtoField(3)
+    cfg1: bytes = proto_field(1)
+    cfg2: bytes = proto_field(2)
+    cfg3: bytes = proto_field(3)
 
 
 class PBGetGrpListRequest(ProtoStruct):
-    body: GetGrpListReqBody = ProtoField(1)
+    body: GetGrpListReqBody = proto_field(1)
 
     @classmethod
     def build(cls) -> "PBGetGrpListRequest":
@@ -371,37 +371,37 @@ class PBGetGrpListRequest(ProtoStruct):
 
 
 class GrpInfoBasic(ProtoStruct):
-    owner: AccountInfo = ProtoField(1)  # uid only
-    create_time: int = ProtoField(2)
-    max_members: int = ProtoField(3)
-    now_members: int = ProtoField(4)
-    grp_name: str = ProtoField(5)
-    introduce: str = ProtoField(18, None)
-    question: str = ProtoField(19, None)
-    recent_notice: str = ProtoField(30, None)  # 30 chars
+    owner: AccountInfo = proto_field(1)  # uid only
+    create_time: int = proto_field(2)
+    max_members: int = proto_field(3)
+    now_members: int = proto_field(4)
+    grp_name: str = proto_field(5)
+    introduce: Optional[str] = proto_field(18, default=None)
+    question: Optional[str] = proto_field(19, default=None)
+    recent_notice: Optional[str] = proto_field(30, default=None)  # 30 chars
 
 
 class GrpInfoOther(ProtoStruct):
-    create_time: int = ProtoField(1)  # ?
-    upgrade_time: int = ProtoField(4, None)  # when upgrade grp size?
-    f5: int = ProtoField(5, None)  # unknown
+    create_time: int = proto_field(1)  # ?
+    upgrade_time: Optional[int] = proto_field(4, default=None)  # when upgrade grp size?
+    f5: Optional[int] = proto_field(5, default=None)  # unknown
 
 
 class GrpInfo(ProtoStruct):
-    grp_id: int = ProtoField(3)
-    info: GrpInfoBasic = ProtoField(4)
-    other: GrpInfoOther = ProtoField(5)
+    grp_id: int = proto_field(3)
+    info: GrpInfoBasic = proto_field(4)
+    other: GrpInfoOther = proto_field(5)
 
 
 class GetGrpListResponse(ProtoStruct):
-    grp_list: list[GrpInfo] = ProtoField(2, [])
+    grp_list: list[GrpInfo] = proto_field(2, default=[])
 
 
 class PBGetInfoFromUidReq(ProtoStruct):
-    uid: list[str] = ProtoField(1)
-    cfg: bytes = ProtoField(
+    uid: list[str] = proto_field(1)
+    cfg: bytes = proto_field(
         3,
-        bytes.fromhex(
+        default=bytes.fromhex(
             "08a29c0108a39c0108a49c0108a59c0108a69c0108a79c0108a99c"
             "0108ab9c0108b49c0108b59c0108ba9c0108bf9c0108c59c011802"
         ),
@@ -409,13 +409,13 @@ class PBGetInfoFromUidReq(ProtoStruct):
 
 
 class GetInfoRspF1(ProtoStruct):
-    type: int = ProtoField(1)
-    value: int = ProtoField(2)
+    type: int = proto_field(1)
+    value: int = proto_field(2)
 
 
 class GetInfoRspF2(ProtoStruct):
-    type: int = ProtoField(1)
-    value: bytes = ProtoField(2)
+    type: int = proto_field(1)
+    value: bytes = proto_field(2)
 
     @property
     def to_str(self) -> str:
@@ -423,14 +423,14 @@ class GetInfoRspF2(ProtoStruct):
 
 
 class GetInfoRspField(ProtoStruct, debug=True):
-    int_t: list[GetInfoRspF1] = ProtoField(1, [])
-    str_t: list[GetInfoRspF2] = ProtoField(2, [])
+    int_t: list[GetInfoRspF1] = proto_field(1, default=[])
+    str_t: list[GetInfoRspF2] = proto_field(2, default=[])
 
 
 class GetInfoRspBody(ProtoStruct):
-    uid: str = ProtoField(1)
-    fields: GetInfoRspField = ProtoField(2)
+    uid: str = proto_field(1)
+    fields: GetInfoRspField = proto_field(2)
 
 
 class GetInfoFromUidRsp(ProtoStruct):
-    body: list[GetInfoRspBody] = ProtoField(1)
+    body: list[GetInfoRspBody] = proto_field(1)

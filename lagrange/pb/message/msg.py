@@ -1,9 +1,11 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from typing import Optional
+
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 from .rich_text import RichText
 
 
 class Message(ProtoStruct):
-    body: RichText = ProtoField(1, None)
-    buf2: bytes = ProtoField(2, bytes())
-    buf3: bytes = ProtoField(3, bytes())
+    body: Optional[RichText] = proto_field(1, default=None)
+    buf2: bytes = proto_field(2, default=bytes())
+    buf3: bytes = proto_field(3, default=bytes())

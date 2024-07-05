@@ -93,19 +93,23 @@ class _TEA:
         return ret[pos + 1 : -7]
 
 
+def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
+    return _TEA(key).encrypt(data)
+
+
+def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
+    return _TEA(key).decrypt(data)
+
+
 try:
-    from ftea import TEA as _TEA
+    from ftea import TEA as FTEA
 
     def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
-        return _TEA(key).encrypt_qq(data)
+        return FTEA(key).encrypt_qq(data)
 
     def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
-        return _TEA(key).decrypt_qq(data)
+        return FTEA(key).decrypt_qq(data)
 
 except ImportError:
-
-    def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
-        return _TEA(key).encrypt(data)
-
-    def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
-        return _TEA(key).decrypt(data)
+    # Leave the pure Python version in place.
+    pass

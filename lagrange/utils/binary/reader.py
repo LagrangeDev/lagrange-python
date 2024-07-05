@@ -1,17 +1,17 @@
 import struct
 from typing import Any, Dict, Tuple, Union
 
-from typing_extensions import NewType, Literal
+from typing_extensions import TypeAlias, Literal
 
 LENGTH_PREFIX = Literal["u8", "u16", "u32", "u64"]
-BYTES_LIKE = NewType("BYTES_LIKE", Union[bytes, bytearray, memoryview])
+BYTES_LIKE: TypeAlias = Union[bytes, bytearray, memoryview]
 
 
 class Reader:
     def __init__(self, buffer: BYTES_LIKE):
         if not isinstance(buffer, (bytes, bytearray, memoryview)):
             raise TypeError("Invalid data: " + str(buffer))
-        self._buffer: bytearray = buffer
+        self._buffer = buffer
         self._pos = 0
 
     @property

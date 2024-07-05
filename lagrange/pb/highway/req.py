@@ -1,78 +1,80 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from typing import Optional
+
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 from .comm import CommonHead, ExtBizInfo, FileInfo, MsgInfo, IndexNode
 
 
 class C2CUserInfo(ProtoStruct):
-    account_type: int = ProtoField(1, 2)
-    uid: str = ProtoField(2)
+    account_type: int = proto_field(1, default=2)
+    uid: str = proto_field(2)
 
 
 class GroupInfo(ProtoStruct):
-    grp_id: int = ProtoField(1)
+    grp_id: int = proto_field(1)
 
 
 class ClientMeta(ProtoStruct):
-    agent_type: int = ProtoField(1, 2)
+    agent_type: int = proto_field(1, default=2)
 
 
 class SceneInfo(ProtoStruct):
-    req_type: int = ProtoField(101)
-    bus_type: int = ProtoField(102)
-    scene_type: int = ProtoField(200)
-    c2c: C2CUserInfo = ProtoField(201, None)
-    grp: GroupInfo = ProtoField(202, None)
+    req_type: int = proto_field(101)
+    bus_type: int = proto_field(102)
+    scene_type: int = proto_field(200)
+    c2c: Optional[C2CUserInfo] = proto_field(201, default=None)
+    grp: Optional[GroupInfo] = proto_field(202, default=None)
 
 
 class MultiMediaReqHead(ProtoStruct):
-    common: CommonHead = ProtoField(1)
-    scene: SceneInfo = ProtoField(2)
-    meta: ClientMeta = ProtoField(3, ClientMeta())
+    common: CommonHead = proto_field(1)
+    scene: SceneInfo = proto_field(2)
+    meta: ClientMeta = proto_field(3, default=ClientMeta())
 
 
 class UploadInfo(ProtoStruct):
-    file_info: FileInfo = ProtoField(1)
-    sub_type: int = ProtoField(2)
+    file_info: FileInfo = proto_field(1)
+    sub_type: int = proto_field(2)
 
 
 class UploadReq(ProtoStruct):
-    infos: list[UploadInfo] = ProtoField(1)
-    try_fast_upload: bool = ProtoField(2, True)
-    serve_sendmsg: bool = ProtoField(3, False)
-    client_rand_id: int = ProtoField(4)
-    compat_stype: int = ProtoField(5, 1)  # CompatQMsgSceneType
-    biz_info: ExtBizInfo = ProtoField(6)
-    client_seq: int = ProtoField(7, 0)
-    no_need_compat_msg: bool = ProtoField(8, False)
+    infos: list[UploadInfo] = proto_field(1)
+    try_fast_upload: bool = proto_field(2, default=True)
+    serve_sendmsg: bool = proto_field(3, default=False)
+    client_rand_id: int = proto_field(4)
+    compat_stype: int = proto_field(5, default=1)  # CompatQMsgSceneType
+    biz_info: ExtBizInfo = proto_field(6)
+    client_seq: int = proto_field(7, default=0)
+    no_need_compat_msg: bool = proto_field(8, default=False)
 
 
 class UploadCompletedReq(ProtoStruct):
-    serve_sendmsg: bool = ProtoField(1)
-    client_rand_id: int = ProtoField(2)
-    msg_info: MsgInfo = ProtoField(3)
-    client_seq: int = ProtoField(4)
+    serve_sendmsg: bool = proto_field(1)
+    client_rand_id: int = proto_field(2)
+    msg_info: MsgInfo = proto_field(3)
+    client_seq: int = proto_field(4)
 
 
 class DownloadVideoExt(ProtoStruct):
-    busi_type: int = ProtoField(1, 0)
-    scene_type: int = ProtoField(2, 0)
-    sub_busi_type: int = ProtoField(3, None)
+    busi_type: int = proto_field(1, default=0)
+    scene_type: int = proto_field(2, default=0)
+    sub_busi_type: Optional[int] = proto_field(3, default=None)
 
 
 class DownloadExt(ProtoStruct):
-    pic_ext: bytes = ProtoField(1, None)
-    video_ext: DownloadVideoExt = ProtoField(2, DownloadVideoExt())
-    ptt_ext: bytes = ProtoField(3, None)
+    pic_ext: Optional[bytes] = proto_field(1, default=None)
+    video_ext: DownloadVideoExt = proto_field(2, default=DownloadVideoExt())
+    ptt_ext: Optional[bytes] = proto_field(3, default=None)
 
 
 class DownloadReq(ProtoStruct):
-    node: IndexNode = ProtoField(1)
-    ext: DownloadExt = ProtoField(2, DownloadExt())
+    node: IndexNode = proto_field(1)
+    ext: DownloadExt = proto_field(2, default=DownloadExt())
 
 
 class NTV2RichMediaReq(ProtoStruct):
-    req_head: MultiMediaReqHead = ProtoField(1)
-    upload: UploadReq = ProtoField(2, None)
-    download: DownloadReq = ProtoField(3, None)
-    upload_completed: UploadCompletedReq = ProtoField(6, None)
-    ext: bytes = ProtoField(99, None)
+    req_head: MultiMediaReqHead = proto_field(1)
+    upload: Optional[UploadReq] = proto_field(2, default=None)
+    download: Optional[DownloadReq] = proto_field(3, default=None)
+    upload_completed: Optional[UploadCompletedReq] = proto_field(6, default=None)
+    ext: Optional[bytes] = proto_field(99, default=None)

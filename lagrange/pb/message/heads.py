@@ -1,27 +1,29 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from typing import Optional
+
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
 class ContentHead(ProtoStruct):
-    type: int = ProtoField(1)
-    sub_type: int = ProtoField(2, 0)
-    msg_id: int = ProtoField(4, 0)
-    seq: int = ProtoField(5, 0)
-    timestamp: int = ProtoField(6, 0)
-    rand: int = ProtoField(7, 0)
-    # new_id: int = ProtoField(12)
+    type: int = proto_field(1)
+    sub_type: int = proto_field(2, default=0)
+    msg_id: int = proto_field(4, default=0)
+    seq: int = proto_field(5, default=0)
+    timestamp: int = proto_field(6, default=0)
+    rand: int = proto_field(7, default=0)
+    # new_id: int = proto_field(12)
 
 
 class Grp(ProtoStruct):
-    gid: int = ProtoField(1, 0)
-    sender_name: str = ProtoField(4, "")  # empty in get_grp_msg
-    grp_name: str = ProtoField(7, "")
+    gid: int = proto_field(1, default=0)
+    sender_name: str = proto_field(4, default="")  # empty in get_grp_msg
+    grp_name: str = proto_field(7, default="")
 
 
 class ResponseHead(ProtoStruct):
-    from_uin: int = ProtoField(1, 0)
-    from_uid: str = ProtoField(2, "")
-    type: int = ProtoField(3, 0)
-    sigmap: int = ProtoField(4, 0)
-    to_uin: int = ProtoField(5, 0)
-    to_uid: str = ProtoField(6, "")
-    rsp_grp: Grp = ProtoField(8, None)
+    from_uin: int = proto_field(1, default=0)
+    from_uid: str = proto_field(2, default="")
+    type: int = proto_field(3, default=0)
+    sigmap: int = proto_field(4, default=0)
+    to_uin: int = proto_field(5, default=0)
+    to_uid: str = proto_field(6, default="")
+    rsp_grp: Optional[Grp] = proto_field(8, default=None)

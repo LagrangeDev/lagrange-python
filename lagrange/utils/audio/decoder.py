@@ -50,6 +50,8 @@ def _decode(f: BinaryIO, *, _f=False) -> AudioInfo:
                 pos += length + 2
 
         return AudioInfo(typ, blks * 0.02)
+    else:
+        raise ValueError(f"Unknown audio type: {buf!r}")
 
 
 def decode(f: BinaryIO) -> AudioInfo:

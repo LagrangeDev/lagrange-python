@@ -1,4 +1,4 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 from .comm import IPv4, MsgInfoBody
 
@@ -17,30 +17,30 @@ def ipv4_to_network(ipv4: list[IPv4]) -> "NTHighwayNetwork":
 
 
 class NTHighwayDomain(ProtoStruct):
-    is_enable: bool = ProtoField(1, True)
-    ip: str = ProtoField(2)
+    is_enable: bool = proto_field(1, default=True)
+    ip: str = proto_field(2)
 
 
 class NTHighwayIPv4(ProtoStruct):
-    domain: NTHighwayDomain = ProtoField(1)
-    port: int = ProtoField(2)
+    domain: NTHighwayDomain = proto_field(1)
+    port: int = proto_field(2)
 
 
 class NTHighwayNetwork(ProtoStruct):
-    v4_addrs: list[NTHighwayIPv4] = ProtoField(1)
+    v4_addrs: list[NTHighwayIPv4] = proto_field(1)
 
 
 class NTHighwayHash(ProtoStruct):
-    sha1: bytes = ProtoField(1)
+    sha1: bytes = proto_field(1)
 
 
 class NTV2RichMediaHighwayExt(ProtoStruct):
-    uuid: str = ProtoField(1)
-    ukey: str = ProtoField(2)
-    network: NTHighwayNetwork = ProtoField(5)
-    msg_info: list[MsgInfoBody] = ProtoField(6)
-    blk_size: int = ProtoField(10)
-    hash: NTHighwayHash = ProtoField(11)
+    uuid: str = proto_field(1)
+    ukey: str = proto_field(2)
+    network: NTHighwayNetwork = proto_field(5)
+    msg_info: list[MsgInfoBody] = proto_field(6)
+    blk_size: int = proto_field(10)
+    hash: NTHighwayHash = proto_field(11)
 
     @classmethod
     def build(

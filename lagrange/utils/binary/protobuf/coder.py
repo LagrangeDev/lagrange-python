@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Union, TYPE_CHECKING, cast
 
 from typing_extensions import Self, TypeAlias
 
@@ -40,7 +40,7 @@ class ProtoBuilder(Builder):
             v = v.encode("utf-8")
 
         self.write_varint(len(v)).write_bytes(v)
-        return Self
+        return self
 
 
 class ProtoReader(Reader):
@@ -87,7 +87,8 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
     if wire_type == 0:
         if isinstance(value, bool):
             value = 1 if value else 0
-
+        if TYPE_CHECKING:
+            assert isinstance(value, int)
         if value >= 0:
             builder.write_varint(value)
         else:
@@ -97,6 +98,8 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
     elif wire_type == 2:
         if isinstance(value, dict):
             value = proto_encode(value)
+        if TYPE_CHECKING:
+            value = cast(LengthDelimited, value)
         builder.write_length_delimited(value)
     else:
         raise AssertionError

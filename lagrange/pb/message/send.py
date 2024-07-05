@@ -1,12 +1,14 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from typing import Optional
+
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
 class SendMsgRsp(ProtoStruct):
-    ret_code: int = ProtoField(1)
-    err_msg: str = ProtoField(2, "")
-    grp_seq: int = ProtoField(11, 0)
-    timestamp: int = ProtoField(12, None)
-    private_seq: int = ProtoField(14, 0)
+    ret_code: int = proto_field(1)
+    err_msg: str = proto_field(2, default="")
+    grp_seq: int = proto_field(11, default=0)
+    timestamp: Optional[int] = proto_field(12, default=None)
+    private_seq: int = proto_field(14, default=0)
 
     @property
     def seq(self) -> int:

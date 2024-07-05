@@ -34,10 +34,10 @@ from .elems import (
     Poke,
     MarketFace,
 )
-from .types import T
+from .types import Element
 
 
-def build_message(msg_chain: List[T], compatible=True) -> RichText:
+def build_message(msg_chain: List[Element], compatible=True) -> RichText:
     if not msg_chain:
         raise ValueError("Message chain is empty")
     msg_pb: List[Elems] = []
@@ -49,7 +49,7 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                     Elems(
                         text=PBText(
                             string=msg.text,
-                            buf6=b"\x00\x01\x00\x00\x00\x05\x01\x00\x00\x00\x00\x00\x00",
+                            attr6_buf=b"\x00\x01\x00\x00\x00\x05\x01\x00\x00\x00\x00\x00\x00",
                         )
                     )
                 )
@@ -58,7 +58,7 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                     Elems(
                         text=PBText(
                             string=msg.text,
-                            buf6=struct.pack(
+                            attr6_buf=struct.pack(
                                 "!xb3xbbI2x", 1, len(msg.text), 0, msg.uin
                             ),
                             pb_reserved={3: 2, 4: 0, 5: 0, 9: msg.uid, 11: 0},
@@ -83,7 +83,7 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                         Elems(
                             text=PBText(
                                 string=text,
-                                buf6=struct.pack(
+                                attr6_buf=struct.pack(
                                     "!xb3xbbI2x", 1, len(text), 0, msg.uin
                                 ),
                                 pb_reserved={3: 2, 4: 0, 5: 0, 9: msg.uid, 11: 0},
@@ -131,7 +131,7 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                     )
                 )
             elif isinstance(msg, Raw):
-                msg_pb.append(Elems(open_data=OpenData(msg.data)))
+                msg_pb.append(Elems(open_data=OpenData(data=msg.data)))
             elif isinstance(msg, Reaction):
                 pass
                 # if msg.show_type == 33:  # sm size
@@ -176,7 +176,7 @@ def build_message(msg_chain: List[T], compatible=True) -> RichText:
                     )
                 )
             elif isinstance(msg, Text):
-                msg_pb.append(Elems(text=PBText(msg.text)))
+                msg_pb.append(Elems(text=PBText(string=msg.text)))
             elif isinstance(msg, Poke):
                 msg_pb.append(
                     Elems(

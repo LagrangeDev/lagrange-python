@@ -1,4 +1,5 @@
-from typing import TypeVar, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING
+from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
     from .elems import (
@@ -15,8 +16,21 @@ if TYPE_CHECKING:
         MarketFace,
     )
 
-T = TypeVar(
-    "T",
+# T = TypeVar(
+#     "T",
+#     "Text",
+#     "AtAll",
+#     "At",
+#     "Image",
+#     "Emoji",
+#     "Json",
+#     "Quote",
+#     "Raw",
+#     "Audio",
+#     "Poke",
+#     "MarketFace",
+# )
+Element: TypeAlias = Union[
     "Text",
     "AtAll",
     "At",
@@ -28,4 +42,4 @@ T = TypeVar(
     "Audio",
     "Poke",
     "MarketFace",
-)
+]

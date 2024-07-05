@@ -66,7 +66,7 @@ class Connection:
     async def close(self):
         if not self._stop_flag:
             await self.on_close()
-            self._writer.close()
+            self._writer.close()  # type: ignore
             await self.writer.wait_closed()
             self._reader = None
             self._writer = None
