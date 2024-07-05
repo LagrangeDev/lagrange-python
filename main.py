@@ -98,8 +98,8 @@ async def handle_kick(client: "Client", event: "ServerKick"):
 
 
 async def main():
-    uin = int(os.environ.get("LAGRANGE_UIN", "434912108"))
-    sign_url = os.environ.get("LAGRANGE_SIGN_URL", "https://sign.libfekit.so/api/sign")
+    uin = int(os.environ.get("LAGRANGE_UIN", "0"))
+    sign_url = os.environ.get("LAGRANGE_SIGN_URL", "")
 
     app = app_list["linux"]
 

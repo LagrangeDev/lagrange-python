@@ -1,5 +1,4 @@
 import time
-from typing import Optional
 
 from .httpcat import HttpCat
 from .log import logger
@@ -54,9 +53,9 @@ def _pack_params(d: dict) -> str:
 
 
 def sign_provider(upstream_url: str):
-    async def get_sign(cmd: str, seq: int, buf: bytes) -> Optional[dict]:
+    async def get_sign(cmd: str, seq: int, buf: bytes) -> dict:
         if cmd not in SIGN_PKG_LIST:
-            return
+            return {}
 
         params = {"cmd": cmd, "seq": seq, "src": buf.hex()}
 
