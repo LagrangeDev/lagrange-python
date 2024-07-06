@@ -37,7 +37,6 @@ includes = ["lagrange"]
 
 [tool.pdm.dev-dependencies]
 dev = [
-    "ftea>=0.1.7",
 ]
 [build-system]
 requires = ["pdm-backend"]

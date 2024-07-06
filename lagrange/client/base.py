@@ -236,7 +236,6 @@ class BaseClient:
         packet = build_code2d_packet(self.uin, 0x31, self._app_info, body)
 
         response = await self.send_uni_packet("wtlogin.trans_emp", packet)
-        print(">>>>", response.data)
         decrypted = Reader(response.data)
         decrypted.read_bytes(54)
         ret_code = decrypted.read_u8()
