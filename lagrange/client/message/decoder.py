@@ -1,5 +1,5 @@
 import zlib
-from typing import List, Tuple
+from typing import List, Tuple, Sequence
 
 from lagrange.client.events.group import GroupMessage
 from lagrange.client.events.friend import FriendMessage
@@ -7,7 +7,7 @@ from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.rich_text import Elems, RichText
 
 from . import elems
-from .types import T
+from .types import Element
 from lagrange.utils.binary.protobuf import proto_encode
 
 
@@ -31,7 +31,7 @@ def parse_friend_info(pkg: MsgPushBody) -> Tuple[int, str, int, str]:
     return from_uin, from_uid, to_uin, to_uid
 
 
-def parse_msg_new(rich: RichText) -> List[T]:
+def parse_msg_new(rich: RichText) -> Sequence[Element]:
     if rich.ptt:
         ptt = rich.ptt
         return [
@@ -47,7 +47,7 @@ def parse_msg_new(rich: RichText) -> List[T]:
             )
         ]
     el: List[Elems] = rich.content
-    msg_chain: List[T] = []
+    msg_chain: List[Element] = []
     ignore_next = False
     for raw in el:
         if not raw or raw == Elems():
@@ -71,7 +71,7 @@ def parse_msg_new(rich: RichText) -> List[T]:
                         elems.At(
                             text=msg.string,
                             uin=int.from_bytes(buf3[7:11], "big"),
-                            uid=msg.pb_reserved.get(9) if msg.pb_reserved else None,
+                            uid=str(msg.pb_reserved.get(9)) if msg.pb_reserved else "",
                         )
                     )
             else:
@@ -245,7 +245,7 @@ def parse_friend_msg(pkg: MsgPushBody) -> FriendMessage:
         msg_id=msg_id,
         timestamp=timestamp,
         msg=msg_text,
-        msg_chain=parsed_msg,
+        msg_chain=list(parsed_msg),
     )
 
 
@@ -276,5 +276,5 @@ def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
         sub_id=sub_id,
         sender_type=sender_type,
         msg=msg_text,
-        msg_chain=parsed_msg,
+        msg_chain=list(parsed_msg),
     )

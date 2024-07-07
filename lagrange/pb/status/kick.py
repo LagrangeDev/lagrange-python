@@ -1,7 +1,7 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
 class KickNT(ProtoStruct):
-    uin: int = ProtoField(1)
-    tips: str = ProtoField(3)
-    title: str = ProtoField(4)
+    uin: int = proto_field(1)
+    tips: str = proto_field(3)
+    title: str = proto_field(4)

@@ -20,10 +20,10 @@ class UserInfo:
     city: str = ""
     email: str = ""
     school: str = ""
-    sex: Sex = None
-    age: int = None
-    birthday: datetime = None
-    registered_on: datetime = None
+    sex: Sex = Sex.notset
+    age: int = 0
+    birthday: datetime = datetime(1, 1, 1)
+    registered_on: datetime = datetime(1, 1, 1)
 
     @classmethod
     def from_pb(cls, pb: GetInfoRspBody) -> "UserInfo":

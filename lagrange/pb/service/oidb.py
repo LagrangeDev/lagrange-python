@@ -1,13 +1,13 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
 class OidbRequest(ProtoStruct):
-    cmd: int = ProtoField(1)
-    sub_cmd: int = ProtoField(2)
-    data: bytes = ProtoField(4)
-    is_uid: bool = ProtoField(12, False)
+    cmd: int = proto_field(1)
+    sub_cmd: int = proto_field(2)
+    data: bytes = proto_field(4)
+    is_uid: bool = proto_field(12, default=False)
 
 
 class OidbResponse(OidbRequest):
-    ret_code: int = ProtoField(3)
-    err_msg: str = ProtoField(5)
+    ret_code: int = proto_field(3)
+    err_msg: str = proto_field(5)

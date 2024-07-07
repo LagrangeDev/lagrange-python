@@ -86,7 +86,7 @@ def build_uni_packet(
 ) -> bytes:
     trace = f"00-{os.urandom(16).hex()}-{os.urandom(8).hex()}-01"
 
-    head = {15: trace, 16: sig_info.uid}
+    head: dict = {15: trace, 16: sig_info.uid}
     if sign:
         head[24] = {
             1: bytes.fromhex(sign["sign"]),
@@ -142,7 +142,7 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         sig.d2_key = tlv.get(0x305) or sig.d2_key
         sig.tgtgt = hashlib.md5(sig.d2_key).digest()
         sig.temp_pwd = tlv[0x106]
-        sig.uid = proto_decode(tlv[0x543])[9][11][1].decode()
+        sig.uid = proto_decode(tlv[0x543])[9][11][1].decode()  # type: ignore
         sig.info_updated()
 
         logger.login.debug("SigInfo got")

@@ -30,14 +30,14 @@ if TYPE_CHECKING:
 
 
 class HighWaySession:
-    def __init__(self, client: "Client", logger: logging.Logger = None):
+    def __init__(self, client: "Client", logger: logging.Logger):
         if not logger:
             logger = logging.getLogger(__name__)
         self.logger = logger
         self._client = client
         self._session_sig: Optional[bytes] = None
         self._session_key: Optional[bytes] = None
-        self._session_addr_list: Optional[List[Tuple[str, int]]] = []
+        self._session_addr_list: List[Tuple[str, int]] = []
 
     async def _get_bdh_session(self):
         rsp = await self._client.send_uni_packet(
@@ -76,7 +76,7 @@ class HighWaySession:
         cmd_id: int,
         ticket: bytes,
         ext=None,
-        addrs: List[Tuple[str, int]] = None,
+        addrs: Optional[List[Tuple[str, int]]] = None,
         bs=65535,
     ) -> Optional[bytes]:
         if not addrs:
@@ -112,7 +112,7 @@ class HighWaySession:
         files: List[BinaryIO],
         cmd_id: int,
         ticket: bytes,
-        ext: bytes = None,
+        ext: Optional[bytes] = None,
         *,
         block_size=65535,
     ) -> Optional[bytes]:
@@ -151,7 +151,7 @@ class HighWaySession:
                     app_id=self._client.app_info.app_id,
                     sub_app_id=self._client.app_info.sub_app_id,
                     timestamp=ts,
-                    ext_info=ext,
+                    ext_info=ext or b"",
                 ).encode()
 
                 rsp_http = await session.send_request(
@@ -190,7 +190,9 @@ class HighWaySession:
         )
         if ret.rsp_head.ret_code != 0:
             raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
-        elif ret.upload.ukey:
+        if not ret.upload:
+            raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
+        if ret.upload.ukey:
             self.logger.debug("file not found, uploading...")
 
             index = ret.upload.msg_info.body[0].index
@@ -203,7 +205,8 @@ class HighWaySession:
                 1048576,
                 fsha1,
             ).encode()
-
+            if not self._session_sig:
+                raise ConnectionError("session sig not found, try again later")
             await self.upload_controller(
                 file,
                 cmd_id=1004 if gid else 1003,
@@ -212,10 +215,9 @@ class HighWaySession:
                 addrs=self._session_addr_list,
                 bs=1048576,
             )
-
         w, h = info.width, info.height
         if gid:
-            fileid = proto_decode(ret.upload.compat_qmsg)[7]
+            fileid: int = proto_decode(ret.upload.compat_qmsg)[7]
             url = "https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
                 uin=self._client.uin,
                 gid=gid,
@@ -261,7 +263,9 @@ class HighWaySession:
 
         if ret.rsp_head.ret_code != 0:
             raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
-        elif ret.upload.ukey:
+        if not ret.upload:
+            raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
+        if ret.upload.ukey:
             self.logger.debug("file not found, uploading...")
 
             index = ret.upload.msg_info.body[0].index
@@ -274,7 +278,8 @@ class HighWaySession:
                 1048576,
                 fsha1,
             ).encode()
-
+            if not self._session_sig:
+                raise ConnectionError("session sig not found, try again later")
             await self.upload_controller(
                 file,
                 cmd_id=1008 if gid else 1007,
@@ -287,7 +292,7 @@ class HighWaySession:
         compat = proto_decode(ret.upload.compat_qmsg, 0)[4]
         if gid:
             pd = proto_decode(compat, 0)
-            file_id = pd[8]
+            file_id: int = pd[8]
             file_key = pd[18]
         else:
             file_id = 0

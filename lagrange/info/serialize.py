@@ -35,7 +35,7 @@ class BinarySerializer(BaseSerializer):
         data = pickle.dumps(self)
         data_hash = hashlib.sha256(data).digest()
 
-        return (Builder().write_bytes(data_hash, True).write_bytes(data, True)).pack()
+        return (Builder().write_bytes(data_hash, with_length=True).write_bytes(data, with_length=True)).pack()
 
     @classmethod
     def _decode(cls, buffer: bytes, verify=True) -> Self:

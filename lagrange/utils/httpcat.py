@@ -4,7 +4,7 @@ import json
 import logging
 import zlib
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union, overload, Literal
 from urllib import parse
 
 _logger = logging.getLogger("lagrange.utils.httpcat")
@@ -32,7 +32,7 @@ class HttpResponse:
         else:
             return self.body
 
-    def json(self, verify_type=True) -> Union[dict, list]:
+    def json(self, verify_type=True):
         if (
             "Content-Type" in self.header
             and self.header["Content-Type"].find("application/json") == -1
@@ -50,8 +50,8 @@ class HttpCat:
         self,
         host: str,
         port: int,
-        headers: Dict[str, str] = None,
-        cookies: Dict[str, str] = None,
+        headers: Optional[Dict[str, str]] = None,
+        cookies: Optional[Dict[str, str]] = None,
         ssl=False,
         timeout=5,
     ):
@@ -133,7 +133,7 @@ class HttpCat:
         while True:
             head_block = await cls._read_line(reader)
             if head_block:
-                k, v = head_block.split(": ")  # type: str
+                k, v = head_block.split(": ")
                 if k.title() == "Set-Cookie":
                     name, value = v[: v.find(";")].split("=", 1)
                     cookies[name] = value
@@ -146,6 +146,7 @@ class HttpCat:
         )
 
     @classmethod
+    @overload
     async def _request(
         cls,
         host: str,
@@ -153,12 +154,45 @@ class HttpCat:
         writer: asyncio.StreamWriter,
         method: str,
         path: str,
-        header: Dict[str, str] = None,
-        body: bytes = None,
-        cookies: Dict[str, str] = None,
-        wait_rsp: bool = True,
-        loop: asyncio.AbstractEventLoop = None,
+        header: Optional[Dict[str, str]] = None,
+        body: Optional[bytes] = None,
+        cookies: Optional[Dict[str, str]] = None,
+        wait_rsp: Literal[True] = True,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> HttpResponse:
+        ...
+
+    @classmethod
+    @overload
+    async def _request(
+        cls,
+        host: str,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+        method: str,
+        path: str,
+        header: Optional[Dict[str, str]] = None,
+        body: Optional[bytes] = None,
+        cookies: Optional[Dict[str, str]] = None,
+        wait_rsp: Literal[False] = False,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> None:
+        ...
+
+    @classmethod
+    async def _request(
+        cls,
+        host: str,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+        method: str,
+        path: str,
+        header: Optional[Dict[str, str]] = None,
+        body: Optional[bytes] = None,
+        cookies: Optional[Dict[str, str]] = None,
+        wait_rsp: bool = True,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> Optional[HttpResponse]:
         if not loop:
             loop = asyncio.get_running_loop()
         header = {
@@ -189,12 +223,12 @@ class HttpCat:
         cls,
         method: str,
         url: str,
-        header: Dict[str, str] = None,
-        body: bytes = None,
-        cookies: Dict[str, str] = None,
+        header: Optional[Dict[str, str]] = None,
+        body: Optional[bytes] = None,
+        cookies: Optional[Dict[str, str]] = None,
         follow_redirect=True,
         conn_timeout=0,
-        loop: asyncio.AbstractEventLoop = None,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> HttpResponse:
         address, path, ssl = cls._parse_url(url)
         if conn_timeout:

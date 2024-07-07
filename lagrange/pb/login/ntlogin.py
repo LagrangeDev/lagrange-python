@@ -1,45 +1,47 @@
-from lagrange.utils.binary.protobuf import ProtoStruct, ProtoField
+from typing import Optional
+
+from lagrange.utils.binary.protobuf import ProtoStruct, proto_field
 
 
 class _LoginCookies(ProtoStruct, debug=True):
-    str: str = ProtoField(1)
+    str: str = proto_field(1)
 
 
 class _LoginVerify(ProtoStruct, debug=True):
-    url: str = ProtoField(3)
+    url: str = proto_field(3)
 
 
 class _LoginErrField(ProtoStruct, debug=True):
-    code: int = ProtoField(1)
-    title: str = ProtoField(2)
-    message: str = ProtoField(3)
+    code: int = proto_field(1)
+    title: str = proto_field(2)
+    message: str = proto_field(3)
 
 
 class _LoginRspHead(ProtoStruct, debug=True):
-    account: dict = ProtoField(1)  # {1: uin}
-    device: dict = ProtoField(
+    account: dict = proto_field(1)  # {1: uin}
+    device: dict = proto_field(
         2
     )  # {1: app.os, 2: device_name, 3: nt_login_type, 4: bytes(guid)}
-    system: dict = ProtoField(
+    system: dict = proto_field(
         3
     )  # {1: device.kernel_version, 2: app.app_id, 3: app.package_name}
-    error: _LoginErrField = ProtoField(4, None)
-    cookies: _LoginCookies = ProtoField(5, None)
+    error: Optional[_LoginErrField] = proto_field(4, default=None)
+    cookies: Optional[_LoginCookies] = proto_field(5, default=None)
 
 
 class _LoginCredentials(ProtoStruct, debug=True):
-    credentials: bytes = ProtoField(1, None)  # on login request
-    temp_pwd: bytes = ProtoField(3, None)
-    tgt: bytes = ProtoField(4, None)
-    d2: bytes = ProtoField(5, None)
-    d2_key: bytes = ProtoField(6, None)
+    credentials: Optional[bytes] = proto_field(1, default=None)  # on login request
+    temp_pwd: Optional[bytes] = proto_field(3, default=None)
+    tgt: Optional[bytes] = proto_field(4, default=None)
+    d2: Optional[bytes] = proto_field(5, default=None)
+    d2_key: Optional[bytes] = proto_field(6, default=None)
 
 
 class _LoginRspBody(ProtoStruct, debug=True):
-    credentials: _LoginCredentials = ProtoField(1, None)
-    verify: _LoginVerify = ProtoField(2, None)
+    credentials: Optional[_LoginCredentials] = proto_field(1, default=None)
+    verify: Optional[_LoginVerify] = proto_field(2, default=None)
 
 
 class NTLoginRsp(ProtoStruct, debug=True):
-    head: _LoginRspHead = ProtoField(1)
-    body: _LoginRspBody = ProtoField(2, None)
+    head: _LoginRspHead = proto_field(1)
+    body: Optional[_LoginRspBody] = proto_field(2, default=None)

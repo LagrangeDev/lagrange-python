@@ -36,6 +36,8 @@ from lagrange.utils.binary.protobuf import proto_decode, proto_encode
 from lagrange.utils.log import logger
 from lagrange.utils.operator import timestamp
 
+from qrcode.main import QRCode
+
 from .base import BaseClient
 from .event import Events
 from .events.group import GroupMessage
@@ -44,7 +46,7 @@ from .highway import HighWaySession
 from .message.decoder import parse_grp_msg
 from .message.elems import Audio, Image
 from .message.encoder import build_message
-from .message.types import T
+from .message.types import Element
 from .models import UserInfo
 from .server_push import push_handler
 from .wtlogin.sso import SSOPacket
@@ -56,8 +58,8 @@ class Client(BaseClient):
         uin: int,
         app_info: AppInfo,
         device_info: DeviceInfo,
-        sig_info: Optional[SigInfo] = None,
-        sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
+        sig_info: SigInfo,
+        sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
         use_ipv6=True,
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
@@ -91,7 +93,7 @@ class Client(BaseClient):
         else:
             raise AssertionError("siginfo not found, you must login first")
 
-    async def login(self, password="", qrcode_path="./qrcode.png") -> bool:
+    async def login(self, password: str = "", qrcode_path: Optional[str] = None) -> bool:
         try:
             if self._sig.temp_pwd:
                 rsp = await self.easy_login()
@@ -115,12 +117,22 @@ class Client(BaseClient):
                 else:
                     logger.root.error(f"Unhandled exception raised: {rsp.name}")
         else:  # QrcodeLogin
-            png, _link = await self.fetch_qrcode()
-            logger.root.info(f"save qrcode to '{qrcode_path}'")
-            with open(qrcode_path, "wb") as f:
-                f.write(png)
-            if await self.qrcode_login(3):
-                return await self.register()
+            ret = await self.fetch_qrcode()
+            if isinstance(ret, int):
+                logger.root.error(f"fetch qrcode fail: {ret}")
+            else:
+                png, _link = ret
+                if qrcode_path:
+                    logger.root.info(f"save qrcode to '{qrcode_path}'")
+                    with open(qrcode_path, "wb") as f:
+                        f.write(png)
+                else:
+                    qr = QRCode()
+                    qr.add_data(_link)
+                    logger.root.info("Please scan the qrcode below")
+                    qr.print_ascii()
+                if await self.qrcode_login(3):
+                    return await self.register()
         return False
 
     async def send_oidb_svc(
@@ -173,7 +185,7 @@ class Client(BaseClient):
         packet = await self.send_uni_packet("MessageSvc.PbSendMsg", proto_encode(body))
         return SendMsgRsp.decode(packet.data)
 
-    async def send_grp_msg(self, msg_chain: List[T], grp_id: int) -> int:
+    async def send_grp_msg(self, msg_chain: List[Element], grp_id: int) -> int:
         result = await self._send_msg_raw(
             {1: build_message(msg_chain).encode()}, grp_id=grp_id
         )
@@ -181,7 +193,7 @@ class Client(BaseClient):
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
 
-    async def send_friend_msg(self, msg_chain: List[T], uid: str) -> int:
+    async def send_friend_msg(self, msg_chain: List[Element], uid: str) -> int:
         result = await self._send_msg_raw(
             {1: build_message(msg_chain).encode()}, uid=uid
         )
@@ -244,7 +256,7 @@ class Client(BaseClient):
         )
 
     async def get_grp_members(
-        self, grp_id: int, next_key: str = None
+        self, grp_id: int, next_key: Optional[str] = None
     ) -> GetGrpMemberInfoRsp:
         """
         500 members per request,

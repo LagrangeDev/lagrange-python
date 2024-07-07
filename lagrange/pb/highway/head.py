@@ -1,53 +1,55 @@
-from lagrange.utils.binary.protobuf import ProtoField, ProtoStruct
+from typing import Optional
+
+from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
 class DataHighwayHead(ProtoStruct):
-    version: int = ProtoField(1, 1)
-    uin: str = ProtoField(2, None)
-    command: str = ProtoField(3, None)
-    seq: int = ProtoField(4)
-    retry_times: int = ProtoField(5, 0)
-    app_id: int = ProtoField(6)
-    data_flag: int = ProtoField(7, 16)
-    command_id: int = ProtoField(8)
-    build_ver: bytes = ProtoField(9, bytes())
+    version: int = proto_field(1, default=1)
+    uin: Optional[str] = proto_field(2, default=None)
+    command: Optional[str] = proto_field(3, default=None)
+    seq: int = proto_field(4)
+    retry_times: int = proto_field(5, default=0)
+    app_id: int = proto_field(6)
+    data_flag: int = proto_field(7, default=16)
+    command_id: int = proto_field(8)
+    build_ver: bytes = proto_field(9, default=bytes())
 
 
 class SegHead(ProtoStruct):
-    service_id: int = ProtoField(1, None)
-    file_size: int = ProtoField(2)
-    data_offset: int = ProtoField(3)
-    data_length: int = ProtoField(4)
-    ret_code: int = ProtoField(5, 0)
-    ticket: bytes = ProtoField(6, bytes())
-    md5: bytes = ProtoField(8)
-    file_md5: bytes = ProtoField(9)
-    cache_addr: int = ProtoField(10, None)
-    cache_port: int = ProtoField(13, None)
+    service_id: Optional[int] = proto_field(1, default=None)
+    file_size: int = proto_field(2)
+    data_offset: int = proto_field(3)
+    data_length: int = proto_field(4)
+    ret_code: int = proto_field(5, default=0)
+    ticket: bytes = proto_field(6, default=bytes())
+    md5: bytes = proto_field(8)
+    file_md5: bytes = proto_field(9)
+    cache_addr: Optional[int] = proto_field(10, default=None)
+    cache_port: Optional[int] = proto_field(13, default=None)
 
 
 class LoginSigHead(ProtoStruct):
-    login_sig_type: int = ProtoField(1)
-    login_sig: bytes = ProtoField(2, bytes())
-    app_id: int = ProtoField(3)
+    login_sig_type: int = proto_field(1)
+    login_sig: bytes = proto_field(2, default=bytes())
+    app_id: int = proto_field(3)
 
 
 class HighwayTransReqHead(ProtoStruct):
-    msg_head: DataHighwayHead = ProtoField(1, None)
-    seg_head: SegHead = ProtoField(2, None)
-    req_ext_info: bytes = ProtoField(3, bytes())
-    timestamp: int = ProtoField(4)
-    login_head: LoginSigHead = ProtoField(5, None)
+    msg_head: Optional[DataHighwayHead] = proto_field(1, default=None)
+    seg_head: Optional[SegHead] = proto_field(2, default=None)
+    req_ext_info: bytes = proto_field(3, default=bytes())
+    timestamp: int = proto_field(4)
+    login_head: Optional[LoginSigHead] = proto_field(5, default=None)
 
 
 class HighwayTransRespHead(ProtoStruct):
-    msg_head: DataHighwayHead = ProtoField(1, None)
-    seg_head: SegHead = ProtoField(2, None)
-    err_code: int = ProtoField(3)
-    allow_retry: int = ProtoField(4)
-    cache_cost: int = ProtoField(5, None)
-    ht_cost: int = ProtoField(6, None)
-    ext_info: bytes = ProtoField(7, bytes())
-    timestamp: int = ProtoField(8, None)
-    range: int = ProtoField(9, None)
-    is_reset: int = ProtoField(10, None)
+    msg_head: Optional[DataHighwayHead] = proto_field(1, default=None)
+    seg_head: Optional[SegHead] = proto_field(2, default=None)
+    err_code: int = proto_field(3)
+    allow_retry: int = proto_field(4)
+    cache_cost: Optional[int] = proto_field(5, default=None)
+    ht_cost: Optional[int] = proto_field(6, default=None)
+    ext_info: bytes = proto_field(7, default=bytes())
+    timestamp: Optional[int] = proto_field(8, default=None)
+    range: Optional[int] = proto_field(9, default=None)
+    is_reset: Optional[int] = proto_field(10, default=None)

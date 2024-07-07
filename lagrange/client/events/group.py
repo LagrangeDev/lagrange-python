@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, List, Optional
 from . import BaseEvent
 
 if TYPE_CHECKING:
-    from lagrange.client.message.types import T
+    from lagrange.client.message.types import Element
 
 
 @dataclass
@@ -30,7 +30,7 @@ class GroupMessage(GroupEvent, MessageInfo):
     sub_id: int = field(repr=False)  # client ver identify
     sender_type: int = field(repr=False)
     msg: str
-    msg_chain: List[T]
+    msg_chain: List[Element]
 
     @property
     def is_bot(self) -> bool:

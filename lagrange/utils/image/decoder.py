@@ -56,9 +56,10 @@ class PNGDecoder(BaseDecoder):
                 fio.read(4), "big"
             ):
                 raise ValueError("CRC not match")
-            elif btype == b"IHDR":
+            if btype == b"IHDR":
                 width, height, depth, *_ = struct.unpack("!IIBBBBB", data)
                 return ImageInfo("png", width, height, depth)
+        raise ValueError("decoder fail")
 
 
 class GIFDecoder(BaseDecoder):

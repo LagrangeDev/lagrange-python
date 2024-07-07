@@ -7,7 +7,7 @@ LENGTH_PREFIX = Literal["none", "u8", "u16", "u32", "u64"]
 
 class PacketBuilder(Builder):
     def write_bytes(
-        self, v: BYTES_LIKE, prefix: LENGTH_PREFIX = "none", with_prefix: bool = True
+        self, v: BYTES_LIKE, prefix: LENGTH_PREFIX = "none", with_prefix: bool = True, *, with_length: bool = False
     ) -> Self:
         if with_prefix:
             if prefix == "none":
@@ -42,4 +42,4 @@ class PacketBuilder(Builder):
     def write_string(
         self, s: str, prefix: LENGTH_PREFIX = "u32", with_prefix: bool = True
     ) -> Self:
-        return self.write_bytes(s.encode(), prefix, with_prefix)
+        return self.write_bytes(s.encode(), prefix=prefix, with_prefix=with_prefix)

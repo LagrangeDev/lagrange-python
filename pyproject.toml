@@ -9,6 +9,7 @@ authors = [
 dependencies = [
     "typing-extensions>=4.7.0",
     "cryptography>=40.0.0",
+    "qrcode>=7.4.2",
 ]
 keywords = ["QQ", "Tencent", "NTQQ", "Framework", "Bot", "asyncio"]
 classifiers = [
@@ -27,7 +28,6 @@ requires-python = ">=3.9"
 
 [project.optional-dependencies]
 faster = ["ftea>=0.1.5"]
-dev = ["pdm", "pdm-backend>=0.3.0"]
 
 [tool.pdm]
 distribution = true
@@ -35,6 +35,9 @@ distribution = true
 [tool.pdm.build]
 includes = ["lagrange"]
 
+[tool.pdm.dev-dependencies]
+dev = [
+]
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"

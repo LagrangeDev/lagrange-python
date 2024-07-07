@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List
 from . import BaseEvent
 
 if TYPE_CHECKING:
-    from lagrange.client.message.types import T
+    from lagrange.client.message.types import Element
 
 
 @dataclass
@@ -22,4 +22,4 @@ class FriendMessage(FriendEvent):
     msg_id: int
     timestamp: int
     msg: str
-    msg_chain: List[T]
+    msg_chain: List[Element]

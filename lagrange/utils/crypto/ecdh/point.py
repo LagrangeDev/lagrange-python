@@ -3,8 +3,8 @@ class EllipticPoint:
         self._x = x
         self._y = y
 
-    def __eq__(self, other: "EllipticPoint") -> bool:
-        return self._x == other._x and self._y == other._y
+    def __eq__(self, other) -> bool:
+        return isinstance(other, EllipticPoint) and self._x == other._x and self._y == other._y
 
     def __neg__(self):
         return EllipticPoint(-self._x, -self._y)

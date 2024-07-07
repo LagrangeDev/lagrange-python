@@ -5,7 +5,7 @@ ClientNetwork Implement
 import asyncio
 import ipaddress
 import sys
-from typing import Dict, Callable, Coroutine, Tuple, overload
+from typing import Dict, Callable, Coroutine, Tuple, overload, Optional
 from typing_extensions import Literal
 
 from lagrange.info import SigInfo
@@ -27,7 +27,7 @@ class ClientNetwork(Connection):
         disconnect_cb: Callable[[bool], Coroutine],
         use_v6=False,
         *,
-        manual_address: Tuple[str, int] = None,
+        manual_address: Optional[Tuple[str, int]] = None,
     ):
         if not manual_address:
             host, port = self.V6UPSTREAM if use_v6 else self.V4UPSTREAM
@@ -51,7 +51,8 @@ class ClientNetwork(Connection):
         raise RuntimeError("Network not connect, execute 'connect' first")
 
     def destroy_connection(self):
-        self._writer.close()
+        if self._writer:
+            self._writer.close()
 
     async def write(self, buf: bytes):
         await self.conn_event.wait()
@@ -60,13 +61,13 @@ class ClientNetwork(Connection):
 
     @overload
     async def send(
-        self, buf: bytes, wait_seq: Literal["-1"] = -1, timeout=10
+        self, buf: bytes, wait_seq: Literal[-1], timeout=10
     ) -> None: ...
 
     @overload
-    async def send(self, buf: bytes, wait_seq=-1, timeout=10) -> SSOPacket: ...
+    async def send(self, buf: bytes, wait_seq: int, timeout=10) -> SSOPacket: ...
 
-    async def send(self, buf: bytes, wait_seq=-1, timeout=10):
+    async def send(self, buf: bytes, wait_seq: int, timeout: int = 10):
         await self.write(buf)
         if wait_seq != -1:
             fut: asyncio.Future[SSOPacket] = asyncio.Future()
@@ -100,7 +101,7 @@ class ClientNetwork(Connection):
         t = asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
 
     async def on_error(self) -> bool:
-        _, err, _ = sys.exc_info()  # type: _, BaseException, _
+        _, err, _ = sys.exc_info()
 
         # OSError: timeout
         if isinstance(err, (asyncio.IncompleteReadError, ConnectionError, OSError)):
@@ -114,8 +115,8 @@ class ClientNetwork(Connection):
         t = asyncio.create_task(self._disconnect_cb(recover), name="disconnect_cb")
         return recover
 
-    async def on_message(self, msg_len: int):
-        raw = await self.reader.readexactly(msg_len)
+    async def on_message(self, message_length: int):
+        raw = await self.reader.readexactly(message_length)
         enc_flag, uin, sso_body = parse_sso_header(raw, self._sig.d2_key)
 
         packet = parse_sso_frame(sso_body, enc_flag == 2)

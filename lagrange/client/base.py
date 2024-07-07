@@ -43,8 +43,8 @@ class BaseClient:
         uin: int,
         app_info: AppInfo,
         device_info: DeviceInfo,
-        sig_info: Optional[SigInfo] = None,
-        sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] = None,
+        sig_info: SigInfo,
+        sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
         use_ipv6=True,
     ):
         if uin and not sig_info.uin:
@@ -176,7 +176,7 @@ class BaseClient:
 
     @overload
     async def send_uni_packet(
-        self, cmd: str, buf: bytes, send_only=False, timeout=10
+        self, cmd: str, buf: bytes, *, timeout=10
     ) -> SSOPacket: ...
 
     @overload
@@ -189,7 +189,7 @@ class BaseClient:
         self, cmd: str, buf: bytes, send_only: Literal[True], timeout=10
     ) -> None: ...
 
-    async def send_uni_packet(self, cmd, buf, send_only=False, timeout=10):
+    async def send_uni_packet(self, cmd, buf, send_only: bool = False, timeout=10):
         seq = self.get_seq()
         sign = None
         if self._sign_provider:
@@ -198,16 +198,15 @@ class BaseClient:
             uin=self.uin,
             seq=seq,
             cmd=cmd,
-            sign=sign,
+            sign=sign or {},
             app_info=self.app_info,
             device_info=self.device_info,
             sig_info=self._sig,
             body=buf,
         )
-
-        return await self._network.send(
-            packet, wait_seq=-1 if send_only else seq, timeout=timeout
-        )
+        if send_only:
+            return await self._network.send(packet, wait_seq=-1, timeout=timeout)
+        return await self._network.send(packet, wait_seq=seq, timeout=timeout)
 
     async def fetch_qrcode(self) -> Union[int, Tuple[bytes, str]]:
         tlv = QrCodeTlvBuilder()
@@ -237,7 +236,6 @@ class BaseClient:
         packet = build_code2d_packet(self.uin, 0x31, self._app_info, body)
 
         response = await self.send_uni_packet("wtlogin.trans_emp", packet)
-
         decrypted = Reader(response.data)
         decrypted.read_bytes(54)
         ret_code = decrypted.read_u8()
