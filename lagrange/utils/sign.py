@@ -1,4 +1,5 @@
 import time
+import json
 
 from .httpcat import HttpCat
 from .log import logger
@@ -45,22 +46,18 @@ SIGN_PKG_LIST = [
 ]
 
 
-def _pack_params(d: dict) -> str:
-    r = "?"
-    for k, v in d.items():
-        r += "%s=%s&" % (k, v)
-    return r[:-1]
-
-
 def sign_provider(upstream_url: str):
     async def get_sign(cmd: str, seq: int, buf: bytes) -> dict:
         if cmd not in SIGN_PKG_LIST:
             return {}
 
         params = {"cmd": cmd, "seq": seq, "src": buf.hex()}
-
+        body = json.dumps(params).encode('utf-8')
+        headers = {
+            "Content-Type": "application/json"
+        }
         start_time = time.time()
-        ret = await HttpCat.request("GET", upstream_url + _pack_params(params))
+        ret = await HttpCat.request("POST", upstream_url, body=body, header=headers)
         _logger.debug(
             f"signed for [{cmd}:{seq}]({round((time.time() - start_time) * 1000, 2)}ms)"
         )
