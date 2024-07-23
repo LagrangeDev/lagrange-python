@@ -28,6 +28,9 @@ requires-python = ">=3.9"
 
 [project.optional-dependencies]
 faster = ["ftea>=0.1.5"]
+loguru = [
+    "loguru>=0.7.2",
+]
 
 [tool.pdm]
 distribution = true
@@ -37,6 +40,7 @@ includes = ["lagrange"]
 
 [tool.pdm.dev-dependencies]
 dev = [
+    "loguru>=0.7.2",
 ]
 [build-system]
 requires = ["pdm-backend"]

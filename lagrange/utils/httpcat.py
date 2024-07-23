@@ -1,13 +1,14 @@
 import asyncio
 import gzip
 import json
-import logging
 import zlib
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Union, overload, Literal
+from typing import Dict, Optional, Tuple, overload, Literal
 from urllib import parse
 
-_logger = logging.getLogger("lagrange.utils.httpcat")
+from .log import log
+
+_logger = log.fork("utils.httpcat")
 
 
 @dataclass

@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 
 from lagrange import Lagrange
@@ -7,11 +6,6 @@ from lagrange.client.client import Client
 from lagrange.client.events.group import GroupMessage
 from lagrange.client.events.service import ServerKick
 from lagrange.client.message.elems import At, Raw, Text
-
-
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s %(name)s[%(levelname)s]: %(message)s"
-)
 
 
 async def msg_handler(client: Client, event: GroupMessage):
@@ -42,6 +36,7 @@ lag = Lagrange(
     "linux",
     os.environ.get("LAGRANGE_SIGN_URL", "")
 )
+lag.log.set_level("DEBUG")
 lag.subscribe(GroupMessage, msg_handler)
 lag.subscribe(ServerKick, handle_kick)
 

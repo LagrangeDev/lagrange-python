@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import time
 import uuid
 from hashlib import md5
@@ -15,6 +14,7 @@ from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
 from lagrange.utils.image import decoder as decoder_img
 from lagrange.utils.audio import decoder as decoder_audio
+from lagrange.utils.log import log
 
 from .encoders import (
     encode_audio_upload_req,
@@ -30,10 +30,8 @@ if TYPE_CHECKING:
 
 
 class HighWaySession:
-    def __init__(self, client: "Client", logger: logging.Logger):
-        if not logger:
-            logger = logging.getLogger(__name__)
-        self.logger = logger
+    def __init__(self, client: "Client"):
+        self.logger = log.fork("highway")
         self._client = client
         self._session_sig: Optional[bytes] = None
         self._session_key: Optional[bytes] = None

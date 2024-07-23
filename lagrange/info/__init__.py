@@ -6,7 +6,7 @@ from .app import AppInfo
 from .device import DeviceInfo
 from .sig import SigInfo
 
-from ..utils.log import logger
+from ..utils.log import log
 
 __all__ = ["DeviceInfo", "AppInfo", "SigInfo", "InfoManager"]
 
@@ -37,21 +37,23 @@ class InfoManager:
         with self._device_info_path.open("wb") as f:
             f.write(self.device.dump())
 
-        logger.root.info("sig info saved")
+        log.root.success("device & sig_info saved")
 
     def __enter__(self):
         if self._device_info_path.is_file():
             with self._device_info_path.open("rb") as f:
                 self._device = DeviceInfo.load(f.read())
+            log.root.success(f"{self._device_info_path} loaded")
         else:
-            logger.root.info(f"{self._device_info_path} not found, generating...")
+            log.root.info(f"{self._device_info_path} not found, generating...")
             self._device = DeviceInfo.generate(self.uin)
 
         if self._sig_info_path.is_file():
             with self._sig_info_path.open("rb") as f:
                 self._sig_info = SigInfo.load(f.read())
+            log.root.success(f"{self._sig_info_path} loaded")
         else:
-            logger.root.info(f"{self._sig_info_path} not found, generating...")
+            log.root.info(f"{self._sig_info_path} not found, generating...")
             self._sig_info = SigInfo.new(8848)
         return self
 

@@ -1,10 +1,11 @@
 import asyncio
-import logging
 import socket
 import traceback
 from typing import Optional
 
-_logger = logging.getLogger("lagrange.network")
+from .log import log
+
+_logger = log.fork("network")
 
 
 class Connection:
@@ -64,6 +65,7 @@ class Connection:
         )
 
     async def close(self):
+        _logger.debug("Closing connection")
         if not self._stop_flag:
             await self.on_close()
             self._writer.close()  # type: ignore

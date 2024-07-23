@@ -1,7 +1,7 @@
 import asyncio
 from typing import TYPE_CHECKING, Any, Callable, Awaitable, Dict, Set, Type, TypeVar
 
-from lagrange.utils.log import logger
+from lagrange.utils.log import log
 
 if TYPE_CHECKING:
     from .events import BaseEvent
@@ -31,14 +31,14 @@ class Events:
         try:
             await handler(client, event)
         except Exception as e:
-            logger.root.error(
+            log.root.error(
                 "Unhandled exception on task {}".format(event), exc_info=e
             )
 
     def emit(self, event: "BaseEvent", client: "Client"):
         typ = type(event)
         if typ not in self._handle_map:
-            logger.root.debug(f"Unhandled event: {event}")
+            log.root.debug(f"Unhandled event: {event}")
             return
 
         t = asyncio.create_task(self._task_exec(client, event, self._handle_map[typ]))

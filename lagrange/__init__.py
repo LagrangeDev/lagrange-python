@@ -2,7 +2,7 @@ from typing import Literal, Optional
 import asyncio
 
 from .client.client import Client as Client
-from .utils.log import logger
+from .utils.log import log as log
 from .utils.sign import sign_provider
 from .info import InfoManager
 from .info.app import app_list
@@ -24,6 +24,7 @@ class Lagrange:
         self.info = app_list[protocol]
         self.sign = sign_provider(sign_url) if sign_url else None
         self.events = {}
+        self.log = log
 
     def subscribe(self, event, handler):
         self.events[event] = handler
@@ -50,7 +51,7 @@ class Lagrange:
             self.client.connect()
             status = await self.login(self.client)
         if not status:
-            logger.login.error("Login failed")
+            log.login.error("Login failed")
             return
         await self.client.wait_closed()
 
@@ -58,5 +59,5 @@ class Lagrange:
         try:
             asyncio.run(self.run())
         except KeyboardInterrupt:
-            logger.root.info("Program exit")
             self.client._task_clear()
+            log.root.info("Program exited by user")

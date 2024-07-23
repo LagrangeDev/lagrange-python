@@ -7,7 +7,7 @@ from lagrange.utils.binary.protobuf import proto_decode, proto_encode
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.crypto.ecdh import ecdh
 from lagrange.utils.crypto.tea import qqtea_decrypt, qqtea_encrypt
-from lagrange.utils.log import logger
+from lagrange.utils.log import log
 from lagrange.utils.operator import timestamp
 
 
@@ -145,8 +145,8 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         sig.uid = proto_decode(tlv[0x543])[9][11][1].decode()  # type: ignore
         sig.info_updated()
 
-        logger.login.debug("SigInfo got")
-        logger.login.info("Login success, username: %s" % tlv[0x11A][5:].decode())
+        log.login.debug("SigInfo got")
+        log.login.info("Login success, username: %s" % tlv[0x11A][5:].decode())
 
         return True
     elif 0x146 in tlv:
@@ -163,6 +163,6 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         title = "未知错误"
         content = "无法解析错误原因，请将完整日志提交给开发者"
 
-    logger.login.error(f"Login fail on oicq({hex(typ)}): [{title}]>{content}")
+    log.login.error(f"Login fail on oicq({hex(typ)}): [{title}]>{content}")
 
     return False

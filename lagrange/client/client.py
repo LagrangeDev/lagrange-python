@@ -33,7 +33,7 @@ from lagrange.pb.service.group import (
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.utils.binary.protobuf import proto_decode, proto_encode
-from lagrange.utils.log import logger
+from lagrange.utils.log import log
 from lagrange.utils.operator import timestamp
 
 from qrcode.main import QRCode
@@ -65,7 +65,7 @@ class Client(BaseClient):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
 
         self._events = Events()
-        self._highway = HighWaySession(self, logger.fork("highway"))
+        self._highway = HighWaySession(self)
 
     @property
     def events(self) -> Events:
@@ -100,7 +100,7 @@ class Client(BaseClient):
                 if rsp:
                     return True
         except Exception as e:
-            logger.login.error("EasyLogin fail", exc_info=e)
+            log.login.error("EasyLogin fail", exc_info=e)
 
         if password:  # TODO: PasswordLogin, WIP
             await self._key_exchange()
@@ -110,26 +110,26 @@ class Client(BaseClient):
                 if rsp.successful:
                     return await self.register()
                 elif rsp.captcha_verify:
-                    logger.root.warning("captcha verification required")
+                    log.root.warning("captcha verification required")
                     self.submit_login_captcha(
                         ticket=input("ticket?->"), rand_str=input("rand_str?->")
                     )
                 else:
-                    logger.root.error(f"Unhandled exception raised: {rsp.name}")
+                    log.root.error(f"Unhandled exception raised: {rsp.name}")
         else:  # QrcodeLogin
             ret = await self.fetch_qrcode()
             if isinstance(ret, int):
-                logger.root.error(f"fetch qrcode fail: {ret}")
+                log.root.error(f"fetch qrcode fail: {ret}")
             else:
                 png, _link = ret
                 if qrcode_path:
-                    logger.root.info(f"save qrcode to '{qrcode_path}'")
+                    log.root.info(f"save qrcode to '{qrcode_path}'")
                     with open(qrcode_path, "wb") as f:
                         f.write(png)
                 else:
                     qr = QRCode()
                     qr.add_data(_link)
-                    logger.root.info("Please scan the qrcode below")
+                    log.root.info("Please scan the qrcode below")
                     qr.print_ascii()
                 if await self.qrcode_login(3):
                     return await self.register()
@@ -149,7 +149,7 @@ class Client(BaseClient):
             ).data
         )
         if rsp.ret_code:
-            logger.network.error(
+            log.network.error(
                 f"OidbSvc(0x{cmd:X}_{sub_cmd}) return an error: ({rsp.ret_code}){rsp.err_msg}"
             )
         return rsp

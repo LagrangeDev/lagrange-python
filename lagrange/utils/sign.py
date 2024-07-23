@@ -1,9 +1,9 @@
 import time
 
 from .httpcat import HttpCat
-from .log import logger
+from .log import log
 
-_logger = logger.fork("sign_provider")
+_logger = log.fork("sign_provider")
 
 SIGN_PKG_LIST = [
     "trpc.o3.ecdh_access.EcdhAccess.SsoEstablishShareKey",

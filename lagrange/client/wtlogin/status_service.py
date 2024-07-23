@@ -1,7 +1,7 @@
 from lagrange.info import AppInfo, DeviceInfo
 from lagrange.pb.login.register import PBRegisterRequest, PBRegisterResponse
 from lagrange.utils.binary.protobuf import proto_encode
-from lagrange.utils.log import logger
+from lagrange.utils.log import log
 
 
 # trpc.qq_new_tech.status_svc.StatusService.Register
@@ -18,5 +18,5 @@ def parse_register_response(response: bytes) -> bool:
     pb = PBRegisterResponse.decode(response)
     if pb.message == "register success":
         return True
-    logger.network.error("register fail, reason: %s", pb.message)
+    log.network.error("register fail, reason: %s", pb.message)
     return False
