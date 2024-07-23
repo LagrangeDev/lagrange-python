@@ -65,9 +65,9 @@ class ClientNetwork(Connection):
     ) -> None: ...
 
     @overload
-    async def send(self, buf: bytes, wait_seq: int, timeout=10) -> SSOPacket: ...
+    async def send(self, buf: bytes, wait_seq: int, timeout=10) -> SSOPacket: ...  # type: ignore
 
-    async def send(self, buf: bytes, wait_seq: int, timeout: int = 10):
+    async def send(self, buf: bytes, wait_seq: int, timeout: int = 10):  # type: ignore
         await self.write(buf)
         if wait_seq != -1:
             fut: asyncio.Future[SSOPacket] = asyncio.Future()
@@ -80,7 +80,8 @@ class ClientNetwork(Connection):
 
     def _cancel_all_task(self):
         for _, fut in self._wait_fut_map.items():
-            fut.cancel("connection closed")
+            if not fut.done():
+                fut.cancel("connection closed")
 
     async def on_connected(self):
         self.conn_event.set()

@@ -58,11 +58,7 @@ class BaseClient:
         self._captcha_info = ["", "", ""]  # ticket, rand_str, aid
 
         self._server_push_queue: asyncio.Queue[SSOPacket] = asyncio.Queue()
-        self._tasks: Dict[str, Optional[asyncio.Task]] = {
-            "loop": None,
-            "push_handle": None,
-            "heartbeat": None,
-        }
+        self._tasks: Dict[str, asyncio.Task] = {}
         self._network = ClientNetwork(
             sig_info,
             self._server_push_queue,
@@ -98,7 +94,7 @@ class BaseClient:
             self._sig.sequence += 1
 
     def connect(self) -> None:
-        if not self._tasks["loop"]:
+        if "loop" not in self._tasks:
             self._tasks["loop"] = asyncio.create_task(self._network.loop())
             self._tasks["push_handle"] = asyncio.create_task(self._push_handle_loop())
             self._tasks["heartbeat"] = asyncio.create_task(self._heartbeat_task())
@@ -111,9 +107,14 @@ class BaseClient:
 
     async def stop(self):
         await self.disconnect()
+        self._task_clear()
+
+    def _task_clear(self):
         for _, task in self._tasks.items():
-            if task:
+            if not task.done():
                 task.cancel()
+                # wakeup loop if it is blocked by select() with long timeout
+                task._loop.call_soon_threadsafe(lambda: None)
 
     async def _heartbeat_task(self):
         err_count = 0

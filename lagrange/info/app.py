@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import TypedDict
 
 from .serialize import JsonSerializer
 
@@ -26,7 +27,13 @@ class AppInfo(JsonSerializer):
     nt_login_type: int
 
 
-app_list = {
+class AppInfoDict(TypedDict):
+    linux: AppInfo
+    macos: AppInfo
+    windows: AppInfo
+
+
+app_list: AppInfoDict = {
     "linux": AppInfo(
         os="Linux",
         kernel="Linux",

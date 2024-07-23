@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING, Callable, Coroutine, Dict, Set, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Awaitable, Dict, Set, Type, TypeVar
 
 from lagrange.utils.log import logger
 
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from .client import Client
 
 T = TypeVar("T", bound="BaseEvent")
-EVENT_HANDLER = Callable[["Client", T], Coroutine[None, None, None]]
+EVENT_HANDLER = Callable[["Client", T], Awaitable[Any]]
 
 
 class Events:
@@ -16,7 +16,7 @@ class Events:
         self._task_group: Set[asyncio.Task] = set()
         self._handle_map: Dict[Type["BaseEvent"], EVENT_HANDLER] = {}
 
-    def subscribe(self, event: Type["BaseEvent"], handler: EVENT_HANDLER):
+    def subscribe(self, event: Type[T], handler: EVENT_HANDLER[T]):
         if event not in self._handle_map:
             self._handle_map[event] = handler
         else:
