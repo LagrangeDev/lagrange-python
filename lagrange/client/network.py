@@ -97,7 +97,7 @@ class ClientNetwork(Connection):
 
     async def on_close(self):
         self.conn_event.clear()
-        log.network.warning("Connection close")
+        log.network.warning("Connection closed")
         self._cancel_all_task()
         t = asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
 

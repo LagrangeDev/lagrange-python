@@ -145,7 +145,10 @@ class BaseClient:
                 log.root.error("Unhandled exception on push handler", exc_info=e)
 
     async def wait_closed(self) -> None:
-        await self._network.wait_closed()
+        try:
+            await self._network.wait_closed()
+        except asyncio.CancelledError:
+            await self.stop()
 
     @property
     def app_info(self) -> AppInfo:

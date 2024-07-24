@@ -61,3 +61,5 @@ class Lagrange:
         except KeyboardInterrupt:
             self.client._task_clear()
             log.root.info("Program exited by user")
+        else:
+            log.root.info("Program exited normally")

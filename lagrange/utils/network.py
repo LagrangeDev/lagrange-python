@@ -64,18 +64,21 @@ class Connection:
             asyncio.open_connection(self.host, self.port, ssl=self.ssl), self.timeout
         )
 
-    async def close(self):
+    async def close(self, force: bool = False):
+        if self._stop_flag and not force:
+            return
         _logger.debug("Closing connection")
-        if not self._stop_flag:
-            await self.on_close()
-            self._writer.close()  # type: ignore
-            await self.writer.wait_closed()
-            self._reader = None
-            self._writer = None
+        await self.on_close()
+        self._writer.close()  # type: ignore
+        await self.writer.wait_closed()
+        self._reader = None
+        self._writer = None
 
     async def stop(self):
+        if self._stop_flag:
+            return
         self._stop_flag = True
-        await self.close()
+        await self.close(force=True)
         self._stop_ev.set()
 
     async def _read_loop(self):
