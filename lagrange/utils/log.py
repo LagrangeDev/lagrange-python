@@ -3,7 +3,7 @@ import logging
 import sys
 from typing import ClassVar, Callable, Optional, Protocol, Union
 
-__all__ = ["log"]
+__all__ = ["log", "install_loguru"]
 
 
 class Logger(Protocol):
@@ -162,10 +162,3 @@ def install_loguru():
 
     _Logger.get_logger = lambda self: logger.patch(lambda r: r.update(name=self.context))
 
-
-try:
-    import loguru
-except ImportError:
-    pass
-else:
-    install_loguru()

@@ -3,6 +3,7 @@ import asyncio
 
 from .client.client import Client as Client
 from .utils.log import log as log
+from .utils.log import install_loguru as install_loguru
 from .utils.sign import sign_provider
 from .info import InfoManager
 from .info.app import app_list
