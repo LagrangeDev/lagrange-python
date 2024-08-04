@@ -7,7 +7,7 @@ from typing_extensions import Literal
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.utils.binary.reader import Reader
-from lagrange.utils.log import logger
+from lagrange.utils.log import log
 from lagrange.client.wtlogin.ntlogin import (
     build_ntlogin_request,
     parse_ntlogin_response,
@@ -58,11 +58,7 @@ class BaseClient:
         self._captcha_info = ["", "", ""]  # ticket, rand_str, aid
 
         self._server_push_queue: asyncio.Queue[SSOPacket] = asyncio.Queue()
-        self._tasks: Dict[str, Optional[asyncio.Task]] = {
-            "loop": None,
-            "push_handle": None,
-            "heartbeat": None,
-        }
+        self._tasks: Dict[str, asyncio.Task] = {}
         self._network = ClientNetwork(
             sig_info,
             self._server_push_queue,
@@ -98,7 +94,7 @@ class BaseClient:
             self._sig.sequence += 1
 
     def connect(self) -> None:
-        if not self._tasks["loop"]:
+        if "loop" not in self._tasks:
             self._tasks["loop"] = asyncio.create_task(self._network.loop())
             self._tasks["push_handle"] = asyncio.create_task(self._push_handle_loop())
             self._tasks["heartbeat"] = asyncio.create_task(self._heartbeat_task())
@@ -111,9 +107,14 @@ class BaseClient:
 
     async def stop(self):
         await self.disconnect()
+        self._task_clear()
+
+    def _task_clear(self):
         for _, task in self._tasks.items():
-            if task:
+            if not task.done():
                 task.cancel()
+                # wakeup loop if it is blocked by select() with long timeout
+                task._loop.call_soon_threadsafe(lambda: None)
 
     async def _heartbeat_task(self):
         err_count = 0
@@ -122,16 +123,16 @@ class BaseClient:
             if not err_count:
                 await asyncio.sleep(self._heartbeat_interval)
             try:
-                logger.network.info(
+                log.network.info(
                     f"{await self.sso_heartbeat(True, 5) * 1000:.2f}ms to server"
                 )
             except asyncio.TimeoutError:
                 if err_count < 3:
-                    logger.network.warning("heartbeat timeout")
+                    log.network.warning("heartbeat timeout")
                     err_count += 1
                     continue
                 else:
-                    logger.network.error("too many heartbeats fail, reconnecting...")
+                    log.network.error("too many heartbeats fail, reconnecting...")
                     self.destroy_network()
             err_count = 0
 
@@ -141,10 +142,13 @@ class BaseClient:
             try:
                 await self.push_handler(sso)
             except Exception as e:
-                logger.root.error("Unhandled exception on push handler", exc_info=e)
+                log.root.error("Unhandled exception on push handler", exc_info=e)
 
     async def wait_closed(self) -> None:
-        await self._network.wait_closed()
+        try:
+            await self._network.wait_closed()
+        except asyncio.CancelledError:
+            await self.stop()
 
     @property
     def app_info(self) -> AppInfo:
@@ -347,7 +351,7 @@ class BaseClient:
             await asyncio.sleep(refresh_interval)
             ret_last = await self.get_qrcode_result()
             if ret_code != ret_last:
-                logger.login.info(
+                log.login.info(
                     f"qrcode state changed: {ret_code.name}->{ret_last.name}"
                 )
                 ret_code = ret_last
@@ -395,9 +399,9 @@ class BaseClient:
         )
         if parse_register_response(response.data):
             self._online.set()
-            logger.login.info("Register successful")
+            log.login.info("Register successful")
             return True
-        logger.login.error("Register failure")
+        log.login.error("Register failure")
         return False
 
     async def sso_heartbeat(self, calc_latency=False, timeout=10) -> float:

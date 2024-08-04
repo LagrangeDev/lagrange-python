@@ -4,7 +4,7 @@ from lagrange.utils.binary.protobuf import ProtoStruct, proto_field
 
 
 class _LoginCookies(ProtoStruct, debug=True):
-    str: str = proto_field(1)
+    str: str = proto_field(1)  # type: ignore
 
 
 class _LoginVerify(ProtoStruct, debug=True):

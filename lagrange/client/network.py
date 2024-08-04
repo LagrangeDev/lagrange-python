@@ -9,7 +9,7 @@ from typing import Dict, Callable, Coroutine, Tuple, overload, Optional
 from typing_extensions import Literal
 
 from lagrange.info import SigInfo
-from lagrange.utils.log import logger
+from lagrange.utils.log import log
 from lagrange.utils.network import Connection
 
 from .wtlogin.sso import SSOPacket, parse_sso_frame, parse_sso_header
@@ -65,9 +65,9 @@ class ClientNetwork(Connection):
     ) -> None: ...
 
     @overload
-    async def send(self, buf: bytes, wait_seq: int, timeout=10) -> SSOPacket: ...
+    async def send(self, buf: bytes, wait_seq: int, timeout=10) -> SSOPacket: ...  # type: ignore
 
-    async def send(self, buf: bytes, wait_seq: int, timeout: int = 10):
+    async def send(self, buf: bytes, wait_seq: int, timeout: int = 10):  # type: ignore
         await self.write(buf)
         if wait_seq != -1:
             fut: asyncio.Future[SSOPacket] = asyncio.Future()
@@ -80,15 +80,16 @@ class ClientNetwork(Connection):
 
     def _cancel_all_task(self):
         for _, fut in self._wait_fut_map.items():
-            fut.cancel("connection closed")
+            if not fut.done():
+                fut.cancel("connection closed")
 
     async def on_connected(self):
         self.conn_event.set()
         host, port = self.writer.get_extra_info("peername")[:2]  # for v6 ip
         if ipaddress.ip_address(host).version != 6 and self._using_v6:
-            logger.network.debug("using v4 address, disable v6 support")
+            log.network.debug("using v4 address, disable v6 support")
             self._using_v6 = False
-        logger.network.info(f"Connected to {host}:{port}")
+        log.network.info(f"Connected to {host}:{port}")
         if self._connected and not self._stop_flag:
             t = asyncio.create_task(self._reconnect_cb(), name="reconnect_cb")
         else:
@@ -96,7 +97,7 @@ class ClientNetwork(Connection):
 
     async def on_close(self):
         self.conn_event.clear()
-        logger.network.warning("Connection close")
+        log.network.warning("Connection closed")
         self._cancel_all_task()
         t = asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
 
@@ -105,11 +106,11 @@ class ClientNetwork(Connection):
 
         # OSError: timeout
         if isinstance(err, (asyncio.IncompleteReadError, ConnectionError, OSError)):
-            logger.network.warning("Connection lost, reconnecting...")
-            logger.network.debug(f"{repr(err)}")
+            log.network.warning("Connection lost, reconnecting...")
+            log.network.debug(f"{repr(err)}")
             recover = True
         else:
-            logger.network.error(f"Connection got an unexpected error: {repr(err)}")
+            log.network.error(f"Connection got an unexpected error: {repr(err)}")
             recover = False
         self._cancel_all_task()
         t = asyncio.create_task(self._disconnect_cb(recover), name="disconnect_cb")
@@ -122,7 +123,7 @@ class ClientNetwork(Connection):
         packet = parse_sso_frame(sso_body, enc_flag == 2)
 
         if packet.seq > 0:  # uni rsp
-            logger.network.debug(
+            log.network.debug(
                 f"{packet.seq}({packet.ret_code})-> {packet.cmd or packet.extra}"
             )
             if packet.ret_code != 0 and packet.seq in self._wait_fut_map:
@@ -130,12 +131,12 @@ class ClientNetwork(Connection):
                     AssertionError(packet.ret_code, packet.extra)
                 )
             elif packet.ret_code != 0:
-                return logger.network.error(
+                return log.network.error(
                     f"Unexpected error on sso layer: {packet.ret_code}: {packet.extra}"
                 )
 
             if packet.seq not in self._wait_fut_map:
-                logger.network.warning(
+                log.network.warning(
                     f"Unknown packet: {packet.cmd}({packet.seq}), ignore"
                 )
             else:
@@ -143,7 +144,7 @@ class ClientNetwork(Connection):
         elif packet.seq == 0:
             raise AssertionError(packet.ret_code, packet.extra)
         else:  # server pushed
-            logger.network.debug(
+            log.network.debug(
                 f"{packet.seq}({packet.ret_code})<- {packet.cmd or packet.extra}"
             )
             await self._push_store.put(packet)

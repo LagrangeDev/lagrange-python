@@ -1,3 +1,3 @@
-from lagrange.utils.log import logger as _logger
+from lagrange.utils.log import log
 
-logger = _logger.fork("server_push")
+logger = log.fork("server_push")
