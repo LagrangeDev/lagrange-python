@@ -2,10 +2,10 @@
 # It is not intended for manual editing.
 
 [metadata]
-groups = ["default", "dev", "faster"]
+groups = ["default", "dev", "faster", "loguru"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:a016d1ff942687b9f736b92a65051e4680dcd5d7a039c09aeec3f7af92bcc050"
+content_hash = "sha256:a4d7e5f9bfd13c7ddb63c8b9e69e42f33b10667ebce7fef537eea07f18986b58"
 
 [[package]]
 name = "cffi"
@@ -69,8 +69,8 @@ name = "colorama"
 version = "0.4.6"
 requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 summary = "Cross-platform colored terminal text."
-groups = ["default"]
-marker = "platform_system == \"Windows\""
+groups = ["default", "dev", "loguru"]
+marker = "sys_platform == \"win32\" or platform_system == \"Windows\""
 files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
@@ -121,6 +121,81 @@ files = [
 ]
 
 [[package]]
+name = "ftea"
+version = "0.1.7"
+requires_python = ">=3.6"
+summary = "tea encrypt and decrypt"
+groups = ["faster"]
+files = [
+    {file = "ftea-0.1.7-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:756d2bc1a5ccd2ba2f84af9c8ec69bd3f3c12afaceed67b5439f19d5dc6f1136"},
+    {file = "ftea-0.1.7-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:306ddd0134b17ff12bbbd2409f9bffa73d273e314c363529e206e8c7ca4f21fa"},
+    {file = "ftea-0.1.7-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b7e1f535029f077468e259252978baab368d1ad5720414fb8e06fec79bda6c6d"},
+    {file = "ftea-0.1.7-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:28f550c5e43311b9e35d110c80f152c10b084a2b2d00e428dc48461e57170a81"},
+    {file = "ftea-0.1.7-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e670b92d670bec63cae93767e3e1f866e240377a1f0d0146942347759175d433"},
+    {file = "ftea-0.1.7-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:f977e517b1b6e26f1b17fb4aab79eca9fc0a5023c8a2522de75027d9f6ba4438"},
+    {file = "ftea-0.1.7-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:05e30bafd7400743ec85af313a65ecd074e82a180217687e4e17aec2aadb231a"},
+    {file = "ftea-0.1.7-cp310-cp310-win32.whl", hash = "sha256:474b9e299ffe25ad28aced1b38d9525a69b854a3d17b5928c5f9879e8872caae"},
+    {file = "ftea-0.1.7-cp310-cp310-win_amd64.whl", hash = "sha256:434639ec979dd6965990ddd165ed5cba9e4226515000d551f7393bf2d1d8cafe"},
+    {file = "ftea-0.1.7-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:84a23f1cef692f568d65e0439361d594d6b082f33c3ac1205e69b4969016f911"},
+    {file = "ftea-0.1.7-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:3226fbceb8991ba1fff8fbf03269e736a929f56f7a6e83c9994fb3c96b29d3a8"},
+    {file = "ftea-0.1.7-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:768a9d4daf818e94ad5fe07e3ac3e25b29f34efa869b7556d15537bd771a7278"},
+    {file = "ftea-0.1.7-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d055a6fa0b812263ca7a0010755b31269ca208a0418d42f97571a2e71625dd65"},
+    {file = "ftea-0.1.7-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ded19bf2a9182ca4a2d6ffbe22da387ce3c571dad2f632ba356e5e39fa7bc18a"},
+    {file = "ftea-0.1.7-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:e4e2c7bd07139c3e75c3cc57855fb606c449d4d409b124893f73d3ec2595824e"},
+    {file = "ftea-0.1.7-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:7f4010fd527a2f17fa165e1ac1163ea795f437408fde59efda95e4b702689538"},
+    {file = "ftea-0.1.7-cp311-cp311-win32.whl", hash = "sha256:75ded0e3a2b2427d4d3edfb14b96570353c5c7d671bfca84fc512e04b7821a78"},
+    {file = "ftea-0.1.7-cp311-cp311-win_amd64.whl", hash = "sha256:3ae918b3d219674f159e579ad1b6c87b416c1f235ad8974f85fd1a75aa7b2bc2"},
+    {file = "ftea-0.1.7-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:8681f9bfe792e059dd61979eb63ee5727124b27fb355f0b16f6a89919a7d0ac1"},
+    {file = "ftea-0.1.7-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:c5b93cc3547e790fbc318a60fe86ce724ff20fb252c5f47540b0a12aae999837"},
+    {file = "ftea-0.1.7-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:b4b1bb87acb3fb766a83d028b3d126d8ea1611e719c23c4d17137c89b3c6fc23"},
+    {file = "ftea-0.1.7-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:72682a682bb8e597a7c38ed2066755436ae3881b896ee11d42685ab67cb9815d"},
+    {file = "ftea-0.1.7-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:74c42f905dbf0eafabe279b5a99293a4d85bd4e0b01a9140fddb27e469892639"},
+    {file = "ftea-0.1.7-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:7332ca73843e26a04fb01bd60fd85577e0fe2cfbe6aeb269dcc64e523571533c"},
+    {file = "ftea-0.1.7-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:dc6c7a510bdeac7362496be4697c746a353c537f50382798db67daa9125cdaa6"},
+    {file = "ftea-0.1.7-cp312-cp312-win32.whl", hash = "sha256:db47f8062463eb14bd4e963f58666ca0df8e50121e03e9e2ff1d84494024d353"},
+    {file = "ftea-0.1.7-cp312-cp312-win_amd64.whl", hash = "sha256:4c0edfa2e0d33c25b204455d31072dbce20cd2cf0be5f3366adbca2462365f1a"},
+    {file = "ftea-0.1.7-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:0c0f8c3819f1b6b022df372ce3e685e9542d487acfce3807238de0f5775c4c33"},
+    {file = "ftea-0.1.7-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:35f7e7c98ea99a58c0fcd5ddc754cf1743e740a3bef801407a97daf3657d5b18"},
+    {file = "ftea-0.1.7-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:ee7681169be1b245380d347650f45c0600f19eb8e46dd01934a6a5952a03e609"},
+    {file = "ftea-0.1.7-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ea9aac9ff794779c4a1c5e70c2cd0213e07a5fb52b9b062406cfe24340ac7769"},
+    {file = "ftea-0.1.7-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6489dbaff2acd885279223633878e668ac34578a1b67209945b0998ab11d72ed"},
+    {file = "ftea-0.1.7-cp39-cp39-musllinux_1_1_aarch64.whl", hash = "sha256:450c91b1e13e91838e00f846bbe371c22c5bb8cdafd5c8294865926ef7e12432"},
+    {file = "ftea-0.1.7-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:8fafd6b4ea05b65ece76a525417db6aec0073ebcdfa1de92a1878affc8bc52be"},
+    {file = "ftea-0.1.7-cp39-cp39-win32.whl", hash = "sha256:adf43c2b91a6a4f145b6e9722b1584e18f53eebf408e265bc4ed277f74fdb435"},
+    {file = "ftea-0.1.7-cp39-cp39-win_amd64.whl", hash = "sha256:8432b48b546af8851a84b90d3a59a6311b6d76f14abc901c1c5a5cdffc98bbf4"},
+    {file = "ftea-0.1.7-pp310-pypy310_pp73-macosx_10_9_x86_64.whl", hash = "sha256:8b0c10dac5c58b2df8d55ba2a7c2228ffef7a7a71fb24cb0ad2776e44609a277"},
+    {file = "ftea-0.1.7-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:3959b5d24d063ef6148a5958443b329a3749b881e8cf42f8ec9db66512990e17"},
+    {file = "ftea-0.1.7-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:89b95ce13a5283aa592e56e25d572b16c370ec6f360b623c1a4072a3769be006"},
+    {file = "ftea-0.1.7-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2b69c6444badc74b5c5221accc0fe54760491c5c8ab45e0195abcc2877895b43"},
+    {file = "ftea-0.1.7-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:2aa1986659d4a6c5f75657cec91c844d2af07d4aedf143bf6ac56619f34664d6"},
+    {file = "ftea-0.1.7-pp38-pypy38_pp73-macosx_10_9_x86_64.whl", hash = "sha256:b7c9964ff5707db1e394ad3da835f416a6dfe94c9c69bd4f1b01901dbb3797d1"},
+    {file = "ftea-0.1.7-pp38-pypy38_pp73-macosx_11_0_arm64.whl", hash = "sha256:b3bef0febd5e2e448e6b71b670cd555b8542c3d2fac441f1460c8f0b492e6021"},
+    {file = "ftea-0.1.7-pp38-pypy38_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a1cc28b3b7737d88d77aae5f9af21706479e9383902b14ff287f34ef7bdafe1d"},
+    {file = "ftea-0.1.7-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:138d3054eca7420f91e1e5f68e1b687b46c35e7b2177e495e13562ac75e42726"},
+    {file = "ftea-0.1.7-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:e13cc3ba85eceb0d2fe0699cf322eeab7cab2af35a94e3fef0d2d2c64c676ea0"},
+    {file = "ftea-0.1.7-pp39-pypy39_pp73-macosx_10_9_x86_64.whl", hash = "sha256:c9e4b06551eee749b80d67b5fc28ce95050be8edff75bd0d5667c36feb3b35dd"},
+    {file = "ftea-0.1.7-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:25537767246123db6d80f635d960e20a7032988725ce140c8700fbdca7300377"},
+    {file = "ftea-0.1.7-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:11f97ab4783e3b457a8559d0a399bc30c8640f29f00848b14ce0cce8ef4a98dd"},
+    {file = "ftea-0.1.7-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a43a08fc1ac96b5bfa34ff6043a65e7ff59b0817e3e8b0c374f66bae0ce7ec29"},
+    {file = "ftea-0.1.7-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:3d9362dbaa47b6ff0dbb0e02835cf3f0a1769ffbb68a15c39e3b01b0217a72e3"},
+]
+
+[[package]]
+name = "loguru"
+version = "0.7.2"
+requires_python = ">=3.5"
+summary = "Python logging made (stupidly) simple"
+groups = ["dev", "loguru"]
+dependencies = [
+    "colorama>=0.3.4; sys_platform == \"win32\"",
+    "win32-setctime>=1.0.0; sys_platform == \"win32\"",
+]
+files = [
+    {file = "loguru-0.7.2-py3-none-any.whl", hash = "sha256:003d71e3d3ed35f0f8984898359d65b79e5b21943f78af86aa5491210429b8eb"},
+    {file = "loguru-0.7.2.tar.gz", hash = "sha256:e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac"},
+]
+
+[[package]]
 name = "pycparser"
 version = "2.22"
 requires_python = ">=3.8"
@@ -167,4 +242,16 @@ groups = ["default"]
 files = [
     {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
     {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
+]
+
+[[package]]
+name = "win32-setctime"
+version = "1.1.0"
+requires_python = ">=3.5"
+summary = "A small Python utility to set file creation time on Windows"
+groups = ["dev", "loguru"]
+marker = "sys_platform == \"win32\""
+files = [
+    {file = "win32_setctime-1.1.0-py3-none-any.whl", hash = "sha256:231db239e959c2fe7eb1d7dc129f11172354f98361c4fa2d6d2d7e278baa8aad"},
+    {file = "win32_setctime-1.1.0.tar.gz", hash = "sha256:15cf5750465118d6929ae4de4eb46e8edae9a5634350c01ba582df868e932cb2"},
 ]

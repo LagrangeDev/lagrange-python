@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import TypedDict
 
 from .serialize import JsonSerializer
 
@@ -26,13 +27,19 @@ class AppInfo(JsonSerializer):
     nt_login_type: int
 
 
-app_list = {
+class AppInfoDict(TypedDict):
+    linux: AppInfo
+    macos: AppInfo
+    windows: AppInfo
+
+
+app_list: AppInfoDict = {
     "linux": AppInfo(
         os="Linux",
         kernel="Linux",
         vendor_os="linux",
-        current_version="3.1.2-13107",
-        build_version=13107,
+        current_version="3.2.10-25765",
+        build_version=25765,
         misc_bitmap=32764,
         pt_version="2.0.0",
         pt_os_version=19,
@@ -40,7 +47,7 @@ app_list = {
         wtlogin_sdk="nt.wtlogin.0.0.1",
         package_sign="V1_LNX_NQ_3.1.2-13107_RDM_B",
         app_id=1600001615,
-        sub_app_id=537146866,
+        sub_app_id=537234773,
         app_id_qrcode=13697054,
         app_client_version=13172,
         main_sigmap=169742560,

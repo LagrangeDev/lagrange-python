@@ -1,7 +1,7 @@
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.utils.binary.protobuf import proto_decode, proto_encode
 from lagrange.utils.crypto.aes import aes_gcm_decrypt, aes_gcm_encrypt
-from lagrange.utils.log import logger
+from lagrange.utils.log import log
 
 from lagrange.client.wtlogin.enum import LoginErrorCode
 from lagrange.pb.login.ntlogin import NTLoginRsp
@@ -36,7 +36,7 @@ def build_ntlogin_request(
     if sig.cookies:
         body[1][5] = {1: sig.cookies}
     if all(captcha):
-        logger.login.debug("login with captcha info")
+        log.login.debug("login with captcha info")
         body[2][2] = build_ntlogin_captcha_submit(*captcha)
 
     return proto_encode(
@@ -58,7 +58,7 @@ def parse_ntlogin_response(
         sig.temp_pwd = cr.temp_pwd
         sig.info_updated()
 
-        logger.login.debug("SigInfo got")
+        log.login.debug("SigInfo got")
 
         return LoginErrorCode.success
     else:
@@ -68,12 +68,12 @@ def parse_ntlogin_response(
             verify_url = rsp.body.verify.url
             aid = verify_url.split("&sid=")[1].split("&")[0]
             captcha[2] = aid
-            logger.login.warning("need captcha verify: " + verify_url)
+            log.login.warning("need captcha verify: " + verify_url)
         else:
             stat = rsp.head.error
             title = stat.title
             content = stat.message
-            logger.login.error(
+            log.login.error(
                 f"Login fail on ntlogin({ret.name}): [{title}]>{content}"
             )
 
