@@ -2,6 +2,8 @@ from typing import Literal, Optional
 import asyncio
 
 from .client.client import Client as Client
+from .client.server_push.msg import msg_push_handler
+from .client.server_push.service import server_kick_handler
 from .utils.log import log as log
 from .utils.log import install_loguru as install_loguru
 from .utils.sign import sign_provider
@@ -49,6 +51,8 @@ class Lagrange:
             )
             for event, handler in self.events.items():
                 self.client.events.subscribe(event, handler)
+            self.client.push_deliver.subscribe("trpc.msg.olpush.OlPushService.MsgPush", msg_push_handler)
+            self.client.push_deliver.subscribe("trpc.qq_new_tech.status_svc.StatusService.KickNT", server_kick_handler)
             self.client.connect()
             status = await self.login(self.client)
         if not status:

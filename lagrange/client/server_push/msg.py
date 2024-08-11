@@ -1,5 +1,6 @@
 import json
 import re
+from typing import TYPE_CHECKING
 
 from lagrange.client.message.decoder import parse_grp_msg, parse_friend_msg
 from lagrange.pb.message.msg_push import MsgPush
@@ -26,12 +27,13 @@ from ..events.group import (
     GroupRecall,
 )
 from ..wtlogin.sso import SSOPacket
-from .binder import push_handler
 from .log import logger
 
+if TYPE_CHECKING:
+    from lagrange.client.client import Client
 
-@push_handler.subscribe("trpc.msg.olpush.OlPushService.MsgPush")
-async def msg_push_handler(sso: SSOPacket):
+
+async def msg_push_handler(client: "Client", sso: SSOPacket):
     pkg = MsgPush.decode(sso.data).body
     typ = pkg.content_head.type
     sub_typ = pkg.content_head.sub_type

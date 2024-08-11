@@ -48,7 +48,7 @@ from .message.elems import Audio, Image
 from .message.encoder import build_message
 from .message.types import Element
 from .models import UserInfo
-from .server_push import push_handler
+from .server_push.binder import PushDeliver
 from .wtlogin.sso import SSOPacket
 
 
@@ -65,11 +65,16 @@ class Client(BaseClient):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
 
         self._events = Events()
+        self._push_deliver = PushDeliver(self)
         self._highway = HighWaySession(self)
 
     @property
     def events(self) -> Events:
         return self._events
+
+    @property
+    def push_deliver(self) -> PushDeliver:
+        return self._push_deliver
 
     async def register(self) -> bool:
         if await super().register():
@@ -155,8 +160,7 @@ class Client(BaseClient):
         return rsp
 
     async def push_handler(self, sso: SSOPacket):
-        rsp = await push_handler.execute(sso.cmd, sso)
-        if rsp:
+        if rsp := await self._push_deliver.execute(sso.cmd, sso):
             self._events.emit(rsp, self)
 
     async def _send_msg_raw(self, pb: dict, *, grp_id=0, uid="") -> SendMsgRsp:
