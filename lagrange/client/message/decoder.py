@@ -1,5 +1,5 @@
 import zlib
-from typing import List, Tuple, Sequence
+from typing import List, Tuple, Sequence, TYPE_CHECKING, cast, Literal
 
 from lagrange.client.events.group import GroupMessage
 from lagrange.client.events.friend import FriendMessage
@@ -9,6 +9,10 @@ from lagrange.pb.message.rich_text import Elems, RichText
 from . import elems
 from .types import Element
 from lagrange.utils.binary.protobuf import proto_encode
+from lagrange.pb.highway.comm import MsgInfo
+
+if TYPE_CHECKING:
+    from lagrange.client.client import Client
 
 
 def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
@@ -31,7 +35,8 @@ def parse_friend_info(pkg: MsgPushBody) -> Tuple[int, str, int, str]:
     return from_uin, from_uid, to_uin, to_uid
 
 
-def parse_msg_new(rich: RichText) -> Sequence[Element]:
+async def parse_msg_new(client: "Client", pkg: MsgPushBody) -> Sequence[Element]:
+    rich: RichText = pkg.message.body
     if rich.ptt:
         ptt = rich.ptt
         return [
@@ -134,6 +139,27 @@ def parse_msg_new(rich: RichText) -> Sequence[Element]:
                         f8=common.pb_elem[8],
                     )
                 )
+            if common.bus_type in [10, 20]:  # 10: friend, 20: group
+                extra = MsgInfo.decode(proto_encode(raw.common_elem.pb_elem))
+                index = extra.body[0].index
+                uid = client.uid
+                gid = pkg.response_head.rsp_grp.gid if common.bus_type == 20 else None
+                url = await client.fetch_image_url(bus_type=cast(Literal[10, 20], common.bus_type),
+                                                   node=index, uid=uid, gid=gid)
+                msg_chain.append(
+                    elems.Image(
+                        name=index.info.name,
+                        size=index.info.size,
+                        id=0,
+                        md5=bytes.fromhex(index.info.hash),
+                        text=extra.biz_info.pic.summary if extra.biz_info.pic.summary else "[图片]",
+                        width=index.info.width,
+                        height=index.info.height,
+                        url=url,
+                        is_emoji=extra.biz_info.pic.biz_type != 0,
+                        qmsg=None,
+                    )
+                )
         elif raw.rich_msg:
             service = raw.rich_msg
             if service.template:
@@ -227,13 +253,13 @@ def parse_msg_new(rich: RichText) -> Sequence[Element]:
     return msg_chain
 
 
-def parse_friend_msg(pkg: MsgPushBody) -> FriendMessage:
+async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
     from_uin, from_uid, to_uin, to_uid = parse_friend_info(pkg)
 
     seq = pkg.content_head.seq
     msg_id = pkg.content_head.msg_id
     timestamp = pkg.content_head.timestamp
-    parsed_msg = parse_msg_new(pkg.message.body)
+    parsed_msg = await parse_msg_new(client, pkg)
     msg_text = "".join([getattr(msg, "text", "") for msg in parsed_msg])
 
     return FriendMessage(
@@ -249,7 +275,7 @@ def parse_friend_msg(pkg: MsgPushBody) -> FriendMessage:
     )
 
 
-def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
+async def parse_grp_msg(client: "Client", pkg: MsgPushBody) -> GroupMessage:
     user_id, uid, seq, time, rand = parse_msg_info(pkg)
 
     grp_id = pkg.response_head.rsp_grp.gid
@@ -261,7 +287,7 @@ def parse_grp_msg(pkg: MsgPushBody) -> GroupMessage:
     if isinstance(grp_name, bytes):  # unexpected end of data
         grp_name = grp_name.decode("utf-8", errors="ignore")
 
-    parsed_msg = parse_msg_new(pkg.message.body)
+    parsed_msg = await parse_msg_new(client, pkg)
     msg_text = "".join([getattr(msg, "text", "") for msg in parsed_msg])
 
     return GroupMessage(

@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO, List, Optional, Tuple
 
 from lagrange.client.message.elems import Audio, Image
+from lagrange.pb.highway.comm import IndexNode
 from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
 from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
 from lagrange.pb.highway.rsp import NTV2RichMediaResp, DownloadInfo, DownloadRsp
@@ -21,6 +22,8 @@ from .encoders import (
     encode_highway_head,
     encode_upload_img_req,
     encode_audio_down_req,
+    encode_grp_img_download_req,
+    encode_pri_img_download_req,
 )
 from .frame import read_frame, write_frame
 from .utils import calc_file_hash_and_length, timeit
@@ -239,6 +242,38 @@ class HighWaySession:
             is_emoji=info.pic_type.name == "gif",
             qmsg=None if gid else ret.upload.compat_qmsg,
         )
+
+    async def get_grp_img_url(self, grp_id: int, node: "IndexNode") -> str:
+        ret = NTV2RichMediaResp.decode(
+            (
+                await self._client.send_oidb_svc(
+                    0x11C4,
+                    200,
+                    encode_grp_img_download_req(
+                        grp_id, node
+                    ).encode(),
+                    True
+                )
+            ).data
+        )
+        body = ret.download
+        return f"https://{body.info.domain}{body.info.url_path}{body.rkey}"
+
+    async def get_pri_img_url(self, uid: str, node: IndexNode) -> str:
+        ret = NTV2RichMediaResp.decode(
+            (
+                await self._client.send_oidb_svc(
+                    0x11C5,
+                    200,
+                    encode_pri_img_download_req(
+                        uid, node
+                    ).encode(),
+                    True
+                )
+            ).data
+        )
+        body = ret.download
+        return f"https://{body.info.domain}{body.info.url_path}{body.rkey}"
 
     async def upload_voice(self, file: BinaryIO, gid=0, uid="") -> Audio:
         if not self._session_addr_list:
