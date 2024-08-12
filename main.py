@@ -5,15 +5,15 @@ from lagrange import Lagrange
 from lagrange.client.client import Client
 from lagrange.client.events.group import GroupMessage
 from lagrange.client.events.service import ServerKick
-from lagrange.client.message.elems import At, Raw, Text
+from lagrange.client.message.elems import At, Text
 
 
 async def msg_handler(client: Client, event: GroupMessage):
-    print(event)
+    #print(event)
     if event.msg.startswith("114514"):
-        p = await client.send_grp_msg([Text("1919810")], event.grp_id)
+        msg_seq = await client.send_grp_msg([At.build(event), Text("1919810")], event.grp_id)
         await asyncio.sleep(5)
-        await client.recall_grp_msg(event.grp_id, p)
+        await client.recall_grp_msg(event.grp_id, msg_seq)
     elif event.msg.startswith("imgs"):
         await client.send_grp_msg(
             [

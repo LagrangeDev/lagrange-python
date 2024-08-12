@@ -1,6 +1,6 @@
 import json
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type, Tuple, TypeVar, Union, Dict
 
 from lagrange.client.message.decoder import parse_grp_msg, parse_friend_msg
 from lagrange.pb.message.msg_push import MsgPush
@@ -11,12 +11,13 @@ from lagrange.pb.status.group import (
     MemberGotTitleBody,
     MemberInviteRequest,
     MemberJoinRequest,
-    MemberRecallMsg,
+    MemberRecallMsg, GroupSub20Head,
 )
-from lagrange.utils.binary.protobuf import proto_decode
+from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.operator import unpack_dict
 
+from ..events import BaseEvent
 from ..events.group import (
     GroupMemberGotSpecialTitle,
     GroupMemberJoined,
@@ -24,13 +25,22 @@ from ..events.group import (
     GroupMemberQuit,
     GroupMuteMember,
     GroupNameChanged,
-    GroupRecall,
+    GroupRecall, GroupNudge, GroupReaction,
 )
 from ..wtlogin.sso import SSOPacket
 from .log import logger
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
+
+T = TypeVar("T", bound=ProtoStruct)
+
+
+def unpack(buf2: bytes, decoder: Type[T]) -> Tuple[int, T]:
+    reader = Reader(buf2)
+    grp_id = reader.read_u32()
+    reader.read_u8()
+    return grp_id, decoder.decode(reader.read_bytes_with_length("u16", False))
 
 
 async def msg_push_handler(client: "Client", sso: SSOPacket):
@@ -76,13 +86,30 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         logger.debug("unhandled friend event: %s" % pkg)
     elif typ == 0x2DC:  # grp event, 732
         if sub_typ == 20:  # nudget(grp_id only)
-            return
-        elif sub_typ == 16:  # rename and special_title and reaction(server not impl)
-            if pkg.message:  # rename and special_title
-                reader = Reader(pkg.message.buf2)
-                grp_id = reader.read_u32()
-                reader.read_u8()  # reserve
-                pb = GroupSub16Head.decode(reader.read_bytes_with_length("u16", False))
+            if pkg.message:
+                grp_id, pb = unpack(pkg.message.buf2, GroupSub20Head)
+                attrs: Dict[str, Union[str, int]] = {}
+                for x in pb.body.attrs:  # type: dict[bytes, bytes]
+                    k, v = x.values()
+                    if v.isdigit():
+                        attrs[k.decode()] = int(v.decode())
+                    else:
+                        attrs[k.decode()] = v.decode()
+                return GroupNudge(
+                    grp_id,
+                    attrs["uin_str1"],
+                    attrs["uin_str2"],
+                    attrs["action_str"],
+                    attrs["suffix_str"],
+                    attrs,
+                    pb.body.attrs_xml
+                )
+            else:
+                # print(pkg.encode().hex(), 2)
+                return
+        elif sub_typ == 16:  # rename and special_title and reaction
+            if pkg.message:
+                grp_id, pb = unpack(pkg.message.buf2, GroupSub16Head)
                 if pb.flag == 6:  # special_title
                     body = MemberGotTitleBody.decode(pb.body)
                     for el in re.findall(r"<(\{.*?})>", body.string):
@@ -107,15 +134,24 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         timestamp=pb.timestamp,
                         operator_uid=pb.operator_uid,
                     )
+                elif pb.flag == 35:  # add reaction
+                    body = pb.f44.inner.body
+                    return GroupReaction(
+                        grp_id=grp_id,
+                        uid=body.detail.sender_uid,
+                        seq=body.msg.id,
+                        emoji_id=int(body.detail.emo_id),
+                        emoji_type=body.detail.emo_type,
+                        emoji_count=body.detail.count,
+                        type=body.detail.send_type,
+                        total_operations=body.msg.total_operations
+                    )
                 else:
                     raise ValueError(
                         f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex() if pb.body else pb}"
                     )
         elif sub_typ == 17:  # recall
-            reader = Reader(pkg.message.buf2)
-            grp_id = reader.read_u32()
-            reader.read_u8()  # reserve
-            pb = MemberRecallMsg.decode(reader.read_bytes_with_length("u16", False))
+            grp_id, pb = unpack(pkg.message.buf2, MemberRecallMsg)
 
             info = pb.body.info
             return GroupRecall(

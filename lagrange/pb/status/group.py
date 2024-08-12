@@ -73,9 +73,55 @@ class GroupRenamedBody(ProtoStruct):
     grp_name: str = proto_field(2)
 
 
+class GroupReactionMsg(ProtoStruct):
+    id: int = proto_field(1)
+    total_operations: int = proto_field(2)
+    # f3: int = proto_field(3)  # 4
+
+
+class GroupReactionDetail(ProtoStruct):
+    emo_id: str = proto_field(1)  # string type Unicode
+    emo_type: int = proto_field(2)  # 1: qq internal emoji, 2: unicode emoji
+    count: int = proto_field(3, default=0)
+    send_type: int = proto_field(5)  # 1: set, 2: remove
+    sender_uid: str = proto_field(4)
+
+
+class GroupReactionBody(ProtoStruct):
+    op_id: int = proto_field(1)
+    msg: GroupReactionMsg = proto_field(2)
+    detail: GroupReactionDetail = proto_field(3)
+
+
+class GroupReactionInner(ProtoStruct):
+    body: GroupReactionBody = proto_field(1)
+
+
+class GroupReaction(ProtoStruct):
+    inner: GroupReactionInner = proto_field(1)
+
+
 class GroupSub16Head(ProtoStruct):
     timestamp: int = proto_field(2, default=0)
     uin: Optional[int] = proto_field(4, default=None)
     body: Optional[bytes] = proto_field(5, default=None)
-    flag: int = proto_field(13)  # 12: renamed, 6: set special_title, 13: unknown
+    flag: int = proto_field(13)  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction
     operator_uid: str = proto_field(21, default="")
+    f44: Optional[GroupReaction] = proto_field(44, default=None)  # set reaction only
+
+
+class GroupSub20Body(ProtoStruct):
+    # f1: int = proto_field(1)  # 12
+    # f2: int = proto_field(2)  # 1061
+    # f3: int = proto_field(3)  # 7
+    # f6: int = proto_field(6)  # 1132
+    attrs: list[dict] = proto_field(7, default={})
+    attrs_xml: str = proto_field(8, default=None)
+    f10: int = proto_field(10)
+
+
+class GroupSub20Head(ProtoStruct):
+    f1: int = proto_field(1)  # 20
+    grp_id: int = proto_field(4)
+    f13: int = proto_field(13)  # 19
+    body: GroupSub20Body = proto_field(26)

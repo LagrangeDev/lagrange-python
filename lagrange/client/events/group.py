@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Union, Dict
 
 from . import BaseEvent
 
@@ -40,6 +40,16 @@ class GroupMessage(GroupEvent, MessageInfo):
 @dataclass
 class GroupRecall(GroupEvent, MessageInfo):
     suffix: str
+
+
+@dataclass
+class GroupNudge(GroupEvent):
+    sender_uin: int
+    target_uin: int
+    action: str
+    suffix: str
+    attrs: Dict[str, Union[str, int]] = field(repr=False)
+    attrs_xml: str = field(repr=False)
 
 
 @dataclass
@@ -86,8 +96,26 @@ class GroupMemberGotSpecialTitle(GroupEvent):
 
 
 @dataclass
-class GroupNameChanged:
-    grp_id: int
+class GroupNameChanged(GroupEvent):
     name_new: str
     timestamp: int
     operator_uid: str
+
+
+@dataclass
+class GroupReaction(GroupEvent):
+    uid: str
+    seq: int
+    emoji_id: int
+    emoji_type: int
+    emoji_count: int
+    type: int
+    total_operations: int
+
+    @property
+    def is_increase(self) -> bool:
+        return self.type == 1
+
+    @property
+    def is_emoji(self) -> bool:
+        return self.emoji_type == 2
