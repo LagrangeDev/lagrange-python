@@ -1,7 +1,8 @@
 import os
 import struct
+import asyncio
 from io import BytesIO
-from typing import BinaryIO, Callable, Coroutine, List, Optional, Union, overload
+from typing import BinaryIO, Callable, Coroutine, List, Optional, Union, overload, Literal
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
@@ -32,6 +33,7 @@ from lagrange.pb.service.group import (
     PBGetInfoFromUidReq,
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
+from lagrange.pb.highway.comm import IndexNode
 from lagrange.utils.binary.protobuf import proto_decode, proto_encode
 from lagrange.utils.log import log
 from lagrange.utils.operator import timestamp
@@ -48,7 +50,7 @@ from .message.elems import Audio, Image
 from .message.encoder import build_message
 from .message.types import Element
 from .models import UserInfo
-from .server_push import push_handler
+from .server_push.binder import PushDeliver
 from .wtlogin.sso import SSOPacket
 
 
@@ -65,11 +67,16 @@ class Client(BaseClient):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
 
         self._events = Events()
+        self._push_deliver = PushDeliver(self)
         self._highway = HighWaySession(self)
 
     @property
     def events(self) -> Events:
         return self._events
+
+    @property
+    def push_deliver(self) -> PushDeliver:
+        return self._push_deliver
 
     async def register(self) -> bool:
         if await super().register():
@@ -155,8 +162,7 @@ class Client(BaseClient):
         return rsp
 
     async def push_handler(self, sso: SSOPacket):
-        rsp = await push_handler.execute(sso.cmd, sso)
-        if rsp:
+        if rsp := await self._push_deliver.execute(sso.cmd, sso):
             self._events.emit(rsp, self)
 
     async def _send_msg_raw(self, pb: dict, *, grp_id=0, uid="") -> SendMsgRsp:
@@ -229,6 +235,20 @@ class Client(BaseClient):
     async def down_friend_audio(self, audio: Audio) -> BytesIO:
         return await self._highway.download_audio(audio, uid=self.uid)
 
+    async def fetch_image_url(self, bus_type: Literal[10, 20], node: "IndexNode", uid=None, gid=None):
+        if bus_type == 10:
+            return await self._get_pri_img_url(uid, node)
+        elif bus_type == 20:
+            return await self._get_grp_img_url(gid, node)
+        else:
+            raise ValueError("bus_type must be 10 or 20")
+
+    async def _get_grp_img_url(self, grp_id: int, node: "IndexNode") -> str:
+        return await self._highway.get_grp_img_url(grp_id=grp_id, node=node)
+
+    async def _get_pri_img_url(self, uid: str, node: "IndexNode") -> str:
+        return await self._highway.get_pri_img_url(uid=uid, node=node)
+
     async def get_grp_list(self) -> GetGrpListResponse:
         rsp = await self.send_oidb_svc(0xFE5, 2, PBGetGrpListRequest.build().encode())
         if rsp.ret_code:
@@ -292,7 +312,9 @@ class Client(BaseClient):
             and payload.end_seq == end
         ), "return args not matched"
 
-        rsp = [parse_grp_msg(MsgPushBody.decode(i)) for i in payload.elems]
+        rsp = list(
+            await asyncio.gather(*[parse_grp_msg(self, MsgPushBody.decode(i)) for i in payload.elems])
+        )
         if filter_deleted_msg:
             return [*filter(lambda msg: msg.rand != -1, rsp)]
         return rsp

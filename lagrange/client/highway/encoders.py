@@ -225,6 +225,35 @@ def encode_audio_down_req(uuid: str, grp_id: int, uid: str):
     )
 
 
+def encode_grp_img_download_req(grp_id: int, node: IndexNode) -> NTV2RichMediaReq:
+    return NTV2RichMediaReq(
+        req_head=MultiMediaReqHead(
+            common=CommonHead(cmd=200),
+            scene=SceneInfo(
+                req_type=2,
+                bus_type=1,
+                scene_type=2,
+                grp=GroupInfo(grp_id=grp_id),
+            )
+        ),
+        download=DownloadReq(node=node),
+    )
+
+
+def encode_pri_img_download_req(uid: str, node: IndexNode) -> NTV2RichMediaReq:
+    return NTV2RichMediaReq(
+        req_head=MultiMediaReqHead(
+            common=CommonHead(cmd=200),
+            scene=SceneInfo(
+                req_type=2,
+                bus_type=1,
+                scene_type=1,
+                c2c=C2CUserInfo(uid=uid),
+            )
+        ),
+        download=DownloadReq(node=node),
+    )
+
 # def encode_video_upload_req(
 #         seq: int,
 #         from_uin: int,

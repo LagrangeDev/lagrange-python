@@ -1,35 +1,25 @@
-import functools
-from typing import Any, Callable, Coroutine, Dict
+from typing import Any, Callable, Coroutine, Dict, TYPE_CHECKING
 
 from lagrange.client.wtlogin.sso import SSOPacket
 
 from .log import logger
 
+if TYPE_CHECKING:
+    from lagrange.client.client import Client
+
 
 class PushDeliver:
-    def __init__(self):
+    def __init__(self, client: "Client"):
+        self._client = client
         self._handle_map: Dict[
-            str, Callable[[SSOPacket], Coroutine[None, None, Any]]
+            str, Callable[["Client", SSOPacket], Coroutine[None, None, Any]]
         ] = {}
 
-    def subscribe(self, cmd: str):
-        def _decorator(
-            func: Callable[[SSOPacket], Coroutine[None, None, Any]]
-        ) -> Callable[[SSOPacket], Coroutine[None, None, Any]]:
-            @functools.wraps(func)
-            async def _wrapper(packet: SSOPacket):
-                return await func(packet)
-
-            self._handle_map[cmd] = _wrapper  # noqa
-            return _wrapper
-
-        return _decorator
+    def subscribe(self, cmd: str, func: Callable[["Client", SSOPacket], Coroutine[None, None, Any]]):
+        self._handle_map[cmd] = func
 
     async def execute(self, cmd: str, sso: SSOPacket):
         if cmd not in self._handle_map:
-            logger.warning("unsupported command: {}".format(cmd))
+            logger.warning(f"Unsupported command: {cmd}")
         else:
-            return await self._handle_map[cmd](sso)
-
-
-push_handler = PushDeliver()
+            return await self._handle_map[cmd](self._client, sso)
