@@ -1,15 +1,15 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from lagrange.utils.binary.protobuf import ProtoStruct, proto_field
 
 
 class FriendProperty(ProtoStruct):
     code: int = proto_field(1)
-    value: str = proto_field(2)
+    value: Optional[str] = proto_field(2, default=None)
 
 
 class FriendLayer1(ProtoStruct):
-    properties: List[FriendProperty] = proto_field(2)
+    properties: List[FriendProperty] = proto_field(2, default=None)
 
 
 class FriendAdditional(ProtoStruct):
@@ -19,7 +19,7 @@ class FriendAdditional(ProtoStruct):
 
 class FriendInfo(ProtoStruct):
     uid: str = proto_field(1)
-    custom_group: int = proto_field(2)
+    custom_group: Optional[int] = proto_field(2, default=None)
     uin: int = proto_field(3)
     additional: List[FriendAdditional] = proto_field(10001)
 
@@ -69,6 +69,8 @@ class GetFriendListRsp(ProtoStruct):
     friend_list: List[FriendInfo] = proto_field(101)
 
 
-def property(properties: List[FriendProperty]):
+def propertys(properties: Union[List[FriendProperty], None]):
+    if properties is None:
+        return {}
     prop_dict = dict((prop.code, prop.value) for prop in properties)
     return prop_dict

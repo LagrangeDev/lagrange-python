@@ -20,7 +20,7 @@ from lagrange.pb.service.comm import SendNudge
 from lagrange.pb.service.friend import (
     GetFriendListRsp,
     PBGetFriendListRequest,
-    property,
+    propertys,
 )
 from lagrange.pb.service.group import (
     FetchGroupResponse,
@@ -347,20 +347,24 @@ class Client(BaseClient):
         frist_send = GetFriendListRsp.decode(
             (await self.send_oidb_svc(0xFD4, 1, PBGetFriendListRequest().encode())).data
         )
-        nextuin_cache.append(frist_send.next)
+        properties: Optional[dict] = None
+        if frist_send.next:
+            nextuin_cache.append(frist_send.next)
         for raw in frist_send.friend_list:
             for j in raw.additional:
-                properties = property(j.layer1.properties)
-            rsp.append(
-                BotFriend(
-                    raw.uin,
-                    raw.uid,
-                    properties[20002],
-                    properties[103],
-                    properties[102],
-                    properties[27394],
+                if j.Type == 1:
+                    properties = propertys(j.layer1.properties)
+            if properties is not None:
+                rsp.append(
+                    BotFriend(
+                        raw.uin,
+                        raw.uid,
+                        properties.get(20002),
+                        properties.get(103),
+                        properties.get(102),
+                        properties.get(27394),
+                    )
                 )
-            )
 
         while nextuin_cache:
             next = GetFriendListRsp.decode(
@@ -372,17 +376,18 @@ class Client(BaseClient):
             )
             for raw in next.friend_list:
                 for j in raw.additional:
-                    properties = property(j.layer1.properties)
-                rsp.append(
-                    BotFriend(
-                        raw.uin,
-                        raw.uid,
-                        properties[20002],
-                        properties[103],
-                        properties[102],
-                        properties[27394],
+                    properties = propertys(j.layer1.properties)
+                if properties is not None:
+                    rsp.append(
+                        BotFriend(
+                            raw.uin,
+                            raw.uid,
+                            properties.get(20002),
+                            properties.get(103),
+                            properties.get(102),
+                            properties.get(27394),
+                        )
                     )
-                )
             if next.next:
                 nextuin_cache.append(next)
 
