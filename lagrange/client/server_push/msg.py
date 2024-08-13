@@ -14,7 +14,7 @@ from lagrange.pb.status.group import (
     MemberRecallMsg,
     GroupSub20Head,
 )
-from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct
+from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct, proto_encode
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.operator import unpack_dict
 
@@ -87,29 +87,38 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     elif typ == 0x210:  # frd event
         logger.debug("unhandled friend event: %s" % pkg)
     elif typ == 0x2DC:  # grp event, 732
-        if sub_typ == 20:  # nudget(grp_id only)
+        if sub_typ == 20:  # nudge and group_sign(群打卡)
             if pkg.message:
                 grp_id, pb = unpack(pkg.message.buf2, GroupSub20Head)
                 attrs: Dict[str, Union[str, int]] = {}
                 for x in pb.body.attrs:  # type: dict[bytes, bytes]
                     k, v = x.values()
+                    if isinstance(v, dict):
+                        v = proto_encode(v)
                     if v.isdigit():
                         attrs[k.decode()] = int(v.decode())
                     else:
                         attrs[k.decode()] = v.decode()
-                return GroupNudge(
-                    grp_id,
-                    attrs["uin_str1"],
-                    attrs["uin_str2"],
-                    attrs["action_str"],
-                    attrs["suffix_str"],
-                    attrs,
-                    pb.body.attrs_xml,
-                )
+                if pb.body.type == 12:
+                    return GroupNudge(
+                        grp_id,
+                        attrs["uin_str1"],
+                        attrs["uin_str2"],
+                        attrs["action_str"],
+                        attrs["suffix_str"],
+                        attrs,
+                        pb.body.attrs_xml,
+                    )
+                elif pb.body.type == 14:  # grp_sign
+                    pass
+                else:
+                    raise ValueError(
+                        f"unknown type({pb.body.type}) on GroupSub20: {attrs}"
+                    )
             else:
                 # print(pkg.encode().hex(), 2)
                 return
-        elif sub_typ == 16:  # rename and special_title and reaction
+        elif sub_typ == 16:  # rename & special_title & reaction
             if pkg.message:
                 grp_id, pb = unpack(pkg.message.buf2, GroupSub16Head)
                 if pb.flag == 6:  # special_title
@@ -136,7 +145,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         timestamp=pb.timestamp,
                         operator_uid=pb.operator_uid,
                     )
-                elif pb.flag == 35:  # add reaction
+                elif pb.flag == 35:  # set reaction
                     body = pb.f44.inner.body
                     return GroupReaction(
                         grp_id=grp_id,

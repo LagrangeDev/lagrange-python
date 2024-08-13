@@ -1,6 +1,7 @@
 """
 Push Events
 """
+
 from typing import Optional
 
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
@@ -105,19 +106,21 @@ class GroupSub16Head(ProtoStruct):
     timestamp: int = proto_field(2, default=0)
     uin: Optional[int] = proto_field(4, default=None)
     body: Optional[bytes] = proto_field(5, default=None)
-    flag: int = proto_field(13)  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction
+    flag: int = proto_field(
+        13
+    )  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction
     operator_uid: str = proto_field(21, default="")
     f44: Optional[GroupReaction] = proto_field(44, default=None)  # set reaction only
 
 
 class GroupSub20Body(ProtoStruct):
-    # f1: int = proto_field(1)  # 12
+    type: int = proto_field(1)  # 12: nudge, 14: group_sign
     # f2: int = proto_field(2)  # 1061
     # f3: int = proto_field(3)  # 7
     # f6: int = proto_field(6)  # 1132
     attrs: list[dict] = proto_field(7, default={})
     attrs_xml: str = proto_field(8, default=None)
-    f10: int = proto_field(10)
+    f10: int = proto_field(10)  # rand?
 
 
 class GroupSub20Head(ProtoStruct):
