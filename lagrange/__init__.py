@@ -20,7 +20,7 @@ class Lagrange:
         protocol: Literal["linux", "macos", "windows"] = "linux",
         sign_url: Optional[str] = None,
         device_info_path="./device.json",
-        signinfo_path="./sig.bin"
+        signinfo_path="./sig.bin",
     ):
         self.im = InfoManager(uin, device_info_path, signinfo_path)
         self.uin = uin

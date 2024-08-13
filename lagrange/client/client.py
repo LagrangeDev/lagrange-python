@@ -2,7 +2,16 @@ import os
 import struct
 import asyncio
 from io import BytesIO
-from typing import BinaryIO, Callable, Coroutine, List, Optional, Union, overload, Literal
+from typing import (
+    BinaryIO,
+    Callable,
+    Coroutine,
+    List,
+    Optional,
+    Union,
+    overload,
+    Literal,
+)
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
@@ -50,7 +59,7 @@ from .message.elems import Audio, Image
 from .message.encoder import build_message
 from .message.types import Element
 from .models import UserInfo
-from .server_push.binder import PushDeliver
+from .server_push import PushDeliver, bind_services
 from .wtlogin.sso import SSOPacket
 
 
@@ -61,7 +70,9 @@ class Client(BaseClient):
         app_info: AppInfo,
         device_info: DeviceInfo,
         sig_info: SigInfo,
-        sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
+        sign_provider: Optional[
+            Callable[[str, int, bytes], Coroutine[None, None, dict]]
+        ] = None,
         use_ipv6=True,
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
@@ -69,6 +80,7 @@ class Client(BaseClient):
         self._events = Events()
         self._push_deliver = PushDeliver(self)
         self._highway = HighWaySession(self)
+        bind_services(self._push_deliver)
 
     @property
     def events(self) -> Events:
@@ -100,7 +112,9 @@ class Client(BaseClient):
         else:
             raise AssertionError("siginfo not found, you must login first")
 
-    async def login(self, password: str = "", qrcode_path: Optional[str] = None) -> bool:
+    async def login(
+        self, password: str = "", qrcode_path: Optional[str] = None
+    ) -> bool:
         try:
             if self._sig.temp_pwd:
                 rsp = await self.easy_login()
@@ -235,7 +249,9 @@ class Client(BaseClient):
     async def down_friend_audio(self, audio: Audio) -> BytesIO:
         return await self._highway.download_audio(audio, uid=self.uid)
 
-    async def fetch_image_url(self, bus_type: Literal[10, 20], node: "IndexNode", uid=None, gid=None):
+    async def fetch_image_url(
+        self, bus_type: Literal[10, 20], node: "IndexNode", uid=None, gid=None
+    ):
         if bus_type == 10:
             return await self._get_pri_img_url(uid, node)
         elif bus_type == 20:
@@ -313,7 +329,9 @@ class Client(BaseClient):
         ), "return args not matched"
 
         rsp = list(
-            await asyncio.gather(*[parse_grp_msg(self, MsgPushBody.decode(i)) for i in payload.elems])
+            await asyncio.gather(
+                *[parse_grp_msg(self, MsgPushBody.decode(i)) for i in payload.elems]
+            )
         )
         if filter_deleted_msg:
             return [*filter(lambda msg: msg.rand != -1, rsp)]

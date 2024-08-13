@@ -11,13 +11,13 @@ from lagrange.pb.status.group import (
     MemberGotTitleBody,
     MemberInviteRequest,
     MemberJoinRequest,
-    MemberRecallMsg, GroupSub20Head,
+    MemberRecallMsg,
+    GroupSub20Head,
 )
 from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.operator import unpack_dict
 
-from ..events import BaseEvent
 from ..events.group import (
     GroupMemberGotSpecialTitle,
     GroupMemberJoined,
@@ -25,7 +25,9 @@ from ..events.group import (
     GroupMemberQuit,
     GroupMuteMember,
     GroupNameChanged,
-    GroupRecall, GroupNudge, GroupReaction,
+    GroupRecall,
+    GroupNudge,
+    GroupReaction,
 )
 from ..wtlogin.sso import SSOPacket
 from .log import logger
@@ -102,7 +104,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                     attrs["action_str"],
                     attrs["suffix_str"],
                     attrs,
-                    pb.body.attrs_xml
+                    pb.body.attrs_xml,
                 )
             else:
                 # print(pkg.encode().hex(), 2)
@@ -144,7 +146,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         emoji_type=body.detail.emo_type,
                         emoji_count=body.detail.count,
                         type=body.detail.send_type,
-                        total_operations=body.msg.total_operations
+                        total_operations=body.msg.total_operations,
                     )
                 else:
                     raise ValueError(
