@@ -12,7 +12,13 @@ __all__ = ["DeviceInfo", "AppInfo", "SigInfo", "InfoManager"]
 
 
 class InfoManager:
-    def __init__(self, uin: int, device_info_path: Union[str, os.PathLike[str]], sig_info_path: Union[str, os.PathLike[str]], auto_save=True):
+    def __init__(
+        self,
+        uin: int,
+        device_info_path: Union[str, os.PathLike[str]],
+        sig_info_path: Union[str, os.PathLike[str]],
+        auto_save=True,
+    ):
         self.uin: int = uin
         self._device_info_path = Path(device_info_path)
         self._sig_info_path = Path(sig_info_path)
@@ -29,6 +35,9 @@ class InfoManager:
     def sig_info(self) -> SigInfo:
         assert self._sig_info, "SigInfo not initialized"
         return self._sig_info
+
+    def renew_sig_info(self):
+        self._sig_info = SigInfo.new()
 
     def save_all(self):
         with self._sig_info_path.open("wb") as f:
