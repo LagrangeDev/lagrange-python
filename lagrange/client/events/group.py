@@ -53,6 +53,17 @@ class GroupNudge(GroupEvent):
 
 
 @dataclass
+class GroupSign(GroupEvent):
+    """群打卡"""
+
+    uin: int
+    nickname: str
+    timestamp: int
+    attrs: Dict[str, Union[str, int]] = field(repr=False)
+    attrs_xml: str = field(repr=False)
+
+
+@dataclass
 class GroupMuteMember(GroupEvent):
     """when target_uid is empty, mute all member"""
 

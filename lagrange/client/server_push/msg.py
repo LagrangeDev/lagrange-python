@@ -16,7 +16,7 @@ from lagrange.pb.status.group import (
 )
 from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct, proto_encode
 from lagrange.utils.binary.reader import Reader
-from lagrange.utils.operator import unpack_dict
+from lagrange.utils.operator import unpack_dict, timestamp
 
 from ..events.group import (
     GroupMemberGotSpecialTitle,
@@ -28,6 +28,7 @@ from ..events.group import (
     GroupRecall,
     GroupNudge,
     GroupReaction,
+    GroupSign,
 )
 from ..wtlogin.sso import SSOPacket
 from .log import logger
@@ -110,7 +111,14 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         pb.body.attrs_xml,
                     )
                 elif pb.body.type == 14:  # grp_sign
-                    pass
+                    return GroupSign(
+                        grp_id,
+                        attrs["mqq_uin"],
+                        attrs["mqq_nick"],
+                        timestamp(),
+                        attrs,
+                        pb.body.attrs_xml,
+                    )
                 else:
                     raise ValueError(
                         f"unknown type({pb.body.type}) on GroupSub20: {attrs}"
