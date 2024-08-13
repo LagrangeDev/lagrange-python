@@ -63,8 +63,8 @@ from .message.decoder import parse_grp_msg
 from .message.elems import Audio, Image
 from .message.encoder import build_message
 from .message.types import Element
-from .models import BotFriend, UserInfo
-from .server_push.binder import PushDeliver
+from .models import UserInfo
+from .server_push import PushDeliver, bind_services
 from .wtlogin.sso import SSOPacket
 
 
