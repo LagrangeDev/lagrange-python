@@ -51,8 +51,6 @@ class Lagrange:
             )
             for event, handler in self.events.items():
                 self.client.events.subscribe(event, handler)
-            self.client.push_deliver.subscribe("trpc.msg.olpush.OlPushService.MsgPush", msg_push_handler)
-            self.client.push_deliver.subscribe("trpc.qq_new_tech.status_svc.StatusService.KickNT", server_kick_handler)
             self.client.connect()
             status = await self.login(self.client)
         if not status:
