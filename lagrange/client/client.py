@@ -17,6 +17,11 @@ from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.send import SendMsgRsp
 from lagrange.pb.service.comm import SendNudge
+from lagrange.pb.service.friend import (
+    GetFriendListRsp,
+    PBGetFriendListRequest,
+    propertys,
+)
 from lagrange.pb.service.group import (
     FetchGroupResponse,
     GetGrpMsgRsp,
@@ -335,6 +340,58 @@ class Client(BaseClient):
         )
         if filter_deleted_msg:
             return [*filter(lambda msg: msg.rand != -1, rsp)]
+        return rsp
+
+    async def get_Friend_list(self):
+        nextuin_cache = list()
+        rsp: List[BotFriend] = list()
+        frist_send = GetFriendListRsp.decode(
+            (await self.send_oidb_svc(0xFD4, 1, PBGetFriendListRequest().encode())).data
+        )
+        properties: Optional[dict] = None
+        if frist_send.next:
+            nextuin_cache.append(frist_send.next)
+        for raw in frist_send.friend_list:
+            for j in raw.additional:
+                if j.Type == 1:
+                    properties = propertys(j.layer1.properties)
+            if properties is not None:
+                rsp.append(
+                    BotFriend(
+                        raw.uin,
+                        raw.uid,
+                        properties.get(20002),
+                        properties.get(103),
+                        properties.get(102),
+                        properties.get(27394),
+                    )
+                )
+
+        while nextuin_cache:
+            next = GetFriendListRsp.decode(
+                (
+                    await self.send_oidb_svc(
+                        0xFD4, 1, PBGetFriendListRequest().encode()
+                    )
+                ).data
+            )
+            for raw in next.friend_list:
+                for j in raw.additional:
+                    properties = propertys(j.layer1.properties)
+                if properties is not None:
+                    rsp.append(
+                        BotFriend(
+                            raw.uin,
+                            raw.uid,
+                            properties.get(20002),
+                            properties.get(103),
+                            properties.get(102),
+                            properties.get(27394),
+                        )
+                    )
+            if next.next:
+                nextuin_cache.append(next)
+
         return rsp
 
     async def recall_grp_msg(self, grp_id: int, seq: int):
