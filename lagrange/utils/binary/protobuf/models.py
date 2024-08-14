@@ -1,7 +1,8 @@
 import inspect
+import importlib
 from types import GenericAlias
-from typing import cast, Dict, List, Tuple, Type, TypeVar, Union, Generic, Any, Callable, Mapping, overload
-from typing_extensions import Optional, Self, TypeAlias, dataclass_transform, get_origin, get_args
+from typing import cast, Dict, List, Tuple, Type, TypeVar, Union, Generic, Any, Callable, Mapping, overload, ForwardRef
+from typing_extensions import Optional, Self, TypeAlias, dataclass_transform
 
 from .coder import Proto, proto_decode, proto_encode
 
@@ -10,6 +11,9 @@ _ProtoTypes = Union[str, list, dict, bytes, int, float, bool, "ProtoStruct"]
 T = TypeVar("T", str, list, dict, bytes, int, float, bool, "ProtoStruct")
 V = TypeVar("V")
 NT: TypeAlias = Dict[int, Union[_ProtoTypes, "NT"]]
+AMT: TypeAlias = Dict[str, Tuple[Type[_ProtoTypes], "ProtoField"]]
+DAMT: TypeAlias = Dict[str, "DelayAnnoType"]
+DelayAnnoType = Union[str, type(List[str])]
 NoneType = type(None)
 
 
@@ -82,11 +86,13 @@ def proto_field(
 @dataclass_transform(kw_only_default=True, field_specifiers=(proto_field,))
 class ProtoStruct:
     _anno_map: Dict[str, Tuple[Type[_ProtoTypes], ProtoField[Any]]]
+    _delay_anno_map: Dict[str, DelayAnnoType]
     _proto_debug: bool
 
     def __init__(self, *args, **kwargs):
         undefined_params: List[str] = []
         args = list(args)
+        self._resolve_annotations(self)
         for name, (typ, field) in self._anno_map.items():
             if args:
                 self._set_attr(name, typ, args.pop(0))
@@ -103,8 +109,8 @@ class ProtoStruct:
             )
 
     def __init_subclass__(cls, **kwargs):
-        cls._anno_map = cls._get_annotations()
         cls._proto_debug = kwargs.pop("debug") if "debug" in kwargs else False
+        cls._anno_map, cls._delay_anno_map = cls._get_annotations()
         super().__init_subclass__(**kwargs)
 
     def __repr__(self) -> str:
@@ -127,8 +133,9 @@ class ProtoStruct:
     @classmethod
     def _get_annotations(
         cls,
-    ) -> Dict[str, Tuple[Type[_ProtoTypes], "ProtoField"]]:  # Name: (ReturnType, ProtoField)
-        annotations: Dict[str, Tuple[Type[_ProtoTypes], "ProtoField"]] = {}
+    ) -> Tuple[AMT, DAMT]:  # Name: (ReturnType, ProtoField)
+        annotations: AMT = {}
+        delay_annotations: DAMT = {}
         for obj in reversed(inspect.getmro(cls)):
             if obj in (ProtoStruct, object):  # base object, ignore
                 continue
@@ -142,15 +149,35 @@ class ProtoStruct:
                 if not isinstance(field, ProtoField):
                     raise TypeError("attribute '{name}' is not a ProtoField object")
 
+                _typ = typ
+                annotations[name] = (_typ, field)
+                if isinstance(typ, str):
+                    delay_annotations[name] = typ
                 if hasattr(typ, "__origin__"):
-                    typ = typ.__origin__[typ.__args__[0]]
-                annotations[name] = (typ, field)
+                    typ = cast(GenericAlias, typ)
+                    _inner = typ.__args__[0]
+                    _typ = typ.__origin__[typ.__args__[0]]
+                    annotations[name] = (_typ, field)
 
-        return annotations
+                    if isinstance(_inner, type):
+                        continue
+                    if isinstance(_inner, GenericAlias) and isinstance(_inner.__args__[0], type):
+                        continue
+                    if isinstance(_inner, str):
+                        delay_annotations[name] = _typ.__origin__[_inner]
+                    if isinstance(_inner, ForwardRef):
+                        delay_annotations[name] = _inner.__forward_arg__
+                    if isinstance(_inner, GenericAlias):
+                        delay_annotations[name] = _typ
+
+        return annotations, delay_annotations
 
     @classmethod
     def _get_field_mapping(cls) -> Dict[int, Tuple[str, Type[_ProtoTypes]]]:  # Tag, (Name, Type)
         field_mapping: Dict[int, Tuple[str, Type[_ProtoTypes]]] = {}
+        if cls._delay_anno_map:
+            print(f"WARNING: '{cls.__name__}' has delay annotations: {cls._delay_anno_map}")
+            cls._resolve_annotations(cls)
         for name, (typ, field) in cls._anno_map.items():
             field_mapping[field.tag] = (name, typ)
         return field_mapping
@@ -160,6 +187,16 @@ class ProtoStruct:
         for name, (_, _) in self._anno_map.items():
             stored_mapping[name] = getattr(self, name)
         return stored_mapping
+
+    @staticmethod
+    def _resolve_annotations(arg: Union[Type["ProtoStruct"], "ProtoStruct"]) -> None:
+        for k, v in arg._delay_anno_map.copy().items():
+            module = importlib.import_module(arg.__module__)
+            if hasattr(v, "__origin__"):  # resolve GenericAlias, such as list[str]
+                arg._anno_map[k] = (v.__origin__[module.__getattribute__(v.__args__[0])], arg._anno_map[k][1])
+            else:
+                arg._anno_map[k] = (module.__getattribute__(v), arg._anno_map[k][1])
+            arg._delay_anno_map.pop(k)
 
     def _encode(self, v: _ProtoTypes) -> NT:
         if isinstance(v, ProtoStruct):
