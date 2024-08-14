@@ -16,7 +16,7 @@ from typing import (
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.send import SendMsgRsp
-from lagrange.pb.service.comm import SendNudge
+from lagrange.pb.service.comm import SendGrpBotHD, SendNudge
 from lagrange.pb.service.group import (
     FetchGroupResponse,
     GetGrpMsgRsp,
@@ -497,3 +497,19 @@ class Client(BaseClient):
             return UserInfo.from_pb(rsp.body[0])
         else:
             return [UserInfo.from_pb(body) for body in rsp.body]
+
+    async def set_grp_bot_hd(
+        self, grp_id: int, bot_id: int, data: Optional[str] = None
+    ):
+        if data:
+            await self.send_oidb_svc(
+                0x112E,
+                1,
+                SendGrpBotHD(grp_id=grp_id, bot_id=bot_id, B_data=data).encode(),
+            )
+        else:
+            await self.send_oidb_svc(
+                0x112E,
+                1,
+                SendGrpBotHD(grp_id=grp_id, bot_id=bot_id).encode(),
+            )
