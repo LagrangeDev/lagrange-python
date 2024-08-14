@@ -176,7 +176,6 @@ class ProtoStruct:
     def _get_field_mapping(cls) -> Dict[int, Tuple[str, Type[_ProtoTypes]]]:  # Tag, (Name, Type)
         field_mapping: Dict[int, Tuple[str, Type[_ProtoTypes]]] = {}
         if cls._delay_anno_map:
-            print(f"WARNING: '{cls.__name__}' has delay annotations: {cls._delay_anno_map}")
             cls._resolve_annotations(cls)
         for name, (typ, field) in cls._anno_map.items():
             field_mapping[field.tag] = (name, typ)
