@@ -6,14 +6,15 @@ from typing_extensions import Optional, Self, TypeAlias, dataclass_transform
 
 from .coder import Proto, proto_decode, proto_encode
 
-_ProtoTypes = Union[str, list, dict, bytes, int, float, bool, "ProtoStruct"]
+_ProtoBasicTypes = Union[str, list, dict, bytes, int, float, bool]
+_ProtoTypes = Union[_ProtoBasicTypes, "ProtoStruct"]
 
 T = TypeVar("T", str, list, dict, bytes, int, float, bool, "ProtoStruct")
 V = TypeVar("V")
 NT: TypeAlias = Dict[int, Union[_ProtoTypes, "NT"]]
 AMT: TypeAlias = Dict[str, Tuple[Type[_ProtoTypes], "ProtoField"]]
 DAMT: TypeAlias = Dict[str, "DelayAnnoType"]
-DelayAnnoType = Union[str, type(List[str])]
+DelayAnnoType = Union[str, List[str]]
 NoneType = type(None)
 
 
@@ -21,8 +22,8 @@ class ProtoField(Generic[T]):
     def __init__(self, tag: int, default: T):
         if tag <= 0:
             raise ValueError("Tag must be a positive integer")
-        self._tag = tag
-        self._default = default
+        self._tag: int = tag
+        self._default: T = default
 
     @property
     def tag(self) -> int:
@@ -91,11 +92,11 @@ class ProtoStruct:
 
     def __init__(self, *args, **kwargs):
         undefined_params: List[str] = []
-        args = list(args)
+        args_list = list(args)
         self._resolve_annotations(self)
         for name, (typ, field) in self._anno_map.items():
             if args:
-                self._set_attr(name, typ, args.pop(0))
+                self._set_attr(name, typ, args_list.pop(0))
             elif name in kwargs:
                 self._set_attr(name, typ, kwargs.pop(name))
             else:
@@ -104,9 +105,7 @@ class ProtoStruct:
                 else:
                     undefined_params.append(name)
         if undefined_params:
-            raise AttributeError(
-                "Undefined parameters in '{}': {}".format(self, undefined_params)
-            )
+            raise AttributeError(f"Undefined parameters in {self}: {undefined_params}")
 
     def __init_subclass__(cls, **kwargs):
         cls._proto_debug = kwargs.pop("debug") if "debug" in kwargs else False
@@ -125,9 +124,7 @@ class ProtoStruct:
         if isinstance(data_typ, GenericAlias):  # force ignore
             pass
         elif not isinstance(value, data_typ) and value is not None:
-            raise TypeError(
-                "'{}' is not a instance of type '{}'".format(value, data_typ)
-            )
+            raise TypeError("{value} is not a instance of type {data_typ}")
         setattr(self, name, value)
 
     @classmethod
@@ -191,13 +188,13 @@ class ProtoStruct:
     def _resolve_annotations(arg: Union[Type["ProtoStruct"], "ProtoStruct"]) -> None:
         for k, v in arg._delay_anno_map.copy().items():
             module = importlib.import_module(arg.__module__)
-            if hasattr(v, "__origin__"):  # resolve GenericAlias, such as list[str]
-                arg._anno_map[k] = (v.__origin__[module.__getattribute__(v.__args__[0])], arg._anno_map[k][1])
-            else:
-                arg._anno_map[k] = (module.__getattribute__(v), arg._anno_map[k][1])
+            if isinstance(v, GenericAlias):  # resolve GenericAlias, such as list[str]
+                arg._anno_map[k] = (v.__origin__[getattr(module, v.__args__[0])], arg._anno_map[k][1])
+            if isinstance(v, str):
+                arg._anno_map[k] = (getattr(module, v), arg._anno_map[k][1])
             arg._delay_anno_map.pop(k)
 
-    def _encode(self, v: _ProtoTypes) -> NT:
+    def _encode(self, v: _ProtoTypes) -> _ProtoBasicTypes:
         if isinstance(v, ProtoStruct):
             v = v.encode()
         return v
@@ -265,5 +262,4 @@ class ProtoStruct:
             print(f"unhandled tags on '{cls.__name__}': {pb_dict}")
 
         return cls(**kwargs)
-
 
