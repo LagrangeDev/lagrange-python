@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from lagrange.utils.binary.protobuf import ProtoStruct, proto_field
 
@@ -69,8 +69,5 @@ class GetFriendListRsp(ProtoStruct):
     friend_list: List[FriendInfo] = proto_field(101)
 
 
-def propertys(properties: Union[List[FriendProperty], None]):
-    if properties is None:
-        return {}
-    prop_dict = dict((prop.code, prop.value) for prop in properties)
-    return prop_dict
+def propertys(properties: List[FriendProperty]):
+    return {prop.code: prop.value for prop in properties}

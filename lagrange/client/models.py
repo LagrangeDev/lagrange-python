@@ -73,6 +73,6 @@ class BotFriend:
     uin: int
     uid: Optional[str] = None
     nickname: Optional[str] = None
-    remarks: Optional[str] = None
+    remark: Optional[str] = None
     personal_sign: Optional[str] = None
     qid: Optional[str] = None

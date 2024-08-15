@@ -354,8 +354,10 @@ class Client(BaseClient):
             nextuin_cache.append(frist_send.next)
         for raw in frist_send.friend_list:
             for j in raw.additional:
-                if j.type == 1:
-                    properties = propertys(j.layer1.properties)
+                if j.type != 1:
+                    continue
+                properties = propertys(j.layer1.properties)
+                break
             if properties is not None:
                 rsp.append(
                     BotFriend(
