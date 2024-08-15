@@ -15,7 +15,7 @@ class SendNudge(ProtoStruct):
 
 class SendGrpBotHD(ProtoStruct):
     bot_id: int = proto_field(3)
-    seq: int = proto_field(4, default=111111)  # no body care
+    seq: int = proto_field(4, default=111111)  # nobody care
     B_id: str = proto_field(5, default="")  # set button_id
     B_data: str = proto_field(6, default="")  # set button_data
     IDD: int = proto_field(7, default=0)
