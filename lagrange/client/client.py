@@ -342,7 +342,7 @@ class Client(BaseClient):
             return [*filter(lambda msg: msg.rand != -1, rsp)]
         return rsp
 
-    async def get_Friend_list(self):
+    async def get_friend_list(self):
         nextuin_cache = list()
         rsp: List[BotFriend] = list()
         frist_send = GetFriendListRsp.decode(
