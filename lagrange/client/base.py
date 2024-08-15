@@ -44,7 +44,9 @@ class BaseClient:
         app_info: AppInfo,
         device_info: DeviceInfo,
         sig_info: SigInfo,
-        sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
+        sign_provider: Optional[
+            Callable[[str, int, bytes], Coroutine[None, None, dict]]
+        ] = None,
         use_ipv6=True,
     ):
         if uin and not sig_info.uin:
@@ -142,7 +144,7 @@ class BaseClient:
             try:
                 await self.push_handler(sso)
             except Exception as e:
-                log.root.error("Unhandled exception on push handler", exc_info=e)
+                log.root.exception("Unhandled exception on push handler", exc_info=e)
 
     async def wait_closed(self) -> None:
         try:

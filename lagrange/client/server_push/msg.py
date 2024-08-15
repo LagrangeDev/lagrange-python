@@ -189,6 +189,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 target_uid=unpack_dict(info, "5.3.1", b"").decode(),
                 duration=unpack_dict(info, "5.3.2"),
             )
+        elif sub_typ == 21:  # set/unset essence msg
+            pass  # todo
         else:
             logger.debug(
                 "unknown sub_type %d: %s"
