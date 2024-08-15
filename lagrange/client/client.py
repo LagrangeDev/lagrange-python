@@ -513,3 +513,17 @@ class Client(BaseClient):
                 1,
                 SendGrpBotHD(grp_id=grp_id, bot_id=bot_id).encode(),
             )
+
+    async def set_C2C_bot_hd(self, bot_id: int, data: Optional[str] = None):
+        if data:
+            await self.send_oidb_svc(
+                0x112E,
+                1,
+                SendGrpBotHD(bot_id=bot_id, B_data=data).encode(),
+            )
+        else:
+            await self.send_oidb_svc(
+                0x112E,
+                1,
+                SendGrpBotHD(bot_id=bot_id).encode(),
+            )
