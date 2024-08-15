@@ -19,5 +19,5 @@ class SendGrpBotHD(ProtoStruct):
     B_id: str = proto_field(5, default="")  # set button_id
     B_data: str = proto_field(6, default="")  # set button_data
     IDD: int = proto_field(7, default=0)
-    grp_id: int = proto_field(8)
-    grp_type: int = proto_field(9, default=0)  # 0guild 1grp 2tx inner grp(maybe)
+    grp_id: int = proto_field(8, default=None)
+    grp_type: int = proto_field(9, default=0)  # 0guild 1grp 2C2C(need grp_id==None)
