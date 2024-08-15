@@ -569,7 +569,7 @@ class Client(BaseClient):
             ).encode(),
         )
 
-    async def set_C2C_bot_hd(self, bot_id: int, data_1: str = "", data_2: str = ""):
+    async def set_c2c_bot_hd(self, bot_id: int, data_1: str = "", data_2: str = ""):
         await self.send_oidb_svc(
             0x112E,
             1,
