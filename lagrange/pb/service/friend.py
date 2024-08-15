@@ -65,7 +65,7 @@ class GetFriendListRsp(ProtoStruct):
     next: Optional[GetFriendListUin] = proto_field(2, default=None)
     display_friend_count: int = proto_field(3)
     timestamp: int = proto_field(6)
-    selfuin: int = proto_field(7)
+    self_uin: int = proto_field(7)
     friend_list: List[FriendInfo] = proto_field(101)
 
 
