@@ -11,10 +11,6 @@ _ProtoTypes = Union[_ProtoBasicTypes, "ProtoStruct"]
 
 T = TypeVar("T", str, list, dict, bytes, int, float, bool, "ProtoStruct")
 V = TypeVar("V")
-NT: TypeAlias = Dict[int, Union[_ProtoTypes, "NT"]]
-AMT: TypeAlias = Dict[str, Tuple[Type[_ProtoTypes], "ProtoField"]]
-DAMT: TypeAlias = Dict[str, "DelayAnnoType"]
-DelayAnnoType = Union[str, List[str]]
 NoneType = type(None)
 
 
@@ -84,10 +80,18 @@ def proto_field(
     return ProtoField(tag, default)
 
 
+NT: TypeAlias = Dict[int, Union[_ProtoTypes, "NT"]]
+AMT: TypeAlias = Dict[str, Tuple[Type[_ProtoTypes], "ProtoField"]]
+PS = TypeVar("PS", bound=ProtoField)
+DAMT: Union[Type[list[ForwardRef]], ForwardRef]
+DAMDT: TypeAlias = Dict[str, Union[Type[list[ForwardRef]], ForwardRef]]
+
+
+# noinspection PyProtectedMember
 @dataclass_transform(kw_only_default=True, field_specifiers=(proto_field,))
 class ProtoStruct:
     _anno_map: Dict[str, Tuple[Type[_ProtoTypes], ProtoField[Any]]]
-    _delay_anno_map: Dict[str, DelayAnnoType]
+    _delay_anno_map: DAMDT
     _proto_debug: bool
 
     def __init__(self, *args, **kwargs):
@@ -128,11 +132,15 @@ class ProtoStruct:
         setattr(self, name, value)
 
     @classmethod
-    def _get_annotations(
-        cls,
-    ) -> Tuple[AMT, DAMT]:  # Name: (ReturnType, ProtoField)
+    def _handle_inner_generic(cls, inner: GenericAlias) -> GenericAlias:
+        if inner.__origin__ is list:
+            return GenericAlias(list, ForwardRef(inner.__args__[0]))
+        raise NotImplementedError(f"unknown inner generic type '{inner}'")
+
+    @classmethod
+    def _get_annotations(cls) -> Tuple[AMT, DAMDT]:  # Name: (ReturnType, ProtoField)
         annotations: AMT = {}
-        delay_annotations: DAMT = {}
+        delay_annotations: DAMDT = {}
         for obj in reversed(inspect.getmro(cls)):
             if obj in (ProtoStruct, object):  # base object, ignore
                 continue
@@ -149,7 +157,7 @@ class ProtoStruct:
                 _typ = typ
                 annotations[name] = (_typ, field)
                 if isinstance(typ, str):
-                    delay_annotations[name] = typ
+                    delay_annotations[name] = ForwardRef(typ)
                 if hasattr(typ, "__origin__"):
                     typ = cast(GenericAlias, typ)
                     _inner = typ.__args__[0]
@@ -161,11 +169,11 @@ class ProtoStruct:
                     if isinstance(_inner, GenericAlias) and isinstance(_inner.__args__[0], type):
                         continue
                     if isinstance(_inner, str):
-                        delay_annotations[name] = _typ.__origin__[_inner]
+                        delay_annotations[name] = _typ.__origin__[ForwardRef(_inner)]
                     if isinstance(_inner, ForwardRef):
-                        delay_annotations[name] = _inner.__forward_arg__
+                        delay_annotations[name] = _inner
                     if isinstance(_inner, GenericAlias):
-                        delay_annotations[name] = _typ
+                        delay_annotations[name] = cast(Type[list[ForwardRef]], cls._handle_inner_generic(_inner))
 
         return annotations, delay_annotations
 
@@ -186,12 +194,17 @@ class ProtoStruct:
 
     @staticmethod
     def _resolve_annotations(arg: Union[Type["ProtoStruct"], "ProtoStruct"]) -> None:
+        if not arg._delay_anno_map:
+            return
+        local = importlib.import_module(arg.__module__).__dict__
         for k, v in arg._delay_anno_map.copy().items():
-            module = importlib.import_module(arg.__module__)
-            if isinstance(v, GenericAlias):  # resolve GenericAlias, such as list[str]
-                arg._anno_map[k] = (v.__origin__[getattr(module, v.__args__[0])], arg._anno_map[k][1])
-            if isinstance(v, str):
-                arg._anno_map[k] = (getattr(module, v), arg._anno_map[k][1])
+            casted_forward: Type["ProtoStruct"]
+            if isinstance(v, GenericAlias):
+                casted_forward = v.__origin__[v.__args__[0]._evaluate(globals(), local, recursive_guard=frozenset())]
+                arg._anno_map[k] = (casted_forward, arg._anno_map[k][1])
+            if isinstance(v, ForwardRef):
+                casted_forward = v._evaluate(globals(), local, recursive_guard=frozenset())  # type: ignore
+                arg._anno_map[k] = (casted_forward, arg._anno_map[k][1])
             arg._delay_anno_map.pop(k)
 
     def _encode(self, v: _ProtoTypes) -> _ProtoBasicTypes:
