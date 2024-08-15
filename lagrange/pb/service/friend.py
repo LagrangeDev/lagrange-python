@@ -13,7 +13,7 @@ class FriendLayer1(ProtoStruct):
 
 
 class FriendAdditional(ProtoStruct):
-    Type: int = proto_field(1)
+    type: int = proto_field(1)
     layer1: FriendLayer1 = proto_field(2)
 
 
@@ -29,12 +29,12 @@ class GetFriendNumbers(ProtoStruct):
 
 
 class GetFriendBody(ProtoStruct):
-    Type: int = proto_field(1)
+    type: int = proto_field(1)
     f2: GetFriendNumbers = proto_field(2)
 
 
 class GetFriendListUin(ProtoStruct):
-    Uin: int = proto_field(1)
+    uin: int = proto_field(1)
 
 
 class PBGetFriendListRequest(ProtoStruct):
@@ -46,8 +46,8 @@ class PBGetFriendListRequest(ProtoStruct):
     body: List[GetFriendBody] = proto_field(
         10001,
         default=[
-            GetFriendBody(Type=1, f2=GetFriendNumbers(f1=[103, 102, 20002, 27394])),
-            GetFriendBody(Type=4, f2=GetFriendNumbers(f1=[100, 101, 102])),
+            GetFriendBody(type=1, f2=GetFriendNumbers(f1=[103, 102, 20002, 27394])),
+            GetFriendBody(type=4, f2=GetFriendNumbers(f1=[100, 101, 102])),
         ],
     )
     f10002: List[int] = proto_field(10002, default=[13578, 13579, 13573, 13572, 13568])

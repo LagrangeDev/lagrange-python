@@ -70,9 +70,9 @@ class UserInfo:
 
 @dataclass
 class BotFriend:
-    Uin: int
-    Uid: Optional[str] = None
-    Nickname: Optional[str] = None
-    Remarks: Optional[str] = None
-    PersonalSign: Optional[str] = None
-    Qid: Optional[str] = None
+    uin: int
+    uid: Optional[str] = None
+    nickname: Optional[str] = None
+    remarks: Optional[str] = None
+    personal_sign: Optional[str] = None
+    qid: Optional[str] = None

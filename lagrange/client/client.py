@@ -19,6 +19,7 @@ from lagrange.pb.message.send import SendMsgRsp
 from lagrange.pb.service.comm import SendNudge
 from lagrange.pb.service.friend import (
     GetFriendListRsp,
+    GetFriendListUin,
     PBGetFriendListRequest,
     propertys,
 )
@@ -343,8 +344,8 @@ class Client(BaseClient):
         return rsp
 
     async def get_friend_list(self):
-        nextuin_cache = list()
-        rsp: List[BotFriend] = list()
+        nextuin_cache: List[GetFriendListUin] = []
+        rsp: List[BotFriend] = []
         frist_send = GetFriendListRsp.decode(
             (await self.send_oidb_svc(0xFD4, 1, PBGetFriendListRequest().encode())).data
         )
@@ -353,7 +354,7 @@ class Client(BaseClient):
             nextuin_cache.append(frist_send.next)
         for raw in frist_send.friend_list:
             for j in raw.additional:
-                if j.Type == 1:
+                if j.type == 1:
                     properties = propertys(j.layer1.properties)
             if properties is not None:
                 rsp.append(
