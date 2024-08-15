@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-from lagrange import Lagrange
+from lagrange import Lagrange, install_loguru
 from lagrange.client.client import Client
 from lagrange.client.events.group import GroupMessage
 from lagrange.client.events.service import ServerKick
@@ -36,7 +36,9 @@ lag = Lagrange(
     "linux",
     os.environ.get("LAGRANGE_SIGN_URL", "")
 )
+install_loguru()  # optional, for better logging
 lag.log.set_level("DEBUG")
+
 lag.subscribe(GroupMessage, msg_handler)
 lag.subscribe(ServerKick, handle_kick)
 
