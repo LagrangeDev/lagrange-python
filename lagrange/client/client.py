@@ -16,7 +16,7 @@ from typing import (
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.send import SendMsgRsp
-from lagrange.pb.service.comm import SendNudge
+from lagrange.pb.service.comm import SendGrpBotHD, SendNudge
 from lagrange.pb.service.friend import (
     GetFriendListRsp,
     GetFriendListUin,
@@ -561,6 +561,24 @@ class Client(BaseClient):
             return UserInfo.from_pb(rsp.body[0])
         else:
             return [UserInfo.from_pb(body) for body in rsp.body]
+
+    async def set_grp_bot_hd(
+        self, grp_id: int, bot_id: int, data_1: str = "", data_2: str = ""
+    ):
+        await self.send_oidb_svc(
+            0x112E,
+            1,
+            SendGrpBotHD(
+                grp_id=grp_id, bot_id=bot_id, B_id=data_1, B_data=data_2
+            ).encode(),
+        )
+
+    async def set_c2c_bot_hd(self, bot_id: int, data_1: str = "", data_2: str = ""):
+        await self.send_oidb_svc(
+            0x112E,
+            1,
+            SendGrpBotHD(bot_id=bot_id, B_id=data_1, B_data=data_2).encode(),
+        )
 
     async def get_group_last_seq(self, grp_id: int) -> int:
         rsp = GetGrpLastSeqRsp.decode(
