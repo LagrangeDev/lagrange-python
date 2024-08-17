@@ -105,8 +105,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         grp_id,
                         attrs["uin_str1"],
                         attrs["uin_str2"],
-                        attrs["action_str"],
-                        attrs["suffix_str"],
+                        attrs.get("action_str", ""),  # ?
+                        attrs.get("suffix_str", ""),
                         attrs,
                         pb.body.attrs_xml,
                     )
