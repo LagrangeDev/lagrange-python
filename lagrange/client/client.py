@@ -46,6 +46,8 @@ from lagrange.pb.service.group import (
     SetEssenceRsp,
     GetInfoFromUidRsp,
     PBGetInfoFromUidReq,
+    PBGetGrpLastSeq,
+    GetGrpLastSeqRsp,
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.pb.highway.comm import IndexNode
@@ -559,3 +561,17 @@ class Client(BaseClient):
             return UserInfo.from_pb(rsp.body[0])
         else:
             return [UserInfo.from_pb(body) for body in rsp.body]
+
+    async def get_group_last_seq(self, grp_id: int) -> int:
+        rsp = GetGrpLastSeqRsp.decode(
+            (
+                await self.send_oidb_svc(
+                    0x88D,
+                    0,
+                    PBGetGrpLastSeq.build(self.app_info.sub_app_id, grp_id).encode(),
+                )
+            ).data
+        )
+        if not rsp.body.args.seq:
+            raise AssertionError("No message found")
+        return rsp.body.args.seq
