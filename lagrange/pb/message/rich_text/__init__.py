@@ -17,6 +17,7 @@ from .elems import (
     SrcMsg,
     Text,
     TransElem,
+    VideoFile,
 )
 
 __all__ = ["Elems", "RichText"]
@@ -33,7 +34,7 @@ class Elems(ProtoStruct, debug=True):
     elem_flags2: Optional[bytes] = proto_field(9, default=None)
     rich_msg: Optional[RichMsg] = proto_field(12, default=None)
     extra_info: Optional[ExtraInfo] = proto_field(16, default=None)
-    # video_file: VideoFile = proto_field(19, default=None)
+    video_file: Optional[VideoFile] = proto_field(19, default=None)
     general_flags: Optional[bytes] = proto_field(37, default=None)
     open_data: Optional[OpenData] = proto_field(41, default=None)
     src_msg: Optional[SrcMsg] = proto_field(45, default=None)

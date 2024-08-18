@@ -94,6 +94,8 @@ class Image(Text, MediaInfo):
 class Video(Text, MediaInfo):
     width: int
     height: int
+    time: int
+    file_key: str = field(repr=True)
 
 
 @dataclass

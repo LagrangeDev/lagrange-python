@@ -167,6 +167,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         type=body.detail.send_type,
                         total_operations=body.msg.total_operations,
                     )
+                elif pb.flag == 23:  # 群幸运字符？
+                    pass
                 else:
                     raise ValueError(
                         f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex() if pb.body else pb}"
