@@ -131,3 +131,20 @@ class CommonElem(ProtoStruct):
     service_type: int = proto_field(1)
     pb_elem: dict = proto_field(2)
     bus_type: int = proto_field(3)
+
+
+class VideoFile(ProtoStruct):
+    id: str = proto_field(1)
+    video_md5: bytes = proto_field(2)
+    name: str = proto_field(3)
+    f4: int = proto_field(4)  # 2
+    length: int = proto_field(5)  # 100: mp4
+    size: int = proto_field(6)
+    width: int = proto_field(7)
+    height: int = proto_field(8)
+    thumb_md5: bytes = proto_field(9)
+    # thumb_name on field 10?
+    thumb_size: int = proto_field(11)
+    thumb_width: int = proto_field(16)
+    thumb_height: int = proto_field(17)
+    # reserve on field 24?

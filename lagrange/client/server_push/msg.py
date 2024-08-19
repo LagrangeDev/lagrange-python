@@ -105,7 +105,9 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         grp_id,
                         attrs["uin_str1"],
                         attrs["uin_str2"],
-                        attrs["action_str"],
+                        attrs["action_str"]
+                        if "action_str" in attrs
+                        else attrs["alt_str1"],  # ?
                         attrs["suffix_str"],
                         attrs,
                         pb.body.attrs_xml,
@@ -165,6 +167,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         type=body.detail.send_type,
                         total_operations=body.msg.total_operations,
                     )
+                elif pb.flag == 23:  # 群幸运字符？
+                    pass
                 else:
                     raise ValueError(
                         f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex() if pb.body else pb}"
@@ -189,6 +193,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 target_uid=unpack_dict(info, "5.3.1", b"").decode(),
                 duration=unpack_dict(info, "5.3.2"),
             )
+        elif sub_typ == 21:  # set/unset essence msg
+            pass  # todo
         else:
             logger.debug(
                 "unknown sub_type %d: %s"

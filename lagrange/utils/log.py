@@ -7,26 +7,21 @@ __all__ = ["log", "install_loguru"]
 
 
 class Logger(Protocol):
-    def info(self, __message: str, *args, **kwargs):
-        ...
+    def info(self, __message: str, *args, **kwargs): ...
 
-    def debug(self, __message: str, *args, **kwargs):
-        ...
+    def debug(self, __message: str, *args, **kwargs): ...
 
-    def success(self, __message: str, *args, **kwargs):
-        ...
+    def success(self, __message: str, *args, **kwargs): ...
 
-    def warning(self, __message: str, *args, **kwargs):
-        ...
+    def warning(self, __message: str, *args, **kwargs): ...
 
-    def error(self, __message: str, *args, **kwargs):
-        ...
+    def error(self, __message: str, *args, **kwargs): ...
 
-    def critical(self, __message: str, *args, **kwargs):
-        ...
+    def critical(self, __message: str, *args, **kwargs): ...
 
-    def exception(self, __message: str, *args, **kwargs):
-        ...
+    def exception(self, __message: str, *args, **kwargs): ...
+
+    def set_level(self, level: Union[str, int]): ...
 
 
 class LoggingLoggerProxy:
@@ -39,6 +34,7 @@ class LoggingLoggerProxy:
         self.error = logger.error
         self.critical = logger.critical
         self.exception = logger.exception
+        self.set_level = logger.setLevel
 
 
 class _Logger:
@@ -69,13 +65,18 @@ class _Logger:
     def exception(self, msg: str, *args, **kwargs):
         _Logger.get_logger(self).exception(msg, *args, **kwargs)
 
+    def set_level(self, level: Union[str, int]):
+        _Logger.get_logger(self).set_level(level)
+
 
 _Logger.get_logger = lambda self: LoggingLoggerProxy(self._root)
 
 
 class LoggerProvider:
     def __init__(self):
-        logging.basicConfig(level="INFO", format="%(asctime)s | %(name)s[%(levelname)s]: %(message)s")
+        logging.basicConfig(
+            level="INFO", format="%(asctime)s | %(name)s[%(levelname)s]: %(message)s"
+        )
         self._root = logging.getLogger("lagrange")
         self.loggers: dict[str, _Logger] = {
             "lagrange": _Logger(self._root),
@@ -84,9 +85,12 @@ class LoggerProvider:
         self.fork("network")
         self.fork("utils")
 
-    @staticmethod
-    def set_level(level: Union[str, int]):
-        logging.basicConfig(level=level, format="%(asctime)s | %(name)s[%(levelname)s]: %(message)s")
+    def set_level(self, level: Union[str, int]):
+        logging.basicConfig(
+            level=level, format="%(asctime)s | %(name)s[%(levelname)s]: %(message)s"
+        )
+        for _, logger in self.loggers.items():
+            logger.set_level(level)
 
     def fork(self, child_name: str):
         logger = _Logger(self._root.getChild(child_name))
@@ -126,7 +130,9 @@ def install_loguru():
                 level = record.levelno
 
             frame, depth = inspect.currentframe(), 0
-            while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
+            while frame and (
+                depth == 0 or frame.f_code.co_filename == logging.__file__
+            ):
                 frame = frame.f_back
                 depth += 1
 
@@ -134,11 +140,17 @@ def install_loguru():
                 level, record.getMessage()
             )
 
-    logging.basicConfig(handlers=[LoguruHandler()], level="INFO", format="%(asctime)s | %(name)s[%(levelname)s]: %(message)s")
+    logging.basicConfig(
+        handlers=[LoguruHandler()],
+        level="INFO",
+        format="%(asctime)s | %(name)s[%(levelname)s]: %(message)s",
+    )
 
     def default_filter(record):
         log_level = record["extra"].get("lagrange_log_level", "INFO")
-        levelno = logger.level(log_level).no if isinstance(log_level, str) else log_level
+        levelno = (
+            logger.level(log_level).no if isinstance(log_level, str) else log_level
+        )
         return record["level"].no >= levelno
 
     logger.remove()
@@ -149,16 +161,19 @@ def install_loguru():
         backtrace=True,
         colorize=True,
         filter=default_filter,
-        format="<g>{time:MM-DD HH:mm:ss}</g> | <lvl>{level: <8}</lvl> | <c><u>{name}</u></c> | <lvl>{message}</lvl>"
+        format="<g>{time:MM-DD HH:mm:ss}</g> | <lvl>{level: <8}</lvl> | <c><u>{name}</u></c> | <lvl>{message}</lvl>",
     )
 
     def _config(level: Union[str, int]):
-        logging.basicConfig(handlers=[LoguruHandler()], level=level, format="%(asctime)s | %(name)s[%(levelname)s]: %(message)s")
-        logger.configure(
-            extra={"lagrange_log_level": level}
+        logging.basicConfig(
+            handlers=[LoguruHandler()],
+            level=level,
+            format="%(asctime)s | %(name)s[%(levelname)s]: %(message)s",
         )
+        logger.configure(extra={"lagrange_log_level": level})
 
     log.set_level = _config
 
-    _Logger.get_logger = lambda self: logger.patch(lambda r: r.update(name=self.context))
-
+    _Logger.get_logger = lambda self: logger.patch(
+        lambda r: r.update(name=self.context)
+    )

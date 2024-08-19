@@ -1,6 +1,6 @@
 [project]
 name = "lagrange-python"
-version = "0.0.2"
+version = "0.1.0"
 description = "An Python Implementation of NTQQ PC Protocol"
 authors = [
     {name="linwenxuan05"},
@@ -27,7 +27,7 @@ classifiers = [
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-faster = ["ftea>=0.1.5"]
+faster = ["ftea>=0.1.8"]
 loguru = [
     "loguru>=0.7.2",
 ]

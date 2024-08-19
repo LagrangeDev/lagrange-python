@@ -16,7 +16,7 @@ from typing import (
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.send import SendMsgRsp
-from lagrange.pb.service.comm import SendNudge
+from lagrange.pb.service.comm import SendGrpBotHD, SendNudge
 from lagrange.pb.service.friend import (
     GetFriendListRsp,
     GetFriendListUin,
@@ -46,6 +46,8 @@ from lagrange.pb.service.group import (
     SetEssenceRsp,
     GetInfoFromUidRsp,
     PBGetInfoFromUidReq,
+    PBGetGrpLastSeq,
+    GetGrpLastSeqRsp,
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.pb.highway.comm import IndexNode
@@ -343,7 +345,7 @@ class Client(BaseClient):
             return [*filter(lambda msg: msg.rand != -1, rsp)]
         return rsp
 
-    async def get_friend_list(self):
+    async def get_friend_list(self) -> List[BotFriend]:
         nextuin_cache: List[GetFriendListUin] = []
         rsp: List[BotFriend] = []
         frist_send = GetFriendListRsp.decode(
@@ -559,3 +561,35 @@ class Client(BaseClient):
             return UserInfo.from_pb(rsp.body[0])
         else:
             return [UserInfo.from_pb(body) for body in rsp.body]
+
+    async def set_grp_bot_hd(
+        self, grp_id: int, bot_id: int, data_1: str = "", data_2: str = ""
+    ):
+        await self.send_oidb_svc(
+            0x112E,
+            1,
+            SendGrpBotHD(
+                grp_id=grp_id, bot_id=bot_id, B_id=data_1, B_data=data_2
+            ).encode(),
+        )
+
+    async def set_c2c_bot_hd(self, bot_id: int, data_1: str = "", data_2: str = ""):
+        await self.send_oidb_svc(
+            0x112E,
+            1,
+            SendGrpBotHD(bot_id=bot_id, B_id=data_1, B_data=data_2).encode(),
+        )
+
+    async def get_group_last_seq(self, grp_id: int) -> int:
+        rsp = GetGrpLastSeqRsp.decode(
+            (
+                await self.send_oidb_svc(
+                    0x88D,
+                    0,
+                    PBGetGrpLastSeq.build(self.app_info.sub_app_id, grp_id).encode(),
+                )
+            ).data
+        )
+        if not rsp.body.args.seq:
+            raise AssertionError("No message found")
+        return rsp.body.args.seq

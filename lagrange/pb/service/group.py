@@ -287,7 +287,9 @@ class PBGetGrpMemberInfoReq(ProtoStruct):
     next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
 
     @classmethod
-    def build(cls, grp_id: int, uid="", next_key: Optional[str] = None) -> "PBGetGrpMemberInfoReq":
+    def build(
+        cls, grp_id: int, uid="", next_key: Optional[str] = None
+    ) -> "PBGetGrpMemberInfoReq":
         assert not (uid and next_key), "invalid arguments"
         if uid:
             account = AccountInfo(uid=uid)
@@ -434,3 +436,34 @@ class GetInfoRspBody(ProtoStruct):
 
 class GetInfoFromUidRsp(ProtoStruct):
     body: list[GetInfoRspBody] = proto_field(1)
+
+
+class Oidb88D0Args(ProtoStruct):
+    seq: Optional[int] = proto_field(22, default=None)
+
+
+class GetGrpLastSeqReqBody(ProtoStruct):
+    grp_id: int = proto_field(1)
+    args: Oidb88D0Args = proto_field(2, default=Oidb88D0Args(seq=0))
+
+
+class PBGetGrpLastSeq(ProtoStruct):
+    apk_sub_id: int = proto_field(1)
+    body: GetGrpLastSeqReqBody = proto_field(2)
+
+    @classmethod
+    def build(cls, apk_subid: int, grp_id: int) -> "PBGetGrpLastSeq":
+        return cls(
+            apk_sub_id=apk_subid,
+            body=GetGrpLastSeqReqBody(grp_id=grp_id),
+        )
+
+
+class GetGrpLastSeqRspBody(ProtoStruct):
+    grp_id: int = proto_field(1)
+    # f2: int = proto_field(2)  # 0
+    args: Oidb88D0Args = proto_field(3)
+
+
+class GetGrpLastSeqRsp(ProtoStruct):
+    body: GetGrpLastSeqRspBody = proto_field(1)
