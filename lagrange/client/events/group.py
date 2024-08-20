@@ -130,3 +130,11 @@ class GroupReaction(GroupEvent):
     @property
     def is_emoji(self) -> bool:
         return self.emoji_type == 2
+
+
+@dataclass
+class GroupAlbumUpdate(GroupEvent):
+    """群相册更新（上传）"""
+
+    timestamp: int
+    image_id: str

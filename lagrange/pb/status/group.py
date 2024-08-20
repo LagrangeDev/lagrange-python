@@ -98,7 +98,7 @@ class GroupReactionInner(ProtoStruct):
     body: GroupReactionBody = proto_field(1)
 
 
-class GroupReaction(ProtoStruct):
+class PBGroupReaction(ProtoStruct):
     inner: GroupReactionInner = proto_field(1)
 
 
@@ -110,7 +110,7 @@ class GroupSub16Head(ProtoStruct):
         13
     )  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction
     operator_uid: str = proto_field(21, default="")
-    f44: Optional[GroupReaction] = proto_field(44, default=None)  # set reaction only
+    f44: Optional[PBGroupReaction] = proto_field(44, default=None)  # set reaction only
 
 
 class GroupSub20Body(ProtoStruct):
@@ -128,3 +128,16 @@ class GroupSub20Head(ProtoStruct):
     grp_id: int = proto_field(4)
     f13: int = proto_field(13)  # 19
     body: GroupSub20Body = proto_field(26)
+
+
+class PBGroupAlbumUpdateBody(ProtoStruct):
+    # f1: 6
+    args: str = proto_field(2)
+
+
+class PBGroupAlbumUpdate(ProtoStruct):
+    # f1: 38
+    timestamp: int = proto_field(2)
+    grp_id: int = proto_field(4)
+    # f13: 37
+    body: PBGroupAlbumUpdateBody = proto_field(46)

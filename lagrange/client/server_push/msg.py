@@ -1,5 +1,6 @@
 import json
 import re
+from urllib.parse import parse_qsl
 from typing import TYPE_CHECKING, Type, Tuple, TypeVar, Union, Dict
 
 from lagrange.client.message.decoder import parse_grp_msg, parse_friend_msg
@@ -13,6 +14,7 @@ from lagrange.pb.status.group import (
     MemberJoinRequest,
     MemberRecallMsg,
     GroupSub20Head,
+    PBGroupAlbumUpdate,
 )
 from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct, proto_encode
 from lagrange.utils.binary.reader import Reader
@@ -29,6 +31,7 @@ from ..events.group import (
     GroupNudge,
     GroupReaction,
     GroupSign,
+    GroupAlbumUpdate,
 )
 from ..wtlogin.sso import SSOPacket
 from .log import logger
@@ -169,6 +172,16 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                     )
                 elif pb.flag == 23:  # 群幸运字符？
                     pass
+                elif pb.flag == 37:  # 群相册上传（手Q专用:(）
+                    _, pb = unpack(
+                        pkg.message.buf2, PBGroupAlbumUpdate
+                    )  # 塞 就硬塞，可以把你的顾辉盒也给塞进来
+                    q = dict(parse_qsl(pb.body.args))
+                    return GroupAlbumUpdate(
+                        grp_id=pb.grp_id,
+                        timestamp=pb.timestamp,
+                        image_id=q["i"],
+                    )
                 else:
                     raise ValueError(
                         f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex() if pb.body else pb}"
