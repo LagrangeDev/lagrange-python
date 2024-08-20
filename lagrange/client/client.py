@@ -16,7 +16,12 @@ from typing import (
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.send import SendMsgRsp
-from lagrange.pb.service.comm import SendGrpBotHD, SendNudge
+from lagrange.pb.service.comm import (
+    GetClientKeyRsp,
+    GetCookieRsp,
+    SendGrpBotHD,
+    SendNudge,
+)
 from lagrange.pb.service.friend import (
     GetFriendListRsp,
     GetFriendListUin,
@@ -52,6 +57,7 @@ from lagrange.pb.service.group import (
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.pb.highway.comm import IndexNode
 from lagrange.utils.binary.protobuf import proto_decode, proto_encode
+from lagrange.utils.httpcat import HttpCat
 from lagrange.utils.log import log
 from lagrange.utils.operator import timestamp
 
@@ -593,3 +599,27 @@ class Client(BaseClient):
         if not rsp.body.args.seq:
             raise AssertionError("No message found")
         return rsp.body.args.seq
+
+    async def get_cookies(self, domains: list[str]) -> List[str]:
+        """pskey"""
+        return [
+            i.value.decode()
+            for i in GetCookieRsp.decode(
+                (
+                    await self.send_oidb_svc(
+                        0x102A,
+                        0,
+                        proto_encode({1: domains}),  # type: ignore
+                    )
+                ).data
+            ).urls
+        ]
+
+    async def get_skey(self):
+        ck = GetClientKeyRsp.decode(
+            (await self.send_oidb_svc(0x102A, 1, proto_encode({}))).data
+        ).client_key
+        jump = "https%3A%2F%2Fh5.qzone.qq.com%2Fqqnt%2Fqzoneinpcqq%2Ffriend%3Frefresh%3D0%26clientuin%3D0%26darkMode%3D0&keyindex=19&random=2599"
+        url = f"https://ssl.ptlogin2.qq.com/jump?ptlang=1033&clientuin={self.uin}&clientkey={ck}&u1={jump}"
+        resp = await HttpCat.request("GET", url)
+        return resp.cookies
