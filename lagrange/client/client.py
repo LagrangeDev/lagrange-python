@@ -600,6 +600,18 @@ class Client(BaseClient):
             raise AssertionError("No message found")
         return rsp.body.args.seq
 
+    async def _get_client_key(self) -> str:
+        return GetClientKeyRsp.decode(
+            (await self.send_oidb_svc(0x102A, 1, proto_encode({}))).data
+        ).client_key
+
+    def _gtk_1(self, skey_or_pskey: str):
+        _hash = 5381
+        _len = len(skey_or_pskey)
+        for i in range(_len):
+            _hash += (_hash << 5) + ord(skey_or_pskey[i])
+        return _hash & 2147483647
+
     async def get_cookies(self, domains: list[str]) -> List[str]:
         """pskey"""
         return [
@@ -615,11 +627,12 @@ class Client(BaseClient):
             ).urls
         ]
 
-    async def get_skey(self):
-        ck = GetClientKeyRsp.decode(
-            (await self.send_oidb_svc(0x102A, 1, proto_encode({}))).data
-        ).client_key
+    async def get_skey(self) -> str:
         jump = "https%3A%2F%2Fh5.qzone.qq.com%2Fqqnt%2Fqzoneinpcqq%2Ffriend%3Frefresh%3D0%26clientuin%3D0%26darkMode%3D0&keyindex=19&random=2599"
-        url = f"https://ssl.ptlogin2.qq.com/jump?ptlang=1033&clientuin={self.uin}&clientkey={ck}&u1={jump}"
-        resp = await HttpCat.request("GET", url)
-        return resp.cookies
+        url = f"https://ssl.ptlogin2.qq.com/jump?ptlang=1033&clientuin={self.uin}&clientkey={await self._get_client_key()}&u1={jump}"
+        resp = await HttpCat.request("GET", url, follow_redirect=False)
+        return resp.cookies["skey"]
+
+    async def get_csrf_token(self) -> int:
+        skey = await self.get_skey()
+        return self._gtk_1(skey)
