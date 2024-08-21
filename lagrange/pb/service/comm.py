@@ -21,3 +21,18 @@ class SendGrpBotHD(ProtoStruct):
     IDD: int = proto_field(7, default=0)
     grp_id: int = proto_field(8, default=None)
     grp_type: int = proto_field(9, default=0)  # 0guild 1grp 2C2C(need grp_id==None)
+
+
+class Propertys(ProtoStruct):
+    key: str = proto_field(1)
+    value: bytes = proto_field(2)
+
+
+class GetCookieRsp(ProtoStruct):
+    urls: list[Propertys] = proto_field(1)
+
+
+class GetClientKeyRsp(ProtoStruct):
+    f2: int = proto_field(2)
+    client_key: str = proto_field(3)
+    expiration: int = proto_field(4)
