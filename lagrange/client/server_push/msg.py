@@ -88,8 +88,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
             return GroupMemberJoinRequest(
                 grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid
             )
-    elif typ == 0x210:  # frd event
-        logger.debug("unhandled friend event: %s" % pkg)
+    elif typ == 0x210:  # friend event / group file upload notice event
+        logger.debug("unhandled friend event / group file upload notice event: %s" % pkg)  # TODO: paste
     elif typ == 0x2DC:  # grp event, 732
         if sub_typ == 20:  # nudge and group_sign(群打卡)
             if pkg.message:
