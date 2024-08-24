@@ -148,3 +148,51 @@ class VideoFile(ProtoStruct):
     thumb_width: int = proto_field(16)
     thumb_height: int = proto_field(17)
     # reserve on field 24?
+
+
+class NotOnlineFile(ProtoStruct):
+    file_type: Optional[int] = proto_field(1)
+    # sig: Optional[bytes] = proto_field(2)
+    file_uuid: Optional[str] = proto_field(3)
+    file_md5: Optional[bytes] = proto_field(4)
+    file_name: Optional[str] = proto_field(5)
+    file_size: Optional[int] = proto_field(6)
+    # note: Optional[bytes] = proto_field(7)
+    # reserved: Optional[int] = proto_field(8)
+    subcmd: Optional[int] = proto_field(9)
+    # micro_cloud: Optional[int] = proto_field(10)
+    # bytes_file_urls: Optional[list[bytes]] = proto_field(11)
+    # download_flag: Optional[int] = proto_field(12)
+    danger_evel: Optional[int] = proto_field(50)
+    # life_time: Optional[int] = proto_field(51)
+    # upload_time: Optional[int] = proto_field(52)
+    # abs_file_type: Optional[int] = proto_field(53)
+    # client_type: Optional[int] = proto_field(54)
+    expire_time: Optional[int] = proto_field(55)
+    pb_reserve: bytes = proto_field(56)
+    file_hash: Optional[str] = proto_field(57)
+
+
+class FileExtra(ProtoStruct):
+    file: NotOnlineFile = proto_field(1)
+
+
+class GroupFileExtraInfo(ProtoStruct):
+    bus_id: int = proto_field(1)
+    file_id: str = proto_field(2)
+    file_size: int = proto_field(3)
+    file_name: str = proto_field(4)
+    f5: int = proto_field(5)
+    f7: str = proto_field(7)
+    file_md5: bytes = proto_field(8)
+
+
+class GroupFileExtraInner(ProtoStruct):
+    info: GroupFileExtraInfo = proto_field(2)
+
+
+class GroupFileExtra(ProtoStruct):
+    f1: int = proto_field(1)
+    file_name: str = proto_field(2)
+    display: str = proto_field(3)
+    inner: GroupFileExtraInner = proto_field(7)

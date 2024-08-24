@@ -144,3 +144,37 @@ class MarketFace(Text):
     def url(self) -> str:
         pic_id = self.face_id.hex()
         return f"https://i.gtimg.cn/club/item/parcel/item/{pic_id[:2]}/{pic_id}/{self.width}x{self.height}.png"
+
+
+@dataclass
+class File(Text):
+    file_size: int
+    file_name: str
+    file_md5: bytes
+    file_url: Optional[str]
+    file_id: Optional[str]  # only in group
+    file_uuid: Optional[str]  # only in private
+    file_hash: Optional[str]
+
+    @classmethod
+    def _paste_build(cls, file_size: int, file_name: str,
+                     file_md5: bytes, file_id: Optional[str] = None,
+                     file_uuid: Optional[str] = None, file_hash: Optional[str] = None) -> "File":
+        return cls(
+            text=f"[file:{file_name}]",
+            file_size=file_size,
+            file_name=file_name,
+            file_md5=file_md5,
+            file_url=None,
+            file_id=file_id,
+            file_uuid=file_uuid,
+            file_hash=file_hash,
+        )
+
+    @classmethod
+    def grp_paste_build(cls, file_size: int, file_name: str, file_md5: bytes, file_id: str) -> "File":
+        return cls._paste_build(file_size, file_name, file_md5, file_id=file_id)
+
+    @classmethod
+    def pri_paste_build(cls, file_size: int, file_name: str, file_md5: bytes, file_uuid: str, file_hash: str) -> "File":
+        return cls._paste_build(file_size, file_name, file_md5, file_uuid=file_uuid, file_hash=file_hash)
