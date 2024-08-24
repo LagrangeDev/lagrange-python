@@ -57,7 +57,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     logger.debug("msg_push received, type: {}.{}".format(typ, sub_typ))
     if typ == 82:  # grp msg
         return await parse_grp_msg(client, pkg)
-    elif typ == 166:  # frd msg
+    elif typ in [166, 529]:  # frd msg
         return await parse_friend_msg(client, pkg)
     elif typ == 33:  # member joined
         pb = MemberChanged.decode(pkg.message.buf2)

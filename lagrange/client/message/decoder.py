@@ -8,7 +8,9 @@ from lagrange.pb.message.rich_text import Elems, RichText
 
 from . import elems
 from .types import Element
+from lagrange.utils.binary.reader import Reader
 from lagrange.utils.binary.protobuf import proto_encode
+from lagrange.pb.message.rich_text.elems import GroupFileExtra, FileExtra
 from lagrange.pb.highway.comm import MsgInfo
 
 if TYPE_CHECKING:
@@ -36,6 +38,18 @@ def parse_friend_info(pkg: MsgPushBody) -> Tuple[int, str, int, str]:
 
 
 async def parse_msg_new(client: "Client", pkg: MsgPushBody) -> Sequence[Element]:
+    if not pkg.message or not pkg.message.body:
+        if pkg.content_head.sub_type == 4:
+            data = FileExtra.decode(pkg.message.buf2)
+            return [
+                elems.File.pri_paste_build(
+                    file_size=data.file.file_size,
+                    file_name=data.file.file_name,
+                    file_md5=data.file.file_md5,
+                    file_uuid=data.file.file_uuid,
+                    file_hash=data.file.file_hash,
+                )
+            ]
     rich: RichText = pkg.message.body
     if rich.ptt:
         ptt = rich.ptt
@@ -164,6 +178,21 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody) -> Sequence[Element]
                         url=url,
                         is_emoji=extra.biz_info.pic.biz_type != 0,
                         qmsg=None,
+                    )
+                )
+        elif raw.trans_elem:
+            elem_type, trans = raw.trans_elem.elem_type, raw.trans_elem.elem_value
+            if elem_type == 24:
+                reader = Reader(trans)
+                reader.read_bytes(1)
+                data = reader.read_bytes_with_length("u16", False)
+                file_extra = GroupFileExtra.decode(data)
+                msg_chain.append(
+                    elems.File.grp_paste_build(
+                        file_size=file_extra.inner.info.file_size,
+                        file_name=file_extra.inner.info.file_name,
+                        file_md5=file_extra.inner.info.file_md5,
+                        file_id=file_extra.inner.info.file_id
                     )
                 )
         elif raw.rich_msg:
