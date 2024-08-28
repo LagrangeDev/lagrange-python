@@ -61,7 +61,7 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody) -> Sequence[Element]
                 md5=ptt.md5,
                 text=f"[audio:{ptt.name}]",
                 time=ptt.time,
-                file_key=ptt.group_file_key if not ptt.to_uin else ptt.friend_file_key,
+                file_key=ptt.group_file_key if ptt.group_file_key else ptt.friend_file_key,
                 qmsg=None,
             )
         ]
