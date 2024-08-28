@@ -257,6 +257,9 @@ class Client(BaseClient):
     async def upload_friend_audio(self, voice: BinaryIO, uid: str) -> Audio:
         return await self._highway.upload_voice(voice, uid=uid)
 
+    async def fetch_audio_url(self, file_key: str, uid=None, gid=None):
+        return await self._highway.get_audio_down_url(file_key, uid=uid, gid=gid)
+
     async def down_grp_audio(self, audio: Audio, grp_id: int) -> BytesIO:
         return await self._highway.download_audio(audio, gid=grp_id)
 

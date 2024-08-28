@@ -21,6 +21,7 @@ class BaseElem(JsonSerializer):
 class MediaInfo:
     name: str
     size: int
+    url: str
     id: int = field(repr=False)
     md5: bytes = field(repr=False)
     qmsg: Optional[bytes] = field(repr=False)  # not online image
@@ -86,7 +87,6 @@ class At(Text):
 class Image(Text, MediaInfo):
     width: int
     height: int
-    url: str
     is_emoji: bool
 
 

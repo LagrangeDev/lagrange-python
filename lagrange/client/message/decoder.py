@@ -1,5 +1,5 @@
 import zlib
-from typing import List, Tuple, Sequence, TYPE_CHECKING, cast, Literal
+from typing import List, Tuple, Sequence, TYPE_CHECKING, cast, Literal, Union
 
 from lagrange.client.events.group import GroupMessage
 from lagrange.client.events.friend import FriendMessage
@@ -37,7 +37,8 @@ def parse_friend_info(pkg: MsgPushBody) -> Tuple[int, str, int, str]:
     return from_uin, from_uid, to_uin, to_uid
 
 
-async def parse_msg_new(client: "Client", pkg: MsgPushBody) -> Sequence[Element]:
+async def parse_msg_new(client: "Client", pkg: MsgPushBody,
+                        fri_id: Union[str, None] = None, grp_id: Union[int, None] = None) -> Sequence[Element]:
     if not pkg.message or not pkg.message.body:
         if pkg.content_head.sub_type == 4:
             data = FileExtra.decode(pkg.message.buf2)
@@ -53,6 +54,7 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody) -> Sequence[Element]
     rich: RichText = pkg.message.body
     if rich.ptt:
         ptt = rich.ptt
+        file_key = ptt.group_file_key if ptt.group_file_key else ptt.friend_file_key
         return [
             elems.Audio(
                 name=ptt.name,
@@ -63,6 +65,7 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody) -> Sequence[Element]
                 time=ptt.time,
                 file_key=ptt.group_file_key if ptt.group_file_key else ptt.friend_file_key,
                 qmsg=None,
+                url=await client.fetch_audio_url(file_key, uid=fri_id, gid=grp_id)
             )
         ]
     el: List[Elems] = rich.content
@@ -280,6 +283,7 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody) -> Sequence[Element]
                     width=video.width,
                     height=video.height,
                     qmsg=None,
+                    url=""  # TODO: fetch video url
                 )
             )
         else:
@@ -294,7 +298,7 @@ async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
     seq = pkg.content_head.seq
     msg_id = pkg.content_head.msg_id
     timestamp = pkg.content_head.timestamp
-    parsed_msg = await parse_msg_new(client, pkg)
+    parsed_msg = await parse_msg_new(client, pkg, fri_id=from_uid, grp_id=None)
     msg_text = "".join([getattr(msg, "text", "") for msg in parsed_msg])
 
     return FriendMessage(
@@ -322,7 +326,7 @@ async def parse_grp_msg(client: "Client", pkg: MsgPushBody) -> GroupMessage:
     if isinstance(grp_name, bytes):  # unexpected end of data
         grp_name = grp_name.decode("utf-8", errors="ignore")
 
-    parsed_msg = await parse_msg_new(client, pkg)
+    parsed_msg = await parse_msg_new(client, pkg, fri_id=None, grp_id=grp_id)
     msg_text = "".join([getattr(msg, "text", "") for msg in parsed_msg])
 
     return GroupMessage(
