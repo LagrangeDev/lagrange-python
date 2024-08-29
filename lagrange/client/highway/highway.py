@@ -1,15 +1,14 @@
 import asyncio
 import time
-import uuid
 from hashlib import md5
 from io import BytesIO
-from typing import TYPE_CHECKING, BinaryIO, List, Optional, Tuple
+from typing import TYPE_CHECKING, BinaryIO, List, Optional, Tuple, overload, Union
 
 from lagrange.client.message.elems import Audio, Image
 from lagrange.pb.highway.comm import IndexNode
 from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
 from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
-from lagrange.pb.highway.rsp import NTV2RichMediaResp, DownloadInfo, DownloadRsp
+from lagrange.pb.highway.rsp import NTV2RichMediaResp, DownloadRsp
 from lagrange.utils.binary.protobuf import proto_decode
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
@@ -341,11 +340,20 @@ class HighWaySession:
             size=fl,
             file_key=file_key.decode(),
             qmsg=None if gid else compat,
+            url=await self.get_audio_down_url(file_key.decode(), gid, uid),
         )
 
-    async def get_audio_down_url(self, audio: Audio, gid=0, uid="") -> str:
+    @overload
+    async def get_audio_down_url(self, file_key_or_audio: str, gid: int = 0, uid: str = "") -> str: ...
+
+    @overload
+    async def get_audio_down_url(self, file_key_or_audio: Audio, gid: int = 0, uid: str = "") -> str: ...
+
+    async def get_audio_down_url(self, file_key_or_audio: Union[str, Audio], gid: int = 0, uid="") -> str:
         if not self._session_addr_list:
             await self._get_bdh_session()
+
+        audio_file_key = file_key_or_audio.file_key if isinstance(file_key_or_audio, Audio) else file_key_or_audio
 
         ret = NTV2RichMediaResp.decode(
             (
@@ -353,13 +361,13 @@ class HighWaySession:
                     0x126E if gid else 0x126D,
                     200,
                     encode_audio_down_req(
-                        audio.file_key, gid, uid
+                        audio_file_key, gid, uid
                     ).encode(), True
                 )
             ).data
         )
 
-        if not ret:
+        if not (ret and ret.download):
             raise ConnectionError("Internal error, check log for more detail")
 
         return self._down_url(ret.download)
