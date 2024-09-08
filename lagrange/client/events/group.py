@@ -95,7 +95,11 @@ class GroupMemberQuit(GroupEvent):
 
     @property
     def is_kicked(self) -> bool:
-        return self.exit_type == 131
+        return self.exit_type in [130, 131]
+    
+    @property
+    def is_kicked_self(self) -> bool:
+        return self.exit_type == 3
 
 
 @dataclass

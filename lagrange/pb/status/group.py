@@ -10,7 +10,7 @@ from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 class MemberChanged(ProtoStruct):
     uin: int = proto_field(1)
     uid: str = proto_field(3)
-    exit_type: Optional[int] = proto_field(4, default=None)  # 131kick, 130exit
+    exit_type: Optional[int] = proto_field(4, default=None)  # 3kick_me, 131kick, 130exit
     operator_uid: str = proto_field(5, default="")
     join_type: Optional[int] = proto_field(6, default=None)  # 6scanqr,
 
