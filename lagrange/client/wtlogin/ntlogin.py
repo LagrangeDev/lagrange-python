@@ -48,7 +48,7 @@ def parse_ntlogin_response(
     response: bytes, sig: SigInfo, captcha: list
 ) -> LoginErrorCode:
     frame = proto_decode(response, 0)
-    rsp = NTLoginRsp.decode(aes_gcm_decrypt(frame[3], sig.exchange_key))
+    rsp = NTLoginRsp.decode(aes_gcm_decrypt(frame.into(3, bytes), sig.exchange_key))
 
     if not rsp.head.error and rsp.body and rsp.body.credentials:
         cr = rsp.body.credentials

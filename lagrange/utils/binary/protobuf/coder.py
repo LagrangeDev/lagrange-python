@@ -16,7 +16,23 @@ ProtoEncodable: TypeAlias = Union[
     Mapping[int, "ProtoEncodable"],
 ]
 TProtoEncodable = TypeVar("TProtoEncodable", bound="ProtoEncodable")
-TProto: TypeAlias = dict[int, TProtoEncodable]
+
+
+class ProtoDecoded:
+    def __init__(self, proto: Proto):
+        self.proto = proto
+
+    def __getitem__(self, item: int) -> "ProtoEncodable":
+        return self.proto[item]
+
+    def into(self, field: Union[int, tuple[int, ...]], tp: type[TProtoEncodable]) -> TProtoEncodable:
+        if isinstance(field, int):
+            return cast(tp, self.proto[field])
+        else:
+            data = self.proto
+            for f in field:
+                data = data[f]  # type: ignore
+            return cast(tp, data)
 
 
 class ProtoBuilder(Builder):
@@ -107,17 +123,7 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         raise AssertionError
 
 
-@overload
-def proto_decode(data: bytes, max_layer: int = -1) -> Proto:
-    ...
-
-
-@overload
-def proto_decode(data: bytes, max_layer: int = -1, *, rt: type[TProtoEncodable]) -> TProto[TProtoEncodable]:
-    ...
-
-
-def proto_decode(data: bytes, max_layer=-1, *, rt: Union[type[TProtoEncodable], None] = None) -> Proto:
+def proto_decode(data: bytes, max_layer=-1) -> ProtoDecoded:
     reader = ProtoReader(data)
     proto = {}
 
@@ -135,7 +141,7 @@ def proto_decode(data: bytes, max_layer=-1, *, rt: Union[type[TProtoEncodable], 
 
             if max_layer > 0 or max_layer < 0 and len(value) > 1:
                 try:  # serialize nested
-                    value = proto_decode(value, max_layer - 1)
+                    value = proto_decode(value, max_layer - 1).proto
                 except Exception:
                     pass
         elif wire_type == 5:
@@ -150,7 +156,7 @@ def proto_decode(data: bytes, max_layer=-1, *, rt: Union[type[TProtoEncodable], 
         else:
             proto[tag] = value
 
-    return proto
+    return ProtoDecoded(proto)
 
 
 def proto_encode(proto: Proto) -> bytes:

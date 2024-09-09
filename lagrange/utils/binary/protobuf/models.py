@@ -1,7 +1,8 @@
 import inspect
+from dataclasses import MISSING
 from types import GenericAlias
-from typing import cast, TypeVar, Union, Generic, Any, Callable, overload
-from collections.abc import Mapping
+from typing import cast, TypeVar, Union, Any, Callable, overload
+from collections.abc import Mapping, Sequence
 from typing_extensions import Self, TypeAlias, dataclass_transform
 from typing import Optional
 
@@ -9,25 +10,30 @@ from .coder import Proto, proto_decode, proto_encode
 
 _ProtoTypes = Union[str, list, dict, bytes, int, float, bool, "ProtoStruct"]
 
-T = TypeVar("T", str, list, dict, bytes, int, float, bool, "ProtoStruct")
+T = TypeVar("T", bound=_ProtoTypes)
 V = TypeVar("V")
 NT: TypeAlias = dict[int, Union[_ProtoTypes, "NT"]]
 NoneType = type(None)
 
 
-class ProtoField(Generic[T]):
-    def __init__(self, tag: int, default: T):
+class ProtoField:
+    def __init__(self, tag: int, default: Any, default_factory: Any):
         if tag <= 0:
             raise ValueError("Tag must be a positive integer")
         self._tag = tag
         self._default = default
+        self._default_factory = default_factory
 
     @property
     def tag(self) -> int:
         return self._tag
 
-    def get_default(self) -> T:
-        return self._default
+    def get_default(self) -> Any:
+        if self._default is not MISSING:
+            return self._default
+        elif self._default_factory is not MISSING:
+            return self._default_factory()
+        return MISSING
 
 
 @overload  # `default` and `default_factory` are optional and mutually exclusive.
@@ -71,19 +77,19 @@ def proto_field(
 def proto_field(
     tag: int,
     *,
-    default: Optional[Any] = ...,
-    default_factory: Optional[Any] = ...,
+    default: Optional[Any] = MISSING,
+    default_factory: Optional[Any] = MISSING,
     init: bool = True,
     repr: bool = True,
     metadata: Optional[Mapping[Any, Any]] = None,
     kw_only: bool = False,
 ) -> "Any":
-    return ProtoField(tag, default)
+    return ProtoField(tag, default, default_factory)
 
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(proto_field,))
 class ProtoStruct:
-    _anno_map: dict[str, tuple[type[_ProtoTypes], ProtoField[Any]]]
+    _anno_map: dict[str, tuple[type[_ProtoTypes], ProtoField]]
     _proto_debug: bool
 
     def __init__(self, *args, **kwargs):
@@ -95,7 +101,7 @@ class ProtoStruct:
             elif name in kwargs:
                 self._set_attr(name, typ, kwargs.pop(name))
             else:
-                if field.get_default() is not ...:
+                if field.get_default() is not MISSING:
                     self._set_attr(name, typ, field.get_default())
                 else:
                     undefined_params.append(name)
@@ -188,7 +194,7 @@ class ProtoStruct:
         elif typ is str:
             return value.decode(errors="ignore")
         elif typ is dict:
-            return proto_decode(value)
+            return proto_decode(value).proto
         elif typ is bool:
             return value == 1
         elif typ is list:
@@ -214,14 +220,14 @@ class ProtoStruct:
     def decode(cls, data: bytes) -> Self:
         if not data:
             return None  # type: ignore
-        pb_dict: Proto = proto_decode(data, 0)
+        pb_dict: Proto = proto_decode(data, 0).proto
         mapping = cls._get_field_mapping()
 
         kwargs = {}
         for tag, (name, typ) in mapping.items():
             if tag not in pb_dict:
                 _, field = cls._anno_map[name]
-                if field.get_default() is not ...:
+                if field.get_default() is not MISSING:
                     kwargs[name] = field.get_default()
                     continue
 

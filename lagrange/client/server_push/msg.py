@@ -95,7 +95,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
             if pkg.message:
                 grp_id, pb = unpack(pkg.message.buf2, GroupSub20Head)
                 attrs: dict[str, Union[str, int]] = {}
-                for x in pb.body.attrs:  # type: dict[bytes, bytes]
+                for x in pb.body.attrs:
+                    x: dict[bytes, bytes]
                     k, v = x.values()
                     if isinstance(v, dict):
                         v = proto_encode(v)
@@ -201,10 +202,10 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         elif sub_typ == 12:  # mute
             info = proto_decode(pkg.message.buf2)
             return GroupMuteMember(
-                grp_id=info[1],
-                operator_uid=info[4].decode(),
-                target_uid=unpack_dict(info, "5.3.1", b"").decode(),
-                duration=unpack_dict(info, "5.3.2"),
+                grp_id=info.into(1, int),
+                operator_uid=info.into(4, bytes).decode(),
+                target_uid=unpack_dict(info.proto, "5.3.1", b"").decode(),
+                duration=unpack_dict(info.proto, "5.3.2"),
             )
         elif sub_typ == 21:  # set/unset essence msg
             pass  # todo

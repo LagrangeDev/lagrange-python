@@ -118,7 +118,7 @@ class GroupSub20Body(ProtoStruct):
     # f2: int = proto_field(2)  # 1061
     # f3: int = proto_field(3)  # 7
     # f6: int = proto_field(6)  # 1132
-    attrs: list[dict] = proto_field(7, default={})
+    attrs: list[dict] = proto_field(7, default_factory=list)
     attrs_xml: str = proto_field(8, default=None)
     f10: int = proto_field(10)  # rand?
 

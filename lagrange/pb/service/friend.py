@@ -50,7 +50,7 @@ class PBGetFriendListRequest(ProtoStruct):
             GetFriendBody(type=4, f2=GetFriendNumbers(f1=[100, 101, 102])),
         ],
     )
-    f10002: list[int] = proto_field(10002, default=[13578, 13579, 13573, 13572, 13568])
+    f10002: list[int] = proto_field(10002, default_factory=lambda: [13578, 13579, 13573, 13572, 13568])
     f10003: int = proto_field(10003, default=4051)
     """
     * GetFriendNumbers里是要拿到的东西

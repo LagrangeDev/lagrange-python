@@ -415,7 +415,7 @@ class Client(BaseClient):
             PBGroupRecallRequest.build(grp_id, seq).encode(),
         )
         result = proto_decode(payload.data)
-        if result[2] != b"Success":
+        if result.into(2, bytes) != b"Success":
             raise AssertionError(result)
 
     async def rename_grp_name(self, grp_id: int, name: str) -> int:  # not test

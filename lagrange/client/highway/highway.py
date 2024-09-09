@@ -217,10 +217,10 @@ class HighWaySession:
             )
         w, h = info.width, info.height
         if gid:
-            fileid = proto_decode(ret.upload.compat_qmsg, rt=int)[7]
+            fileid = proto_decode(ret.upload.compat_qmsg).into(7, int)
             url = f"https://gchat.qpic.cn/gchatpic_new/{self._client.uin}/{gid}-{fileid}-{fmd5.hex().upper()}/0?term=2"
         else:
-            path = proto_decode(ret.upload.compat_qmsg, rt=dict[int, bytes])[29][30]
+            path = proto_decode(ret.upload.compat_qmsg).into(29, dict[int, bytes])[30]
             fileid = 0
             url = "https://multimedia.nt.qq.com.cn/" + path.decode()
 
@@ -318,13 +318,14 @@ class HighWaySession:
                 bs=1048576,
             )
 
-        compat = proto_decode(ret.upload.compat_qmsg, 0, rt=bytes)[4]
+        compat = proto_decode(ret.upload.compat_qmsg, 0).into(4, bytes)
+        pt = proto_decode(compat, 0)
         if gid:
-            file_id = proto_decode(compat, 0, rt=int)[8]
-            file_key = proto_decode(compat, 0, rt=bytes)[18]
+            file_id = pt.into(8, int)
+            file_key = pt.into(18, bytes)
         else:
             file_id = 0
-            file_key = proto_decode(compat, 0, rt=bytes)[3]
+            file_key = pt.into(3, bytes)
         # print(f"https://grouptalk.c2c.qq.com/?ver=0&rkey={compat[18].hex()}&filetype=4%voice_codec=0")
 
         return Audio(
