@@ -1,6 +1,6 @@
 import struct
 import zlib
-from typing import List, Optional
+from typing import Optional
 
 from lagrange.pb.message.rich_text import Elems, RichText
 from lagrange.pb.message.rich_text.elems import (
@@ -37,10 +37,10 @@ from .elems import (
 from .types import Element
 
 
-def build_message(msg_chain: List[Element], compatible=True) -> RichText:
+def build_message(msg_chain: list[Element], compatible=True) -> RichText:
     if not msg_chain:
         raise ValueError("Message chain is empty")
-    msg_pb: List[Elems] = []
+    msg_pb: list[Elems] = []
     msg_ptt: Optional[Ptt] = None
     if not isinstance(msg_chain[0], Audio):
         for msg in msg_chain:

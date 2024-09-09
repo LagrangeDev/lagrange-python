@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Optional, Union, Dict
+from typing import TYPE_CHECKING
 
 from . import BaseEvent
 
@@ -30,7 +30,7 @@ class GroupMessage(GroupEvent, MessageInfo):
     sub_id: int = field(repr=False)  # client ver identify
     sender_type: int = field(repr=False)
     msg: str
-    msg_chain: List[Element]
+    msg_chain: list[Element]
 
     @property
     def is_bot(self) -> bool:
@@ -48,7 +48,7 @@ class GroupNudge(GroupEvent):
     target_uin: int
     action: str
     suffix: str
-    attrs: Dict[str, Union[str, int]] = field(repr=False)
+    attrs: dict[str, str | int] = field(repr=False)
     attrs_xml: str = field(repr=False)
 
 
@@ -59,7 +59,7 @@ class GroupSign(GroupEvent):
     uin: int
     nickname: str
     timestamp: int
-    attrs: Dict[str, Union[str, int]] = field(repr=False)
+    attrs: dict[str, str | int] = field(repr=False)
     attrs_xml: str = field(repr=False)
 
 
@@ -75,8 +75,8 @@ class GroupMuteMember(GroupEvent):
 @dataclass
 class GroupMemberJoinRequest(GroupEvent):
     uid: str
-    invitor_uid: Optional[str] = None
-    answer: Optional[str] = None  # 问题：(.*)答案：(.*)
+    invitor_uid: str | None = None
+    answer: str | None = None  # 问题：(.*)答案：(.*)
 
 
 @dataclass
@@ -96,7 +96,7 @@ class GroupMemberQuit(GroupEvent):
     @property
     def is_kicked(self) -> bool:
         return self.exit_type in [3, 131]
-    
+
     @property
     def is_kicked_self(self) -> bool:
         return self.exit_type == 3

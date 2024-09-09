@@ -1,5 +1,6 @@
 import zlib
-from typing import List, Tuple, Sequence, TYPE_CHECKING, cast, Literal, Union
+from typing import TYPE_CHECKING, cast, Literal, Union
+from collections.abc import Sequence
 
 from lagrange.client.events.group import GroupMessage
 from lagrange.client.events.friend import FriendMessage
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     from lagrange.client.client import Client
 
 
-def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
+def parse_msg_info(pb: MsgPushBody) -> tuple[int, str, int, int, int]:
     user_id = pb.response_head.from_uin
     uid = pb.response_head.from_uid
     seq = pb.content_head.seq
@@ -27,7 +28,7 @@ def parse_msg_info(pb: MsgPushBody) -> Tuple[int, str, int, int, int]:
     return user_id, uid, seq, time, rand
 
 
-def parse_friend_info(pkg: MsgPushBody) -> Tuple[int, str, int, str]:
+def parse_friend_info(pkg: MsgPushBody) -> tuple[int, str, int, str]:
     info = pkg.response_head
     from_uin = info.from_uin
     from_uid = info.from_uid
@@ -68,8 +69,8 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody,
                 url=await client.fetch_audio_url(file_key, uid=fri_id, gid=grp_id)
             )
         ]
-    el: List[Elems] = rich.content
-    msg_chain: List[Element] = []
+    el: list[Elems] = rich.content
+    msg_chain: list[Element] = []
     ignore_next = False
     for raw in el:
         if not raw or raw == Elems():

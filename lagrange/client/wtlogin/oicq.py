@@ -146,7 +146,7 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         sig.info_updated()
 
         log.login.debug("SigInfo got")
-        log.login.info("Login success, username: %s" % tlv[0x11A][5:].decode())
+        log.login.info(f"Login success, username: {tlv[0x11A][5:].decode()}")
 
         return True
     elif 0x146 in tlv:

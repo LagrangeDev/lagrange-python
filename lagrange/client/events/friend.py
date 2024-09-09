@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 from . import BaseEvent
 
 if TYPE_CHECKING:
@@ -22,4 +22,4 @@ class FriendMessage(FriendEvent):
     msg_id: int
     timestamp: int
     msg: str
-    msg_chain: List[Element]
+    msg_chain: list[Element]

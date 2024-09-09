@@ -2,7 +2,6 @@ import struct
 import zlib
 from dataclasses import dataclass, field
 from io import BytesIO
-from typing import Tuple
 
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.crypto.ecdh import ecdh
@@ -24,7 +23,7 @@ def parse_lv(buffer: BytesIO):  # u32 len only
     return buffer.read(length - 4)
 
 
-def parse_sso_header(raw: bytes, d2_key: bytes) -> Tuple[int, str, bytes]:
+def parse_sso_header(raw: bytes, d2_key: bytes) -> tuple[int, str, bytes]:
     buf = BytesIO(raw)
     # parse sso header
     buf.read(4)

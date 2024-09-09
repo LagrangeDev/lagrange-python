@@ -1,5 +1,5 @@
 import struct
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Union
 
 from typing_extensions import TypeAlias, Literal
 
@@ -38,7 +38,7 @@ class Reader:
         self._pos += 8
         return struct.unpack(">Q", v)[0]
 
-    def read_struct(self, format: str) -> Tuple[Any, ...]:
+    def read_struct(self, format: str) -> tuple[Any, ...]:
         size = struct.calcsize(format)
         v = self._buffer[self._pos : self._pos + size]
         self._pos += size
@@ -78,7 +78,7 @@ class Reader:
     def read_string_with_length(self, prefix: LENGTH_PREFIX, with_prefix=True) -> str:
         return self.read_bytes_with_length(prefix, with_prefix).decode("utf-8")
 
-    def read_tlv(self) -> Dict[int, bytes]:
+    def read_tlv(self) -> dict[int, bytes]:
         result = {}
         count = self.read_u16()
 

@@ -5,13 +5,12 @@ from io import BytesIO
 from typing import (
     BinaryIO,
     Callable,
-    Coroutine,
-    List,
     Optional,
     Union,
     overload,
     Literal,
 )
+from collections.abc import Coroutine
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.msg_push import MsgPushBody
@@ -176,7 +175,7 @@ class Client(BaseClient):
         rsp = OidbResponse.decode(
             (
                 await self.send_uni_packet(
-                    "OidbSvcTrpcTcp.0x{:0>2X}_{}".format(cmd, sub_cmd),
+                    f"OidbSvcTrpcTcp.0x{cmd:0>2X}_{sub_cmd}",
                     OidbRequest(
                         cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), is_uid=is_uid
                     ).encode(),
@@ -219,7 +218,7 @@ class Client(BaseClient):
         packet = await self.send_uni_packet("MessageSvc.PbSendMsg", proto_encode(body))
         return SendMsgRsp.decode(packet.data)
 
-    async def send_grp_msg(self, msg_chain: List[Element], grp_id: int) -> int:
+    async def send_grp_msg(self, msg_chain: list[Element], grp_id: int) -> int:
         result = await self._send_msg_raw(
             {1: build_message(msg_chain).encode()}, grp_id=grp_id
         )
@@ -227,7 +226,7 @@ class Client(BaseClient):
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
 
-    async def send_friend_msg(self, msg_chain: List[Element], uid: str) -> int:
+    async def send_friend_msg(self, msg_chain: list[Element], uid: str) -> int:
         result = await self._send_msg_raw(
             {1: build_message(msg_chain).encode()}, uid=uid
         )
@@ -257,7 +256,7 @@ class Client(BaseClient):
     async def upload_friend_audio(self, voice: BinaryIO, uid: str) -> Audio:
         return await self._highway.upload_voice(voice, uid=uid)
 
-    async def fetch_audio_url(self, file_key: str, uid=None, gid=None):
+    async def fetch_audio_url(self, file_key: str, gid: int = 0, uid: str = ""):
         return await self._highway.get_audio_down_url(file_key, uid=uid, gid=gid)
 
     async def down_grp_audio(self, audio: Audio, grp_id: int) -> BytesIO:
@@ -267,7 +266,7 @@ class Client(BaseClient):
         return await self._highway.download_audio(audio, uid=self.uid)
 
     async def fetch_image_url(
-        self, bus_type: Literal[10, 20], node: "IndexNode", uid=None, gid=None
+        self, bus_type: Literal[10, 20], node: "IndexNode", gid: int = 0, uid: str = ""
     ):
         if bus_type == 10:
             return await self._get_pri_img_url(uid, node)
@@ -327,7 +326,7 @@ class Client(BaseClient):
 
     async def get_grp_msg(
         self, grp_id: int, start: int, end: int = 0, filter_deleted_msg=True
-    ) -> List[GroupMessage]:
+    ) -> list[GroupMessage]:
         if not end:
             end = start
         payload = GetGrpMsgRsp.decode(
@@ -354,9 +353,9 @@ class Client(BaseClient):
             return [*filter(lambda msg: msg.rand != -1, rsp)]
         return rsp
 
-    async def get_friend_list(self) -> List[BotFriend]:
-        nextuin_cache: List[GetFriendListUin] = []
-        rsp: List[BotFriend] = []
+    async def get_friend_list(self) -> list[BotFriend]:
+        nextuin_cache: list[GetFriendListUin] = []
+        rsp: list[BotFriend] = []
         frist_send = GetFriendListRsp.decode(
             (await self.send_oidb_svc(0xFD4, 1, PBGetFriendListRequest().encode())).data
         )
@@ -550,11 +549,11 @@ class Client(BaseClient):
     async def get_user_info(self, uid: str) -> UserInfo: ...
 
     @overload
-    async def get_user_info(self, uid: List[str]) -> List[UserInfo]: ...
+    async def get_user_info(self, uid: list[str]) -> list[UserInfo]: ...
 
     async def get_user_info(
-        self, uid: Union[str, List[str]]
-    ) -> Union[UserInfo, List[UserInfo]]:
+        self, uid: Union[str, list[str]]
+    ) -> Union[UserInfo, list[UserInfo]]:
         if isinstance(uid, str):
             uid = [uid]
         rsp = GetInfoFromUidRsp.decode(
@@ -615,7 +614,7 @@ class Client(BaseClient):
             _hash += (_hash << 5) + ord(skey_or_pskey[i])
         return _hash & 2147483647
 
-    async def get_cookies(self, domains: list[str]) -> List[str]:
+    async def get_cookies(self, domains: list[str]) -> list[str]:
         """pskey"""
         return [
             i.value.decode()
@@ -631,8 +630,14 @@ class Client(BaseClient):
         ]
 
     async def get_skey(self) -> str:
-        jump = "https%3A%2F%2Fh5.qzone.qq.com%2Fqqnt%2Fqzoneinpcqq%2Ffriend%3Frefresh%3D0%26clientuin%3D0%26darkMode%3D0&keyindex=19&random=2599"
-        url = f"https://ssl.ptlogin2.qq.com/jump?ptlang=1033&clientuin={self.uin}&clientkey={await self._get_client_key()}&u1={jump}"
+        jump = (
+            "https%3A%2F%2Fh5.qzone.qq.com%2Fqqnt%2Fqzoneinpcqq%2F"
+            "friend%3Frefresh%3D0%26clientuin%3D0%26darkMode%3D0&keyindex=19&random=2599"
+        )
+        url = (
+            f"https://ssl.ptlogin2.qq.com/jump?ptlang=1033&clientuin={self.uin}"
+            f"&clientkey={await self._get_client_key()}&u1={jump}"
+        )
         resp = await HttpCat.request("GET", url, follow_redirect=False)
         return resp.cookies["skey"]
 

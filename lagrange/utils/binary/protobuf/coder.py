@@ -1,20 +1,22 @@
-from typing import Dict, List, Union, TYPE_CHECKING, cast
-
+from typing import Union, TypeVar, TYPE_CHECKING, cast, overload
+from collections.abc import Mapping, Sequence
 from typing_extensions import Self, TypeAlias
 
 from lagrange.utils.binary.builder import Builder
 from lagrange.utils.binary.reader import Reader
 
-Proto: TypeAlias = Dict[int, "ProtoEncodable"]
+Proto: TypeAlias = dict[int, "ProtoEncodable"]
 LengthDelimited: TypeAlias = Union[str, "Proto", bytes]
 ProtoEncodable: TypeAlias = Union[
     int,
     float,
     bool,
     LengthDelimited,
-    List["ProtoEncodable"],
-    Dict[int, "ProtoEncodable"],
+    Sequence["ProtoEncodable"],
+    Mapping[int, "ProtoEncodable"],
 ]
+TProtoEncodable = TypeVar("TProtoEncodable", bound="ProtoEncodable")
+TProto: TypeAlias = dict[int, TProtoEncodable]
 
 
 class ProtoBuilder(Builder):
@@ -105,7 +107,17 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         raise AssertionError
 
 
-def proto_decode(data: bytes, max_layer=-1) -> Proto:
+@overload
+def proto_decode(data: bytes, max_layer: int = -1) -> Proto:
+    ...
+
+
+@overload
+def proto_decode(data: bytes, max_layer: int = -1, *, rt: type[TProtoEncodable]) -> TProto[TProtoEncodable]:
+    ...
+
+
+def proto_decode(data: bytes, max_layer=-1, *, rt: Union[type[TProtoEncodable], None] = None) -> Proto:
     reader = ProtoReader(data)
     proto = {}
 

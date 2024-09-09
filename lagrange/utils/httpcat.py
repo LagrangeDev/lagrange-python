@@ -3,7 +3,7 @@ import gzip
 import json
 import zlib
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, overload, Literal
+from typing import Optional, overload, Literal
 from urllib import parse
 
 from .log import log
@@ -15,9 +15,9 @@ _logger = log.fork("utils.httpcat")
 class HttpResponse:
     code: int
     status: str
-    header: Dict[str, str]
+    header: dict[str, str]
     body: bytes
-    cookies: Dict[str, str]
+    cookies: dict[str, str]
 
     @property
     def decompressed_body(self) -> bytes:
@@ -51,16 +51,16 @@ class HttpCat:
         self,
         host: str,
         port: int,
-        headers: Optional[Dict[str, str]] = None,
-        cookies: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
         ssl=False,
         timeout=5,
     ):
         self.host = host
         self.port = port
         self.ssl = ssl
-        self.header: Dict[str, str] = headers or {}
-        self.cookie: Dict[str, str] = cookies or {}
+        self.header: dict[str, str] = headers or {}
+        self.cookie: dict[str, str] = cookies or {}
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
         self._stop_flag = True
@@ -69,7 +69,7 @@ class HttpCat:
 
     @classmethod
     def _encode_header(
-        cls, method: str, path: str, header: Dict[str, str], *, protocol="HTTP/1.1"
+        cls, method: str, path: str, header: dict[str, str], *, protocol="HTTP/1.1"
     ) -> bytearray:
         ret = bytearray()
         ret += f"{method.upper()} {path} {protocol}\r\n".encode()
@@ -83,7 +83,7 @@ class HttpCat:
         return (await reader.readline()).rstrip(b"\r\n").decode()
 
     @staticmethod
-    def _parse_url(url: str) -> Tuple[Tuple[str, int], str, bool]:
+    def _parse_url(url: str) -> tuple[tuple[str, int], str, bool]:
         purl = parse.urlparse(url)
         if purl.scheme not in ("http", "https"):
             raise ValueError("unsupported scheme:", purl.scheme)
@@ -155,9 +155,9 @@ class HttpCat:
         writer: asyncio.StreamWriter,
         method: str,
         path: str,
-        header: Optional[Dict[str, str]] = None,
+        header: Optional[dict[str, str]] = None,
         body: Optional[bytes] = None,
-        cookies: Optional[Dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
         wait_rsp: Literal[True] = True,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> HttpResponse:
@@ -172,9 +172,9 @@ class HttpCat:
         writer: asyncio.StreamWriter,
         method: str,
         path: str,
-        header: Optional[Dict[str, str]] = None,
+        header: Optional[dict[str, str]] = None,
         body: Optional[bytes] = None,
-        cookies: Optional[Dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
         wait_rsp: Literal[False] = False,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
@@ -188,9 +188,9 @@ class HttpCat:
         writer: asyncio.StreamWriter,
         method: str,
         path: str,
-        header: Optional[Dict[str, str]] = None,
+        header: Optional[dict[str, str]] = None,
         body: Optional[bytes] = None,
-        cookies: Optional[Dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
         wait_rsp: bool = True,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> Optional[HttpResponse]:
@@ -224,9 +224,9 @@ class HttpCat:
         cls,
         method: str,
         url: str,
-        header: Optional[Dict[str, str]] = None,
+        header: Optional[dict[str, str]] = None,
         body: Optional[bytes] = None,
-        cookies: Optional[Dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
         follow_redirect=True,
         conn_timeout=0,
         loop: Optional[asyncio.AbstractEventLoop] = None,

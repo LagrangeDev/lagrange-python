@@ -83,8 +83,8 @@ def encode_upload_img_req(
     fn = f"{md5.hex().upper()}.{info.name or 'jpg'}"
     c2c_info = None
     grp_info = None
-    c2c_pb = bytes()
-    grp_pb = bytes()
+    c2c_pb = b""
+    grp_pb = b""
     if grp_id:
         scene_type = 2
         grp_info = GroupInfo(grp_id=grp_id)

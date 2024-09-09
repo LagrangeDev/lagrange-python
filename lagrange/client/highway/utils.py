@@ -1,9 +1,10 @@
 import time
 from hashlib import md5, sha1
-from typing import Any, Awaitable, BinaryIO, Tuple
+from typing import Any, BinaryIO
+from collections.abc import Awaitable
 
 
-def calc_file_hash_and_length(*files: BinaryIO, bs=4096) -> Tuple[bytes, bytes, int]:
+def calc_file_hash_and_length(*files: BinaryIO, bs=4096) -> tuple[bytes, bytes, int]:
     fm, fs, length = md5(), sha1(), 0
     for f in files:
         try:
@@ -26,7 +27,7 @@ def itoa(i: int) -> str:  # int to address(str)
     return ".".join([str(p) for p in i.to_bytes(4, "big", signed=signed)])
 
 
-async def timeit(func: Awaitable) -> Tuple[float, Any]:
+async def timeit(func: Awaitable) -> tuple[float, Any]:
     start = time.time()
     result = await func
     return time.time() - start, result

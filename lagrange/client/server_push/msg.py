@@ -1,7 +1,7 @@
 import json
 import re
 from urllib.parse import parse_qsl
-from typing import TYPE_CHECKING, Type, Tuple, TypeVar, Union, Dict
+from typing import TYPE_CHECKING, TypeVar, Union
 
 from lagrange.client.message.decoder import parse_grp_msg, parse_friend_msg
 from lagrange.pb.message.msg_push import MsgPush
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound=ProtoStruct)
 
 
-def unpack(buf2: bytes, decoder: Type[T]) -> Tuple[int, T]:
+def unpack(buf2: bytes, decoder: type[T]) -> tuple[int, T]:
     reader = Reader(buf2)
     grp_id = reader.read_u32()
     reader.read_u8()
@@ -54,7 +54,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     typ = pkg.content_head.type
     sub_typ = pkg.content_head.sub_type
 
-    logger.debug("msg_push received, type: {}.{}".format(typ, sub_typ))
+    logger.debug(f"msg_push received, type: {typ}.{sub_typ}")
     if typ == 82:  # grp msg
         return await parse_grp_msg(client, pkg)
     elif typ in [166, 208, 529]:  # frd msg
@@ -89,12 +89,12 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid
             )
     elif typ == 0x210:  # friend event / group file upload notice event
-        logger.debug("unhandled friend event / group file upload notice event: %s" % pkg)  # TODO: paste
+        logger.debug(f"unhandled friend event / group file upload notice event: {pkg}")  # TODO: paste
     elif typ == 0x2DC:  # grp event, 732
         if sub_typ == 20:  # nudge and group_sign(群打卡)
             if pkg.message:
                 grp_id, pb = unpack(pkg.message.buf2, GroupSub20Head)
-                attrs: Dict[str, Union[str, int]] = {}
+                attrs: dict[str, Union[str, int]] = {}
                 for x in pb.body.attrs:  # type: dict[bytes, bytes]
                     k, v = x.values()
                     if isinstance(v, dict):

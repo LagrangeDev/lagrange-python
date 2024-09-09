@@ -1,5 +1,4 @@
 import asyncio
-import socket
 import traceback
 from typing import Optional
 
@@ -104,7 +103,7 @@ class Connection:
             try:
                 await self.connect()
                 fail = False
-            except (ConnectionError, socket.error) as e:
+            except (OSError, ConnectionError) as e:
                 if fail:
                     _logger.debug(f"connect retry fail: {repr(e)}")
                 else:

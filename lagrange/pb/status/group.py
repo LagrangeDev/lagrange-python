@@ -22,7 +22,7 @@ class MemberJoinRequest(ProtoStruct):
     uid: str = proto_field(3)
     src: int = proto_field(4)
     request_field: str = proto_field(5, default="")
-    field_9: bytes = proto_field(9, default=bytes())
+    field_9: bytes = proto_field(9, default=b"")
 
 
 class InviteInner(ProtoStruct):

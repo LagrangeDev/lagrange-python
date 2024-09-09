@@ -1,5 +1,5 @@
 import struct
-from typing import BinaryIO, Tuple
+from typing import BinaryIO
 
 from lagrange.pb.highway.head import HighwayTransRespHead
 
@@ -16,7 +16,7 @@ def write_frame(head: bytes, body: bytes) -> bytes:
 
 def read_frame(
     reader: BinaryIO,
-) -> Tuple[HighwayTransRespHead, bytes]:
+) -> tuple[HighwayTransRespHead, bytes]:
     head = reader.read(9)
     if len(head) != 9 and head[0] != 0x28:
         raise ValueError("Invalid frame head", head)
