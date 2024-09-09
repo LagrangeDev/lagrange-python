@@ -22,7 +22,7 @@ class MemberJoinRequest(ProtoStruct):
     uid: str = proto_field(3)
     src: int = proto_field(4)
     request_field: str = proto_field(5, default="")
-    field_9: bytes = proto_field(9, default=bytes())
+    field_9: bytes = proto_field(9, default=b"")
 
 
 class InviteInner(ProtoStruct):
@@ -118,7 +118,7 @@ class GroupSub20Body(ProtoStruct):
     # f2: int = proto_field(2)  # 1061
     # f3: int = proto_field(3)  # 7
     # f6: int = proto_field(6)  # 1132
-    attrs: list[dict] = proto_field(7, default={})
+    attrs: list[dict] = proto_field(7, default_factory=list)
     attrs_xml: str = proto_field(8, default=None)
     f10: int = proto_field(10)  # rand?
 

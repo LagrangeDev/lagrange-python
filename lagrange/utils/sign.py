@@ -52,7 +52,7 @@ def sign_provider(upstream_url: str):
             return {}
 
         params = {"cmd": cmd, "seq": seq, "src": buf.hex()}
-        body = json.dumps(params).encode('utf-8')
+        body = json.dumps(params).encode("utf-8")
         headers = {
             "Content-Type": "application/json"
         }

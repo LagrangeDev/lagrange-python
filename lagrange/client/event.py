@@ -1,5 +1,6 @@
 import asyncio
-from typing import TYPE_CHECKING, Any, Callable, Awaitable, Dict, Set, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from collections.abc import Awaitable
 
 from lagrange.utils.log import log
 
@@ -13,18 +14,18 @@ EVENT_HANDLER = Callable[["Client", T], Awaitable[Any]]
 
 class Events:
     def __init__(self):
-        self._task_group: Set[asyncio.Task] = set()
-        self._handle_map: Dict[Type["BaseEvent"], EVENT_HANDLER] = {}
+        self._task_group: set[asyncio.Task] = set()
+        self._handle_map: dict[type["BaseEvent"], EVENT_HANDLER] = {}
 
-    def subscribe(self, event: Type[T], handler: EVENT_HANDLER[T]):
+    def subscribe(self, event: type[T], handler: EVENT_HANDLER[T]):
         if event not in self._handle_map:
             self._handle_map[event] = handler
         else:
             raise AssertionError(
-                "Event already subscribed to {}".format(self._handle_map[event])
+                f"Event already subscribed to {self._handle_map[event]}"
             )
 
-    def unsubscribe(self, event: Type["BaseEvent"]):
+    def unsubscribe(self, event: type["BaseEvent"]):
         return self._handle_map.pop(event)
 
     async def _task_exec(self, client: "Client", event: "BaseEvent", handler: EVENT_HANDLER):
@@ -32,7 +33,7 @@ class Events:
             await handler(client, event)
         except Exception as e:
             log.root.error(
-                "Unhandled exception on task {}".format(event), exc_info=e
+                f"Unhandled exception on task {event}", exc_info=e
             )
 
     def emit(self, event: "BaseEvent", client: "Client"):

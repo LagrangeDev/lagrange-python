@@ -11,14 +11,14 @@ class CommonHead(ProtoStruct):
 class PicExtInfo(ProtoStruct):
     biz_type: Optional[int] = proto_field(1, default=None)
     summary: Optional[str] = proto_field(2, default=None)
-    c2c_reserved: bytes = proto_field(11, default=bytes())
-    troop_reserved: bytes = proto_field(12, default=bytes())
+    c2c_reserved: bytes = proto_field(11, default=b"")
+    troop_reserved: bytes = proto_field(12, default=b"")
 
 
 class VideoExtInfo(ProtoStruct):
     from_scene: Optional[int] = proto_field(1, default=None)
     to_scene: Optional[int] = proto_field(2, default=None)
-    pb_reserved: bytes = proto_field(3, default=bytes())
+    pb_reserved: bytes = proto_field(3, default=b"")
 
 
 class AudioExtInfo(ProtoStruct):
@@ -28,9 +28,9 @@ class AudioExtInfo(ProtoStruct):
     change_voice: Optional[int] = proto_field(4, default=None)
     waveform: Optional[bytes] = proto_field(5, default=None)
     audio_convert_text: Optional[int] = proto_field(6, default=None)
-    bytes_reserved: bytes = proto_field(11, default=bytes())
-    pb_reserved: bytes = proto_field(12, default=bytes())
-    general_flags: bytes = proto_field(13, default=bytes())
+    bytes_reserved: bytes = proto_field(11, default=b"")
+    pb_reserved: bytes = proto_field(12, default=b"")
+    general_flags: bytes = proto_field(13, default=b"")
 
 
 class ExtBizInfo(ProtoStruct):

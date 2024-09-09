@@ -1,20 +1,38 @@
-from typing import Dict, List, Union, TYPE_CHECKING, cast
-
+from typing import Union, TypeVar, TYPE_CHECKING, cast
+from collections.abc import Mapping, Sequence
 from typing_extensions import Self, TypeAlias
 
 from lagrange.utils.binary.builder import Builder
 from lagrange.utils.binary.reader import Reader
 
-Proto: TypeAlias = Dict[int, "ProtoEncodable"]
+Proto: TypeAlias = dict[int, "ProtoEncodable"]
 LengthDelimited: TypeAlias = Union[str, "Proto", bytes]
 ProtoEncodable: TypeAlias = Union[
     int,
     float,
     bool,
     LengthDelimited,
-    List["ProtoEncodable"],
-    Dict[int, "ProtoEncodable"],
+    Sequence["ProtoEncodable"],
+    Mapping[int, "ProtoEncodable"],
 ]
+TProtoEncodable = TypeVar("TProtoEncodable", bound="ProtoEncodable")
+
+
+class ProtoDecoded:
+    def __init__(self, proto: Proto):
+        self.proto = proto
+
+    def __getitem__(self, item: int) -> "ProtoEncodable":
+        return self.proto[item]
+
+    def into(self, field: Union[int, tuple[int, ...]], tp: type[TProtoEncodable]) -> TProtoEncodable:
+        if isinstance(field, int):
+            return cast(tp, self.proto[field])
+        else:
+            data = self.proto
+            for f in field:
+                data = data[f]  # type: ignore
+            return cast(tp, data)
 
 
 class ProtoBuilder(Builder):
@@ -105,7 +123,7 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         raise AssertionError
 
 
-def proto_decode(data: bytes, max_layer=-1) -> Proto:
+def proto_decode(data: bytes, max_layer=-1) -> ProtoDecoded:
     reader = ProtoReader(data)
     proto = {}
 
@@ -123,7 +141,7 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
 
             if max_layer > 0 or max_layer < 0 and len(value) > 1:
                 try:  # serialize nested
-                    value = proto_decode(value, max_layer - 1)
+                    value = proto_decode(value, max_layer - 1).proto
                 except Exception:
                     pass
         elif wire_type == 5:
@@ -138,7 +156,7 @@ def proto_decode(data: bytes, max_layer=-1) -> Proto:
         else:
             proto[tag] = value
 
-    return proto
+    return ProtoDecoded(proto)
 
 
 def proto_encode(proto: Proto) -> bytes:

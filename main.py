@@ -46,7 +46,7 @@ async def handle_grp_sign(client: "Client", event: "GroupSign"):
         if uid:
             break
         if kk.next_key:
-            k = kk.next_key
+            k = kk.next_key.decode()
         else:
             raise ValueError(f"cannot find member: {event.uin}")
 

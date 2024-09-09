@@ -5,7 +5,8 @@ ClientNetwork Implement
 import asyncio
 import ipaddress
 import sys
-from typing import Dict, Callable, Coroutine, Tuple, overload, Optional
+from typing import Callable, overload, Optional
+from collections.abc import Coroutine
 from typing_extensions import Literal
 
 from lagrange.info import SigInfo
@@ -27,7 +28,7 @@ class ClientNetwork(Connection):
         disconnect_cb: Callable[[bool], Coroutine],
         use_v6=False,
         *,
-        manual_address: Optional[Tuple[str, int]] = None,
+        manual_address: Optional[tuple[str, int]] = None,
     ):
         if not manual_address:
             host, port = self.V6UPSTREAM if use_v6 else self.V4UPSTREAM
@@ -40,7 +41,7 @@ class ClientNetwork(Connection):
         self._push_store = push_store
         self._reconnect_cb = reconnect_cb
         self._disconnect_cb = disconnect_cb
-        self._wait_fut_map: Dict[int, asyncio.Future[SSOPacket]] = {}
+        self._wait_fut_map: dict[int, asyncio.Future[SSOPacket]] = {}
         self._connected = False
         self._sig = sig_info
 
@@ -91,7 +92,7 @@ class ClientNetwork(Connection):
             self._using_v6 = False
         log.network.info(f"Connected to {host}:{port}")
         if self._connected and not self._stop_flag:
-            t = asyncio.create_task(self._reconnect_cb(), name="reconnect_cb")
+            asyncio.create_task(self._reconnect_cb(), name="reconnect_cb")
         else:
             self._connected = True
 
@@ -99,7 +100,7 @@ class ClientNetwork(Connection):
         self.conn_event.clear()
         log.network.warning("Connection closed")
         self._cancel_all_task()
-        t = asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
+        asyncio.create_task(self._disconnect_cb(False), name="disconnect_cb")
 
     async def on_error(self) -> bool:
         _, err, _ = sys.exc_info()
@@ -113,7 +114,7 @@ class ClientNetwork(Connection):
             log.network.error(f"Connection got an unexpected error: {repr(err)}")
             recover = False
         self._cancel_all_task()
-        t = asyncio.create_task(self._disconnect_cb(recover), name="disconnect_cb")
+        asyncio.create_task(self._disconnect_cb(recover), name="disconnect_cb")
         return recover
 
     async def on_message(self, message_length: int):

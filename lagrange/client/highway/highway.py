@@ -2,7 +2,7 @@ import asyncio
 import time
 from hashlib import md5
 from io import BytesIO
-from typing import TYPE_CHECKING, BinaryIO, List, Optional, Tuple, overload, Union
+from typing import TYPE_CHECKING, BinaryIO, Optional, Union
 
 from lagrange.client.message.elems import Audio, Image
 from lagrange.pb.highway.comm import IndexNode
@@ -37,7 +37,7 @@ class HighWaySession:
         self._client = client
         self._session_sig: Optional[bytes] = None
         self._session_key: Optional[bytes] = None
-        self._session_addr_list: List[Tuple[str, int]] = []
+        self._session_addr_list: list[tuple[str, int]] = []
 
     async def _get_bdh_session(self):
         rsp = await self._client.send_uni_packet(
@@ -76,7 +76,7 @@ class HighWaySession:
         cmd_id: int,
         ticket: bytes,
         ext=None,
-        addrs: Optional[List[Tuple[str, int]]] = None,
+        addrs: Optional[list[tuple[str, int]]] = None,
         bs=65535,
     ) -> Optional[bytes]:
         if not addrs:
@@ -108,8 +108,8 @@ class HighWaySession:
     async def _bdh_uploader(
         self,
         cmd: str,
-        addr: Tuple[str, int],
-        files: List[BinaryIO],
+        addr: tuple[str, int],
+        files: list[BinaryIO],
         cmd_id: int,
         ticket: bytes,
         ext: Optional[bytes] = None,
@@ -217,15 +217,10 @@ class HighWaySession:
             )
         w, h = info.width, info.height
         if gid:
-            fileid: int = proto_decode(ret.upload.compat_qmsg)[7]
-            url = "https://gchat.qpic.cn/gchatpic_new/{uin}/{gid}-{file_id}-{fmd5}/0?term=2".format(
-                uin=self._client.uin,
-                gid=gid,
-                file_id=fileid,
-                fmd5=fmd5.hex().upper(),
-            )
+            fileid = proto_decode(ret.upload.compat_qmsg).into(7, int)
+            url = f"https://gchat.qpic.cn/gchatpic_new/{self._client.uin}/{gid}-{fileid}-{fmd5.hex().upper()}/0?term=2"
         else:
-            path = proto_decode(ret.upload.compat_qmsg)[29][30]
+            path = proto_decode(ret.upload.compat_qmsg).into(29, dict[int, bytes])[30]
             fileid = 0
             url = "https://multimedia.nt.qq.com.cn/" + path.decode()
 
@@ -256,6 +251,7 @@ class HighWaySession:
             ).data
         )
         body = ret.download
+        assert body, "Internal error, check log for more detail"
         return f"https://{body.info.domain}{body.info.url_path}{body.rkey}"
 
     async def get_pri_img_url(self, uid: str, node: IndexNode) -> str:
@@ -272,6 +268,7 @@ class HighWaySession:
             ).data
         )
         body = ret.download
+        assert body, "Internal error, check log for more detail"
         return f"https://{body.info.domain}{body.info.url_path}{body.rkey}"
 
     async def upload_voice(self, file: BinaryIO, gid=0, uid="") -> Audio:
@@ -321,14 +318,14 @@ class HighWaySession:
                 bs=1048576,
             )
 
-        compat = proto_decode(ret.upload.compat_qmsg, 0)[4]
+        compat = proto_decode(ret.upload.compat_qmsg, 0).into(4, bytes)
+        pt = proto_decode(compat, 0)
         if gid:
-            pd = proto_decode(compat, 0)
-            file_id: int = pd[8]
-            file_key = pd[18]
+            file_id = pt.into(8, int)
+            file_key = pt.into(18, bytes)
         else:
             file_id = 0
-            file_key = proto_decode(compat, 0)[3]
+            file_key = pt.into(3, bytes)
         # print(f"https://grouptalk.c2c.qq.com/?ver=0&rkey={compat[18].hex()}&filetype=4%voice_codec=0")
 
         return Audio(
@@ -343,13 +340,7 @@ class HighWaySession:
             url=await self.get_audio_down_url(file_key.decode(), gid, uid),
         )
 
-    @overload
-    async def get_audio_down_url(self, file_key_or_audio: str, gid: int = 0, uid: str = "") -> str: ...
-
-    @overload
-    async def get_audio_down_url(self, file_key_or_audio: Audio, gid: int = 0, uid: str = "") -> str: ...
-
-    async def get_audio_down_url(self, file_key_or_audio: Union[str, Audio], gid: int = 0, uid="") -> str:
+    async def get_audio_down_url(self, file_key_or_audio: Union[str, Audio], gid: int = 0, uid: str = "") -> str:
         if not self._session_addr_list:
             await self._get_bdh_session()
 

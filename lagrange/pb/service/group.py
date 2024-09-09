@@ -33,7 +33,7 @@ class PBGroupRecallRequest(ProtoStruct):
     type: int = proto_field(1, default=1)
     grp_id: int = proto_field(2)
     field3: RecallRequestF3 = proto_field(3)
-    field4: dict = proto_field(4, default={1: 0})
+    field4: dict = proto_field(4, default_factory=lambda: {1: 0})
 
     @classmethod
     def build(cls, grp_id: int, seq: int) -> "PBGroupRecallRequest":
@@ -81,7 +81,7 @@ class GetGrpMsgRspBody(ProtoStruct):
     grp_id: int = proto_field(3)
     start_seq: int = proto_field(4)
     end_seq: int = proto_field(5)
-    elems: list[bytes] = proto_field(6, default=[])
+    elems: list[bytes] = proto_field(6, default_factory=list)
 
 
 class GetGrpMsgRsp(ProtoStruct):
@@ -307,7 +307,7 @@ class PBGetGrpMemberInfoReq(ProtoStruct):
                 "500158016001680170017801800101a00101a00601a80601c00601c80601c00c01"
             ),  # 10-16, 20, 100, 101, 104, 105, 200
             account=account,
-            next_key=next_key,
+            next_key=next_key.encode() if next_key else None,
         )
 
 
@@ -444,7 +444,7 @@ class Oidb88D0Args(ProtoStruct):
 
 class GetGrpLastSeqReqBody(ProtoStruct):
     grp_id: int = proto_field(1)
-    args: Oidb88D0Args = proto_field(2, default=Oidb88D0Args(seq=0))
+    args: Oidb88D0Args = proto_field(2, default_factory=lambda: Oidb88D0Args(seq=0))
 
 
 class PBGetGrpLastSeq(ProtoStruct):

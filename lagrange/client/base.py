@@ -1,7 +1,8 @@
 import asyncio
 import hashlib
 import time
-from typing import Callable, Coroutine, Dict, Optional, Tuple, Union, overload
+from typing import Callable, Optional, Union, overload
+from collections.abc import Coroutine
 
 from typing_extensions import Literal
 
@@ -60,7 +61,7 @@ class BaseClient:
         self._captcha_info = ["", "", ""]  # ticket, rand_str, aid
 
         self._server_push_queue: asyncio.Queue[SSOPacket] = asyncio.Queue()
-        self._tasks: Dict[str, asyncio.Task] = {}
+        self._tasks: dict[str, asyncio.Task] = {}
         self._network = ClientNetwork(
             sig_info,
             self._server_push_queue,
@@ -70,8 +71,8 @@ class BaseClient:
         )
         self._sign_provider = sign_provider
 
-        self._t106 = bytes()
-        self._t16a = bytes()
+        self._t106 = b""
+        self._t16a = b""
 
         self._online = asyncio.Event()
 
@@ -214,7 +215,7 @@ class BaseClient:
             return await self._network.send(packet, wait_seq=-1, timeout=timeout)
         return await self._network.send(packet, wait_seq=seq, timeout=timeout)
 
-    async def fetch_qrcode(self) -> Union[int, Tuple[bytes, str]]:
+    async def fetch_qrcode(self) -> Union[int, tuple[bytes, str]]:
         tlv = QrCodeTlvBuilder()
         body = (
             PacketBuilder()

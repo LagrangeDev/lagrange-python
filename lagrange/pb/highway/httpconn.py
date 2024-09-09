@@ -11,7 +11,7 @@ class X501ReqBody(ProtoStruct):
     field_4: int = proto_field(4, default=1)
     tgt_hex: str = proto_field(5)
     field_6: int = proto_field(6, default=3)
-    field_7: list[int] = proto_field(7, default=[1, 5, 10, 21])
+    field_7: list[int] = proto_field(7, default_factory=lambda: [1, 5, 10, 21])
     field_9: int = proto_field(9, default=2)
     field_10: int = proto_field(10, default=9)
     field_11: int = proto_field(11, default=8)
@@ -54,14 +54,14 @@ class ServerV6Address(BaseAddress):
 
 class ServerInfo(ProtoStruct):
     service_type: int = proto_field(1)
-    v4_addr: list[ServerV4Address] = proto_field(2, default=[])
-    v6_addr: list[ServerV6Address] = proto_field(5, default=[])
+    v4_addr: list[ServerV4Address] = proto_field(2, default_factory=list)
+    v6_addr: list[ServerV6Address] = proto_field(5, default_factory=list)
 
 
 class X501RspBody(ProtoStruct):
     sig_session: bytes = proto_field(1)
     sig_key: bytes = proto_field(2)
-    servers: list[ServerInfo] = proto_field(3, default=[])
+    servers: list[ServerInfo] = proto_field(3, default_factory=list)
 
 
 class HttpConn0x6ffRsp(ProtoStruct):

@@ -32,9 +32,9 @@ class UploadRsp(ProtoStruct):
     v6_addrs: list[IPv6] = proto_field(4)
     msg_seq: int = proto_field(5, default=0)
     msg_info: MsgInfo = proto_field(6)
-    ext: list[RichMediaStorageTransInfo] = proto_field(7, default=[])
+    ext: list[RichMediaStorageTransInfo] = proto_field(7, default_factory=list)
     compat_qmsg: bytes = proto_field(8)
-    sub_file_info: list[SubFileInfo] = proto_field(10, default=[])
+    sub_file_info: list[SubFileInfo] = proto_field(10, default_factory=list)
 
 
 class DownloadInfo(ProtoStruct):

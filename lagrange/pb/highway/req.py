@@ -29,7 +29,7 @@ class SceneInfo(ProtoStruct):
 class MultiMediaReqHead(ProtoStruct):
     common: CommonHead = proto_field(1)
     scene: SceneInfo = proto_field(2)
-    meta: ClientMeta = proto_field(3, default=ClientMeta())
+    meta: ClientMeta = proto_field(3, default_factory=ClientMeta)
 
 
 class UploadInfo(ProtoStruct):

@@ -1,31 +1,39 @@
 import inspect
+from dataclasses import MISSING
 from types import GenericAlias
-from typing import cast, Dict, List, Tuple, Type, TypeVar, Union, Generic, Any, Callable, Mapping, overload
-from typing_extensions import Optional, Self, TypeAlias, dataclass_transform, get_origin, get_args
+from typing import cast, TypeVar, Union, Any, Callable, overload
+from collections.abc import Mapping
+from typing_extensions import Self, TypeAlias, dataclass_transform
+from typing import Optional
 
 from .coder import Proto, proto_decode, proto_encode
 
 _ProtoTypes = Union[str, list, dict, bytes, int, float, bool, "ProtoStruct"]
 
-T = TypeVar("T", str, list, dict, bytes, int, float, bool, "ProtoStruct")
+T = TypeVar("T", bound=_ProtoTypes)
 V = TypeVar("V")
-NT: TypeAlias = Dict[int, Union[_ProtoTypes, "NT"]]
+NT: TypeAlias = dict[int, Union[_ProtoTypes, "NT"]]
 NoneType = type(None)
 
 
-class ProtoField(Generic[T]):
-    def __init__(self, tag: int, default: T):
+class ProtoField:
+    def __init__(self, tag: int, default: Any, default_factory: Any):
         if tag <= 0:
             raise ValueError("Tag must be a positive integer")
         self._tag = tag
         self._default = default
+        self._default_factory = default_factory
 
     @property
     def tag(self) -> int:
         return self._tag
 
-    def get_default(self) -> T:
-        return self._default
+    def get_default(self) -> Any:
+        if self._default is not MISSING:
+            return self._default
+        elif self._default_factory is not MISSING:
+            return self._default_factory()
+        return MISSING
 
 
 @overload  # `default` and `default_factory` are optional and mutually exclusive.
@@ -69,23 +77,23 @@ def proto_field(
 def proto_field(
     tag: int,
     *,
-    default: Optional[Any] = ...,
-    default_factory: Optional[Any] = ...,
+    default: Optional[Any] = MISSING,
+    default_factory: Optional[Any] = MISSING,
     init: bool = True,
     repr: bool = True,
     metadata: Optional[Mapping[Any, Any]] = None,
     kw_only: bool = False,
 ) -> "Any":
-    return ProtoField(tag, default)
+    return ProtoField(tag, default, default_factory)
 
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(proto_field,))
 class ProtoStruct:
-    _anno_map: Dict[str, Tuple[Type[_ProtoTypes], ProtoField[Any]]]
+    _anno_map: dict[str, tuple[type[_ProtoTypes], ProtoField]]
     _proto_debug: bool
 
     def __init__(self, *args, **kwargs):
-        undefined_params: List[str] = []
+        undefined_params: list[str] = []
         args = list(args)
         for name, (typ, field) in self._anno_map.items():
             if args:
@@ -93,13 +101,13 @@ class ProtoStruct:
             elif name in kwargs:
                 self._set_attr(name, typ, kwargs.pop(name))
             else:
-                if field.get_default() is not ...:
+                if field.get_default() is not MISSING:
                     self._set_attr(name, typ, field.get_default())
                 else:
                     undefined_params.append(name)
         if undefined_params:
             raise AttributeError(
-                "Undefined parameters in '{}': {}".format(self, undefined_params)
+                f"Undefined parameters in '{self}': {undefined_params}"
             )
 
     def __init_subclass__(cls, **kwargs):
@@ -113,22 +121,22 @@ class ProtoStruct:
             attrs += f"{k}={v}, "
         return f"{self.__class__.__name__}({attrs[:-2]})"
 
-    def _set_attr(self, name: str, data_typ: Type[V], value: V) -> None:
+    def _set_attr(self, name: str, data_typ: type[V], value: V) -> None:
         # if get_origin(data_typ) is Union:
         #     data_typ = (typ for typ in get_args(data_typ) if typ is not NoneType)  # type: ignore
         if isinstance(data_typ, GenericAlias):  # force ignore
             pass
         elif not isinstance(value, data_typ) and value is not None:
             raise TypeError(
-                "'{}' is not a instance of type '{}'".format(value, data_typ)
+                f"'{value}' is not a instance of type '{data_typ}'"
             )
         setattr(self, name, value)
 
     @classmethod
     def _get_annotations(
         cls,
-    ) -> Dict[str, Tuple[Type[_ProtoTypes], "ProtoField"]]:  # Name: (ReturnType, ProtoField)
-        annotations: Dict[str, Tuple[Type[_ProtoTypes], "ProtoField"]] = {}
+    ) -> dict[str, tuple[type[_ProtoTypes], "ProtoField"]]:  # Name: (ReturnType, ProtoField)
+        annotations: dict[str, tuple[type[_ProtoTypes], "ProtoField"]] = {}
         for obj in reversed(inspect.getmro(cls)):
             if obj in (ProtoStruct, object):  # base object, ignore
                 continue
@@ -149,14 +157,14 @@ class ProtoStruct:
         return annotations
 
     @classmethod
-    def _get_field_mapping(cls) -> Dict[int, Tuple[str, Type[_ProtoTypes]]]:  # Tag, (Name, Type)
-        field_mapping: Dict[int, Tuple[str, Type[_ProtoTypes]]] = {}
+    def _get_field_mapping(cls) -> dict[int, tuple[str, type[_ProtoTypes]]]:  # Tag, (Name, Type)
+        field_mapping: dict[int, tuple[str, type[_ProtoTypes]]] = {}
         for name, (typ, field) in cls._anno_map.items():
             field_mapping[field.tag] = (name, typ)
         return field_mapping
 
-    def _get_stored_mapping(self) -> Dict[str, NT]:
-        stored_mapping: Dict[str, NT] = {}
+    def _get_stored_mapping(self) -> dict[str, NT]:
+        stored_mapping: dict[str, NT] = {}
         for name, (_, _) in self._anno_map.items():
             stored_mapping[name] = getattr(self, name)
         return stored_mapping
@@ -164,7 +172,7 @@ class ProtoStruct:
     def _encode(self, v: _ProtoTypes) -> NT:
         if isinstance(v, ProtoStruct):
             v = v.encode()
-        return v
+        return v  # type: ignore
 
     def encode(self) -> bytes:
         pb_dict: NT = {}
@@ -180,16 +188,16 @@ class ProtoStruct:
         return proto_encode(cast(Proto, pb_dict))
 
     @classmethod
-    def _decode(cls, typ: Type[_ProtoTypes], value):
+    def _decode(cls, typ: type[_ProtoTypes], value):
         if issubclass(typ, ProtoStruct):
             return typ.decode(value)
-        elif typ == str:
+        elif typ is str:
             return value.decode(errors="ignore")
-        elif typ == dict:
-            return proto_decode(value)
-        elif typ == bool:
+        elif typ is dict:
+            return proto_decode(value).proto
+        elif typ is bool:
             return value == 1
-        elif typ == list:
+        elif typ is list:
             if not isinstance(value, list):
                 return [value]
             return value
@@ -212,21 +220,21 @@ class ProtoStruct:
     def decode(cls, data: bytes) -> Self:
         if not data:
             return None  # type: ignore
-        pb_dict: Proto = proto_decode(data, 0)
+        pb_dict: Proto = proto_decode(data, 0).proto
         mapping = cls._get_field_mapping()
 
         kwargs = {}
         for tag, (name, typ) in mapping.items():
             if tag not in pb_dict:
                 _, field = cls._anno_map[name]
-                if field.get_default() is not ...:
+                if field.get_default() is not MISSING:
                     kwargs[name] = field.get_default()
                     continue
 
                 raise KeyError(f"tag {tag} not found in '{cls.__name__}'")
             kwargs[name] = cls._decode(typ, pb_dict.pop(tag))
         if pb_dict and cls._proto_debug:  # unhandled tags
-            print(f"unhandled tags on '{cls.__name__}': {pb_dict}")
+            pass
 
         return cls(**kwargs)
 
