@@ -1,4 +1,4 @@
-from typing import Union, TypeVar, TYPE_CHECKING, cast, overload
+from typing import Union, TypeVar, TYPE_CHECKING, cast
 from collections.abc import Mapping, Sequence
 from typing_extensions import Self, TypeAlias
 

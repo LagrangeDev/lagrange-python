@@ -2,7 +2,7 @@ import inspect
 from dataclasses import MISSING
 from types import GenericAlias
 from typing import cast, TypeVar, Union, Any, Callable, overload
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing_extensions import Self, TypeAlias, dataclass_transform
 from typing import Optional
 
