@@ -83,9 +83,7 @@ class Client(BaseClient):
         app_info: AppInfo,
         device_info: DeviceInfo,
         sig_info: SigInfo,
-        sign_provider: Optional[
-            Callable[[str, int, bytes], Coroutine[None, None, dict]]
-        ] = None,
+        sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
         use_ipv6=True,
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
@@ -125,9 +123,7 @@ class Client(BaseClient):
         else:
             raise AssertionError("siginfo not found, you must login first")
 
-    async def login(
-        self, password: str = "", qrcode_path: Optional[str] = None
-    ) -> bool:
+    async def login(self, password: str = "", qrcode_path: Optional[str] = None) -> bool:
         try:
             if self._sig.temp_pwd:
                 rsp = await self.easy_login()
@@ -145,9 +141,7 @@ class Client(BaseClient):
                     return await self.register()
                 elif rsp.captcha_verify:
                     log.root.warning("captcha verification required")
-                    self.submit_login_captcha(
-                        ticket=input("ticket?->"), rand_str=input("rand_str?->")
-                    )
+                    self.submit_login_captcha(ticket=input("ticket?->"), rand_str=input("rand_str?->"))
                 else:
                     log.root.error(f"Unhandled exception raised: {rsp.name}")
         else:  # QrcodeLogin
@@ -169,23 +163,17 @@ class Client(BaseClient):
                     return await self.register()
         return False
 
-    async def send_oidb_svc(
-        self, cmd: int, sub_cmd: int, buf: bytes, is_uid=False
-    ) -> OidbResponse:
+    async def send_oidb_svc(self, cmd: int, sub_cmd: int, buf: bytes, is_uid=False) -> OidbResponse:
         rsp = OidbResponse.decode(
             (
                 await self.send_uni_packet(
                     f"OidbSvcTrpcTcp.0x{cmd:0>2X}_{sub_cmd}",
-                    OidbRequest(
-                        cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), is_uid=is_uid
-                    ).encode(),
+                    OidbRequest(cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), is_uid=is_uid).encode(),
                 )
             ).data
         )
         if rsp.ret_code:
-            log.network.error(
-                f"OidbSvc(0x{cmd:X}_{sub_cmd}) return an error: ({rsp.ret_code}){rsp.err_msg}"
-            )
+            log.network.error(f"OidbSvc(0x{cmd:X}_{sub_cmd}) return an error: ({rsp.ret_code}){rsp.err_msg}")
         return rsp
 
     async def push_handler(self, sso: SSOPacket):
@@ -219,32 +207,24 @@ class Client(BaseClient):
         return SendMsgRsp.decode(packet.data)
 
     async def send_grp_msg(self, msg_chain: list[Element], grp_id: int) -> int:
-        result = await self._send_msg_raw(
-            {1: build_message(msg_chain).encode()}, grp_id=grp_id
-        )
+        result = await self._send_msg_raw({1: build_message(msg_chain).encode()}, grp_id=grp_id)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
 
     async def send_friend_msg(self, msg_chain: list[Element], uid: str) -> int:
-        result = await self._send_msg_raw(
-            {1: build_message(msg_chain).encode()}, uid=uid
-        )
+        result = await self._send_msg_raw({1: build_message(msg_chain).encode()}, uid=uid)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
 
-    async def upload_grp_image(
-        self, image: BinaryIO, grp_id: int, is_emoji=False
-    ) -> Image:
+    async def upload_grp_image(self, image: BinaryIO, grp_id: int, is_emoji=False) -> Image:
         img = await self._highway.upload_image(image, gid=grp_id)
         if is_emoji:
             img.is_emoji = True
         return img
 
-    async def upload_friend_image(
-        self, image: BinaryIO, uid: str, is_emoji=False
-    ) -> Image:
+    async def upload_friend_image(self, image: BinaryIO, uid: str, is_emoji=False) -> Image:
         img = await self._highway.upload_image(image, uid=uid)
         if is_emoji:
             img.is_emoji = True
@@ -265,9 +245,7 @@ class Client(BaseClient):
     async def down_friend_audio(self, audio: Audio) -> BytesIO:
         return await self._highway.download_audio(audio, uid=self.uid)
 
-    async def fetch_image_url(
-        self, bus_type: Literal[10, 20], node: "IndexNode", gid: int = 0, uid: str = ""
-    ):
+    async def fetch_image_url(self, bus_type: Literal[10, 20], node: "IndexNode", gid: int = 0, uid: str = ""):
         if bus_type == 10:
             return await self._get_pri_img_url(uid, node)
         elif bus_type == 20:
@@ -300,16 +278,10 @@ class Client(BaseClient):
 
     async def get_grp_member_info(self, grp_id: int, uid: str) -> GetGrpMemberInfoRsp:
         return GetGrpMemberInfoRsp.decode(
-            (
-                await self.send_oidb_svc(
-                    0xFE7, 4, PBGetGrpMemberInfoReq.build(grp_id, uid=uid).encode()
-                )
-            ).data
+            (await self.send_oidb_svc(0xFE7, 4, PBGetGrpMemberInfoReq.build(grp_id, uid=uid).encode())).data
         )
 
-    async def get_grp_members(
-        self, grp_id: int, next_key: Optional[str] = None
-    ) -> GetGrpMemberInfoRsp:
+    async def get_grp_members(self, grp_id: int, next_key: Optional[str] = None) -> GetGrpMemberInfoRsp:
         """
         500 members per request,
         get next page: fill 'next_key' from GetGrpMemberInfoRsp.next_key
@@ -324,9 +296,7 @@ class Client(BaseClient):
             ).data
         )
 
-    async def get_grp_msg(
-        self, grp_id: int, start: int, end: int = 0, filter_deleted_msg=True
-    ) -> list[GroupMessage]:
+    async def get_grp_msg(self, grp_id: int, start: int, end: int = 0, filter_deleted_msg=True) -> list[GroupMessage]:
         if not end:
             end = start
         payload = GetGrpMsgRsp.decode(
@@ -339,16 +309,10 @@ class Client(BaseClient):
         ).body
 
         assert (
-            payload.grp_id == grp_id
-            and payload.start_seq == start
-            and payload.end_seq == end
+            payload.grp_id == grp_id and payload.start_seq == start and payload.end_seq == end
         ), "return args not matched"
 
-        rsp = list(
-            await asyncio.gather(
-                *[parse_grp_msg(self, MsgPushBody.decode(i)) for i in payload.elems]
-            )
-        )
+        rsp = list(await asyncio.gather(*[parse_grp_msg(self, MsgPushBody.decode(i)) for i in payload.elems]))
         if filter_deleted_msg:
             return [*filter(lambda msg: msg.rand != -1, rsp)]
         return rsp
@@ -419,11 +383,7 @@ class Client(BaseClient):
             raise AssertionError(result)
 
     async def rename_grp_name(self, grp_id: int, name: str) -> int:  # not test
-        return (
-            await self.send_oidb_svc(
-                0x89A, 15, PBGroupRenameRequest.build(grp_id, name).encode()
-            )
-        ).ret_code
+        return (await self.send_oidb_svc(0x89A, 15, PBGroupRenameRequest.build(grp_id, name).encode())).ret_code
 
     async def rename_grp_member(self, grp_id: int, target_uid: str, name: str):  # fixme
         rsp = await self.send_oidb_svc(
@@ -436,11 +396,7 @@ class Client(BaseClient):
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     async def leave_grp(self, grp_id: int) -> int:  # not test
-        return (
-            await self.send_oidb_svc(
-                0x1097, 1, PBLeaveGroupRequest.build(grp_id).encode()
-            )
-        ).ret_code
+        return (await self.send_oidb_svc(0x1097, 1, PBLeaveGroupRequest.build(grp_id).encode())).ret_code
 
     async def kick_grp_member(self, grp_id: int, uin: int, permanent=False):
         rsp = await self.send_oidb_svc(
@@ -452,9 +408,7 @@ class Client(BaseClient):
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, str(rsp.err_msg))
 
-    async def send_grp_reaction(
-        self, grp_id: int, msg_seq: int, content: Union[str, int], is_cancel=False
-    ) -> None:
+    async def send_grp_reaction(self, grp_id: int, msg_seq: int, content: Union[str, int], is_cancel=False) -> None:
         if isinstance(content, str):
             assert len(content) == 1, "content must be a emoji"
         rsp = await self.send_oidb_svc(
@@ -512,25 +466,17 @@ class Client(BaseClient):
     #         raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     async def set_mute_member(self, grp_id: int, uin: int, duration: int):
-        rsp = await self.send_oidb_svc(
-            0x570, 8, struct.pack(">IBHII", grp_id, 0x20, 1, uin, duration)
-        )
+        rsp = await self.send_oidb_svc(0x570, 8, struct.pack(">IBHII", grp_id, 0x20, 1, uin, duration))
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     async def fetch_grp_request(self, count=20) -> FetchGroupResponse:
         rsp = FetchGroupResponse.decode(
-            (
-                await self.send_oidb_svc(
-                    0x10C0, 1, PBFetchGroupRequest(count=count).encode()
-                )
-            ).data
+            (await self.send_oidb_svc(0x10C0, 1, PBFetchGroupRequest(count=count).encode())).data
         )
         return rsp
 
-    async def set_grp_request(
-        self, grp_id: int, grp_req_seq: int, ev_type: int, action: int, reason=""
-    ):
+    async def set_grp_request(self, grp_id: int, grp_req_seq: int, ev_type: int, action: int, reason=""):
         """
         grp_req_seq: from fetch_grp_request
         action: 1 for accept; 2 for reject; 3 for ignore
@@ -538,9 +484,7 @@ class Client(BaseClient):
         rsp = await self.send_oidb_svc(
             0x10C8,
             1,
-            PBHandleGroupRequest.build(
-                action, grp_req_seq, ev_type, grp_id, reason
-            ).encode(),
+            PBHandleGroupRequest.build(action, grp_req_seq, ev_type, grp_id, reason).encode(),
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
@@ -551,18 +495,10 @@ class Client(BaseClient):
     @overload
     async def get_user_info(self, uid: list[str]) -> list[UserInfo]: ...
 
-    async def get_user_info(
-        self, uid: Union[str, list[str]]
-    ) -> Union[UserInfo, list[UserInfo]]:
+    async def get_user_info(self, uid: Union[str, list[str]]) -> Union[UserInfo, list[UserInfo]]:
         if isinstance(uid, str):
             uid = [uid]
-        rsp = GetInfoFromUidRsp.decode(
-            (
-                await self.send_oidb_svc(
-                    0xFE1, 8, PBGetInfoFromUidReq(uid=uid).encode()
-                )
-            ).data
-        )
+        rsp = GetInfoFromUidRsp.decode((await self.send_oidb_svc(0xFE1, 8, PBGetInfoFromUidReq(uid=uid).encode())).data)
         if not rsp.body:
             raise AssertionError("Empty response")
         elif len(rsp.body) == 1:
@@ -570,15 +506,11 @@ class Client(BaseClient):
         else:
             return [UserInfo.from_pb(body) for body in rsp.body]
 
-    async def set_grp_bot_hd(
-        self, grp_id: int, bot_id: int, data_1: str = "", data_2: str = ""
-    ):
+    async def set_grp_bot_hd(self, grp_id: int, bot_id: int, data_1: str = "", data_2: str = ""):
         await self.send_oidb_svc(
             0x112E,
             1,
-            SendGrpBotHD(
-                grp_id=grp_id, bot_id=bot_id, B_id=data_1, B_data=data_2
-            ).encode(),
+            SendGrpBotHD(grp_id=grp_id, bot_id=bot_id, B_id=data_1, B_data=data_2).encode(),
         )
 
     async def set_c2c_bot_hd(self, bot_id: int, data_1: str = "", data_2: str = ""):
@@ -603,9 +535,7 @@ class Client(BaseClient):
         return rsp.body.args.seq
 
     async def _get_client_key(self) -> str:
-        return GetClientKeyRsp.decode(
-            (await self.send_oidb_svc(0x102A, 1, proto_encode({}))).data
-        ).client_key
+        return GetClientKeyRsp.decode((await self.send_oidb_svc(0x102A, 1, proto_encode({}))).data).client_key
 
     def _gtk_1(self, skey_or_pskey: str):
         _hash = 5381
@@ -644,3 +574,18 @@ class Client(BaseClient):
     async def get_csrf_token(self) -> int:
         skey = await self.get_skey()
         return self._gtk_1(skey)
+
+    async def get_rkey(self) -> tuple[str, str]:
+        """
+        Returns:
+            rkey:
+            Tuple[str, str]: first is private,second is group
+        """
+        body = {
+            1: {1: {1: 1, 2: 202}, 2: {101: 2, 102: 1, 200: 0}, 3: {1: 2}},
+            4: {1: [10, 20, 2]},
+        }
+        rsp = await self.send_oidb_svc(0x9067, 202, proto_encode(body), True)
+        a = proto_decode(rsp.data).proto
+        temp = a[4][1]  # type: ignore
+        return temp[0], temp[1]  # type: ignore
