@@ -588,4 +588,4 @@ class Client(BaseClient):
         rsp = await self.send_oidb_svc(0x9067, 202, proto_encode(body), True)
         a = proto_decode(rsp.data).proto
         temp = a[4][1]  # type: ignore
-        return temp[0], temp[1]  # type: ignore
+        return temp[0][1].decode(), temp[1][1].decode()  # type: ignore
