@@ -345,7 +345,7 @@ class Client(BaseClient):
                 )
 
         while nextuin_cache:
-            next = GetFriendListRsp.decode(
+            next: GetFriendListRsp = GetFriendListRsp.decode(
                 (
                     await self.send_oidb_svc(
                         0xFD4,
@@ -368,7 +368,7 @@ class Client(BaseClient):
                             properties.get(27394),
                         )
                     )
-            if next.next:
+            if next.next and next.next.uin is not None:
                 nextuin_cache.append(next.next)
 
         return rsp
@@ -579,13 +579,12 @@ class Client(BaseClient):
         """
         Returns:
             rkey:
-            Tuple[str, str]: first is private,second is group
+            Tuple[str, str]: first is private, second is group
         """
         body = {
             1: {1: {1: 1, 2: 202}, 2: {101: 2, 102: 1, 200: 0}, 3: {1: 2}},
             4: {1: [10, 20, 2]},
         }
         rsp = await self.send_oidb_svc(0x9067, 202, proto_encode(body), True)
-        a = proto_decode(rsp.data).proto
-        temp = a[4][1]  # type: ignore
-        return temp[0][1].decode(), temp[1][1].decode()  # type: ignore
+        temp = proto_decode(rsp.data).into((4, 1), dict[int, list[bytes]])
+        return temp[0][1].decode(), temp[1][1].decode()
