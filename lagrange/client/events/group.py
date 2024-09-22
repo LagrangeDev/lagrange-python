@@ -142,3 +142,8 @@ class GroupAlbumUpdate(GroupEvent):
 
     timestamp: int
     image_id: str
+
+
+@dataclass
+class GroupInvite(GroupEvent):
+    invitor_uid: str

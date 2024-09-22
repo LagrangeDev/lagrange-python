@@ -15,12 +15,14 @@ from lagrange.pb.status.group import (
     MemberRecallMsg,
     GroupSub20Head,
     PBGroupAlbumUpdate,
+    PBGroupInvite,
 )
 from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct, proto_encode
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.operator import unpack_dict, timestamp
 
 from ..events.group import (
+    GroupInvite,
     GroupMemberGotSpecialTitle,
     GroupMemberJoined,
     GroupMemberJoinRequest,
@@ -58,7 +60,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     if typ == 82:  # grp msg
         return await parse_grp_msg(client, pkg)
     elif typ in [166, 208, 529]:  # frd msg
-        return await parse_friend_msg(client, pkg)
+        if pkg.message:
+            return await parse_friend_msg(client, pkg)
     elif typ == 33:  # member joined
         pb = MemberChanged.decode(pkg.message.buf2)
         return GroupMemberJoined(
@@ -78,16 +81,15 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         )
     elif typ == 84:
         pb = MemberJoinRequest.decode(pkg.message.buf2)
-        return GroupMemberJoinRequest(
-            grp_id=pb.grp_id, uid=pb.uid, answer=pb.request_field
-        )
+        return GroupMemberJoinRequest(grp_id=pb.grp_id, uid=pb.uid, answer=pb.request_field)
+    elif typ == 87:
+        pb = PBGroupInvite.decode(pkg.message.buf2)
+        return GroupInvite(grp_id=pb.gid, invitor_uid=pb.invitor_uid)
     elif typ == 525:
         pb = MemberInviteRequest.decode(pkg.message.buf2)
         if pb.cmd == 87:
             inn = pb.info.inner
-            return GroupMemberJoinRequest(
-                grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid
-            )
+            return GroupMemberJoinRequest(grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid)
     elif typ == 0x210:  # friend event / group file upload notice event
         logger.debug(f"unhandled friend event / group file upload notice event: {pkg}")  # TODO: paste
     elif typ == 0x2DC:  # grp event, 732
@@ -109,9 +111,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         grp_id,
                         attrs["uin_str1"],
                         attrs["uin_str2"],
-                        attrs["action_str"]
-                        if "action_str" in attrs
-                        else attrs["alt_str1"],  # ?
+                        attrs["action_str"] if "action_str" in attrs else attrs["alt_str1"],  # ?
                         attrs["suffix_str"],
                         attrs,
                         pb.body.attrs_xml,
@@ -126,9 +126,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         pb.body.attrs_xml,
                     )
                 else:
-                    raise ValueError(
-                        f"unknown type({pb.body.type}) on GroupSub20: {attrs}"
-                    )
+                    raise ValueError(f"unknown type({pb.body.type}) on GroupSub20: {attrs}")
             else:
                 # print(pkg.encode().hex(), 2)
                 return
@@ -174,9 +172,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 elif pb.flag == 23:  # 群幸运字符？
                     pass
                 elif pb.flag == 37:  # 群相册上传（手Q专用:(）
-                    _, pb = unpack(
-                        pkg.message.buf2, PBGroupAlbumUpdate
-                    )  # 塞 就硬塞，可以把你的顾辉盒也给塞进来
+                    _, pb = unpack(pkg.message.buf2, PBGroupAlbumUpdate)  # 塞 就硬塞，可以把你的顾辉盒也给塞进来
                     q = dict(parse_qsl(pb.body.args))
                     return GroupAlbumUpdate(
                         grp_id=pb.grp_id,
@@ -184,9 +180,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         image_id=q["i"],
                     )
                 else:
-                    raise ValueError(
-                        f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex() if pb.body else pb}"
-                    )
+                    raise ValueError(f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex() if pb.body else pb}")
         elif sub_typ == 17:  # recall
             grp_id, pb = unpack(pkg.message.buf2, MemberRecallMsg)
 
@@ -214,9 +208,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 "unknown sub_type %d: %s"
                 % (
                     sub_typ,
-                    pkg.message.buf2.hex()
-                    if getattr(pkg.message, "buf2", None)
-                    else pkg,
+                    pkg.message.buf2.hex() if getattr(pkg.message, "buf2", None) else pkg,
                 )
             )
     else:

@@ -38,8 +38,9 @@ def parse_friend_info(pkg: MsgPushBody) -> tuple[int, str, int, str]:
     return from_uin, from_uid, to_uin, to_uid
 
 
-async def parse_msg_new(client: "Client", pkg: MsgPushBody,
-                        fri_id: Union[str, None] = None, grp_id: Union[int, None] = None) -> Sequence[Element]:
+async def parse_msg_new(
+    client: "Client", pkg: MsgPushBody, fri_id: Union[str, None] = None, grp_id: Union[int, None] = None
+) -> Sequence[Element]:
     if not pkg.message or not pkg.message.body:
         if pkg.content_head.sub_type == 4:
             data = FileExtra.decode(pkg.message.buf2)
@@ -66,7 +67,7 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody,
                 time=ptt.time,
                 file_key=ptt.group_file_key if ptt.group_file_key else ptt.friend_file_key,
                 qmsg=None,
-                url=await client.fetch_audio_url(file_key, uid=fri_id, gid=grp_id)
+                url=await client.fetch_audio_url(file_key, uid=fri_id, gid=grp_id),
             )
         ]
     el: list[Elems] = rich.content
@@ -174,9 +175,7 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody,
                         size=index.info.size,
                         id=0,
                         md5=bytes.fromhex(index.info.hash),
-                        text=extra.biz_info.pic.summary
-                        if extra.biz_info.pic.summary
-                        else "[图片]",
+                        text=extra.biz_info.pic.summary if extra.biz_info.pic.summary else "[图片]",
                         width=index.info.width,
                         height=index.info.height,
                         url=url,
@@ -196,7 +195,7 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody,
                         file_size=file_extra.inner.info.file_size,
                         file_name=file_extra.inner.info.file_name,
                         file_md5=file_extra.inner.info.file_md5,
-                        file_id=file_extra.inner.info.file_id
+                        file_id=file_extra.inner.info.file_id,
                     )
                 )
         elif raw.rich_msg:
@@ -208,16 +207,10 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody,
                     content = zlib.decompress(jr[1:])
                 else:
                     content = jr[1:]
-                msg_chain.append(
-                    elems.Service(id=sid, raw=content, text=f"[service:{sid}]")
-                )
+                msg_chain.append(elems.Service(id=sid, raw=content, text=f"[service:{sid}]"))
             ignore_next = True
         elif raw.open_data:
-            msg_chain.append(
-                elems.Raw(
-                    text=f"[raw:{len(raw.open_data.data)}]", data=raw.open_data.data
-                )
-            )
+            msg_chain.append(elems.Raw(text=f"[raw:{len(raw.open_data.data)}]", data=raw.open_data.data))
         elif raw.src_msg:  # msg source info
             src = raw.src_msg
             msg_text = ""
@@ -284,7 +277,7 @@ async def parse_msg_new(client: "Client", pkg: MsgPushBody,
                     width=video.width,
                     height=video.height,
                     qmsg=None,
-                    url=""  # TODO: fetch video url
+                    url="",  # TODO: fetch video url
                 )
             )
         else:
