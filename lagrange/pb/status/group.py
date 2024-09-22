@@ -106,9 +106,7 @@ class GroupSub16Head(ProtoStruct):
     timestamp: int = proto_field(2, default=0)
     uin: Optional[int] = proto_field(4, default=None)
     body: Optional[bytes] = proto_field(5, default=None)
-    flag: int = proto_field(
-        13
-    )  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction
+    flag: int = proto_field(13)  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction
     operator_uid: str = proto_field(21, default="")
     f44: Optional[PBGroupReaction] = proto_field(44, default=None)  # set reaction only
 
@@ -141,3 +139,24 @@ class PBGroupAlbumUpdate(ProtoStruct):
     grp_id: int = proto_field(4)
     # f13: 37
     body: PBGroupAlbumUpdateBody = proto_field(46)
+
+
+# class InviteInner_what(ProtoStruct):
+#     f1: int = proto_field(1)  # 0
+#     f3: int = proto_field(3)  # 32
+#     f4: bytes = proto_field(4)
+#     f5: int = proto_field(5)
+#     f6: str = proto_field(6)
+
+
+# class InviteInfo_what(ProtoStruct):
+#     inner: InviteInner_what = proto_field(1)
+
+
+class PBGroupInvite(ProtoStruct):
+    gid: int = proto_field(1)
+    f2: int = proto_field(2)  # 1
+    f3: int = proto_field(3)  # 4
+    f4: int = proto_field(4)  # 0
+    invitor_uid: str = proto_field(5)
+    invite_info: bytes = proto_field(6)
