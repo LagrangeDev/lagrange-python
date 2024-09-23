@@ -121,8 +121,9 @@ class ProtoStruct:
             return True
         return False  # or True if value is None else False
 
-    def _evaluate(self):
-        for base in reversed(self.__class__.__mro__):
+    @classmethod
+    def _evaluate(cls):
+        for base in reversed(cls.__mro__):
             if base in (ProtoStruct, object):
                 continue
             if getattr(base, '__proto_evaluated__', False):
@@ -263,6 +264,7 @@ class ProtoStruct:
         pb_dict: Proto = proto_decode(data, 0).proto
 
         kwargs = {}
+        cls._evaluate()
         for _, field in cls.__fields__.items():
             if field.tag not in pb_dict:
                 if (de := field.get_default()) is not MISSING:
