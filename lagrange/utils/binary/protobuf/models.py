@@ -96,55 +96,73 @@ def proto_field(
     return ProtoField(tag, default, default_factory)
 
 
+def _decode(typ: type[_ProtoTypes], raw):
+    if isinstance(typ, str):
+        raise ValueError("ForwardRef not resolved. Please call ProtoStruct.update_forwardref() before decoding")
+    if issubclass(typ, ProtoStruct):
+        return typ.decode(raw)
+    elif typ is str:
+        return raw.decode(errors="ignore")
+    elif typ is dict:
+        return proto_decode(raw).proto
+    elif typ is bool:
+        return raw == 1
+    elif typ is list:
+        if not isinstance(raw, list):
+            return [raw]
+        return raw
+    elif isinstance(typ, GenericAlias) and get_origin(typ) is list:
+        real_typ = get_args(typ)[0]
+        ret = []
+        if isinstance(raw, list):
+            for v in raw:
+                ret.append(_decode(real_typ, v))
+        else:
+            ret.append(_decode(real_typ, raw))
+        return ret
+    elif isinstance(raw, typ):
+        return raw
+    else:
+        raise NotImplementedError(f"unknown type '{typ}' and data {raw}")
+
+
+def check_type(value: Any, typ: Any) -> bool:
+    if isinstance(typ, str):
+        raise ValueError("ForwardRef not resolved. Please call ProtoStruct.update_forwardref() before decoding")
+    if typ is Any:
+        return True
+    if typ is list:
+        return isinstance(value, list)
+    if typ is dict:
+        return isinstance(value, dict)
+    if isinstance(typ, GenericAlias):
+        if get_origin(typ) is list:
+            return all(check_type(v, get_args(typ)[0]) for v in value)
+        if get_origin(typ) is dict:
+            return all(check_type(k, get_args(typ)[0]) and check_type(v, get_args(typ)[1]) for k, v in value.items())
+        return False
+    if get_origin(typ) is Union:  # Should Only be Optional
+        return check_type(value, get_args(typ)[0]) if value is not None else True
+    if isinstance(value, typ):
+        return True
+    return False  # or True if value is None else False
+
+
 @dataclass_transform(kw_only_default=True, field_specifiers=(proto_field,))
 class ProtoStruct:
-    __fields__: ClassVar[dict[str, ProtoField]]
+    __proto_fields__: ClassVar[dict[str, ProtoField]]
     __proto_debug__: ClassVar[bool]
     __proto_evaluated__: ClassVar[bool] = False
 
-    def check_type(self, value: Any, typ: Any) -> bool:
-        if typ is Any:
-            return True
-        if typ is list:
-            return isinstance(value, list)
-        if typ is dict:
-            return isinstance(value, dict)
-        if isinstance(typ, GenericAlias):
-            if get_origin(typ) is list:
-                return all(self.check_type(v, get_args(typ)[0]) for v in value)
-            if get_origin(typ) is dict:
-                return all(self.check_type(k, get_args(typ)[0]) and self.check_type(v, get_args(typ)[1]) for k, v in value.items())
-            return False
-        if get_origin(typ) is Union:  # Should Only be Optional
-            return self.check_type(value, get_args(typ)[0]) if value is not None else True
-        if isinstance(value, typ):
-            return True
-        return False  # or True if value is None else False
-
-    @classmethod
-    def _evaluate(cls):
-        for base in reversed(cls.__mro__):
-            if base in (ProtoStruct, object):
-                continue
-            if getattr(base, '__proto_evaluated__', False):
-                continue
-            base_globals = getattr(sys.modules.get(base.__module__, None), '__dict__', {})
-            base_locals = dict(vars(base))
-            base_globals, base_locals = base_locals, base_globals
-            for field in base.__fields__.values():
-                if isinstance(field.type, str):
-                    field.type = ForwardRef(field.type, is_argument=False, is_class=True)._evaluate(
-                        base_globals, base_locals, recursive_guard=frozenset()
-                    )
-            base.__proto_evaluated__ = True
-
-    def __init__(self, **kwargs):
-        undefined_params: list[str] = []
+    def __init__(self, __from_raw: bool = False, **kwargs):
+        undefined_params: list[ProtoField] = []
         self._evaluate()
-        for name, field in self.__fields__.items():
+        for name, field in self.__proto_fields__.items():
             if name in kwargs:
                 value = kwargs.pop(name)
-                if not self.check_type(value, field.type):
+                if __from_raw:
+                    value = _decode(field.type_without_optional, value)
+                if not check_type(value, field.type):
                     raise TypeError(
                         f"'{value}' is not a instance of type '{field.type}'"
                     )
@@ -153,16 +171,22 @@ class ProtoStruct:
                 if (de := field.get_default()) is not MISSING:
                     setattr(self, name, de)
                 else:
-                    undefined_params.append(name)
+                    undefined_params.append(field)
         if undefined_params:
             raise AttributeError(
-                f"Undefined parameters in '{self}': {undefined_params}"
+                f"Missing required parameters: {', '.join(f'{f.name}({f.tag})' for f in undefined_params)}"
             )
-        super().__init__(**kwargs)
 
     @classmethod
     def _process_field(cls):
         fields = {}
+
+        for b in cls.__mro__[-1:0:-1]:
+            base_fields = getattr(b, "__proto_fields__", None)
+            if base_fields is not None:
+                for f in base_fields.values():
+                    fields[f.name] = f
+
         cls_annotations = cls.__dict__.get('__annotations__', {})
         cls_fields: list[ProtoField] = []
         for name, typ in cls_annotations.items():
@@ -181,7 +205,34 @@ class ProtoStruct:
             if isinstance(value, ProtoField) and not name in cls_annotations:
                 raise TypeError(f'{name!r} is a proto_field but has no type annotation')
 
-        cls.__fields__ = fields
+        cls.__proto_fields__ = fields
+
+    @classmethod
+    def _evaluate(cls):
+        for base in reversed(cls.__mro__):
+            if base in (ProtoStruct, object):
+                continue
+            if getattr(base, '__proto_evaluated__', False):
+                continue
+            base_globals = getattr(sys.modules.get(base.__module__, None), '__dict__', {})
+            base_locals = dict(vars(base))
+            base_globals, base_locals = base_locals, base_globals
+            for field in base.__proto_fields__.values():
+                if isinstance(field.type, str):
+                    try:
+                        field.type = ForwardRef(field.type, is_argument=False, is_class=True)._evaluate(
+                            base_globals, base_locals, recursive_guard=frozenset()
+                        )
+                    except NameError:
+                        pass
+            base.__proto_evaluated__ = True
+
+    @classmethod
+    def update_forwardref(cls, mapping: dict[str, "type[ProtoStruct]"]):
+        """更新 ForwardRef"""
+        for field in cls.__proto_fields__.values():
+            if isinstance(field.type, str) and field.type in mapping:
+                field.type = mapping[field.type]
 
     def __init_subclass__(cls, **kwargs):
         cls.__proto_debug__ = kwargs.pop("debug") if "debug" in kwargs else False
@@ -196,66 +247,24 @@ class ProtoStruct:
             attrs += f"{k}={v!r}, "
         return f"{self.__class__.__name__}({attrs})"
 
-
-    # @classmethod
-    # def _get_field_mapping(cls) -> dict[int, tuple[str, type[_ProtoTypes]]]:  # Tag, (Name, Type)
-    #     field_mapping: dict[int, tuple[str, type[_ProtoTypes]]] = {}
-    #     for name, (typ, field) in cls._anno_map.items():
-    #         field_mapping[field.tag] = (name, typ)
-    #     return field_mapping
-
-    # def _get_stored_mapping(self) -> dict[str, NT]:
-    #     stored_mapping: dict[str, NT] = {}
-    #     for name, (_, _) in self._anno_map.items():
-    #         stored_mapping[name] = getattr(self, name)
-    #     return stored_mapping
-
-    def _encode(self, v: _ProtoTypes) -> NT:
-        if isinstance(v, ProtoStruct):
-            v = v.encode()
-        return v  # type: ignore
-
     def encode(self) -> bytes:
         pb_dict: NT = {}
-        for name, field in self.__fields__.items():
+
+        def _encode(v: _ProtoTypes) -> NT:
+            if isinstance(v, ProtoStruct):
+                v = v.encode()
+            return v  # type: ignore
+
+        for name, field in self.__proto_fields__.items():
             tag = field.tag
             if tag in pb_dict:
                 raise ValueError(f"duplicate tag: {tag}")
             value: _ProtoTypes = getattr(self, name)
             if isinstance(value, list):
-                pb_dict[tag] = [self._encode(v) for v in value]
+                pb_dict[tag] = [_encode(v) for v in value]
             else:
-                pb_dict[tag] = self._encode(value)
+                pb_dict[tag] = _encode(value)
         return proto_encode(cast(Proto, pb_dict))
-
-    @classmethod
-    def _decode(cls, typ: type[_ProtoTypes], value):
-        if issubclass(typ, ProtoStruct):
-            return typ.decode(value)
-        elif typ is str:
-            return value.decode(errors="ignore")
-        elif typ is dict:
-            return proto_decode(value).proto
-        elif typ is bool:
-            return value == 1
-        elif typ is list:
-            if not isinstance(value, list):
-                return [value]
-            return value
-        elif isinstance(typ, GenericAlias):
-            if typ.__name__.lower() == "list":
-                real_typ = typ.__args__[0]
-                ret = []
-                if isinstance(value, list):
-                    for v in value:
-                        ret.append(cls._decode(real_typ, v))
-                else:
-                    ret.append(cls._decode(real_typ, value))
-                return ret
-        elif isinstance(value, typ):
-            return value
-        else:
-            raise NotImplementedError(f"unknown type '{typ}' and data {value}")
 
     @classmethod
     def decode(cls, data: bytes) -> Self:
@@ -263,17 +272,12 @@ class ProtoStruct:
             return None  # type: ignore
         pb_dict: Proto = proto_decode(data, 0).proto
 
-        kwargs = {}
-        cls._evaluate()
-        for _, field in cls.__fields__.items():
-            if field.tag not in pb_dict:
-                if (de := field.get_default()) is not MISSING:
-                    kwargs[field.name] = de
-                    continue
+        kwargs = {
+            field.name: pb_dict.pop(field.tag)
+            for field in cls.__proto_fields__.values()
+            if field.tag in pb_dict
+        }
 
-                raise KeyError(f"tag {field.tag} not found in '{cls.__name__}'")
-            kwargs[field.name] = cls._decode(field.type_without_optional, pb_dict.pop(field.tag))
         if pb_dict and cls.__proto_debug__:  # unhandled tags
             pass
-
-        return cls(**kwargs)
+        return cls(True, **kwargs)

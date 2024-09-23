@@ -53,7 +53,7 @@ class NotOnlineImage(ProtoStruct):
     width: int = proto_field(9)
     res_id: str = proto_field(10)
     origin_path: Optional[str] = proto_field(15, default=None)
-    args: ImageReserveArgs = proto_field(34, default=ImageReserveArgs())
+    args: ImageReserveArgs = proto_field(34, default_factory=ImageReserveArgs)
 
 
 class TransElem(ProtoStruct):
@@ -90,7 +90,7 @@ class CustomFace(ProtoStruct):
     width: int = proto_field(22)
     height: int = proto_field(23)
     size: int = proto_field(25)
-    args: ImageReserveArgs = proto_field(34, default=ImageReserveArgs())
+    args: ImageReserveArgs = proto_field(34, default_factory=ImageReserveArgs)
 
 
 class ExtraInfo(ProtoStruct):

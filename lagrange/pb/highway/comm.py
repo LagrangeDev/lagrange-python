@@ -34,9 +34,9 @@ class AudioExtInfo(ProtoStruct):
 
 
 class ExtBizInfo(ProtoStruct):
-    pic: PicExtInfo = proto_field(1, default=PicExtInfo())
-    video: VideoExtInfo = proto_field(2, default=VideoExtInfo())
-    audio: AudioExtInfo = proto_field(3, default=AudioExtInfo())
+    pic: PicExtInfo = proto_field(1, default_factory=PicExtInfo)
+    video: VideoExtInfo = proto_field(2, default_factory=VideoExtInfo)
+    audio: AudioExtInfo = proto_field(3, default_factory=AudioExtInfo)
     bus_type: Optional[int] = proto_field(4, default=None)
 
 

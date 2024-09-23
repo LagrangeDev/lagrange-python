@@ -63,13 +63,13 @@ class DownloadVideoExt(ProtoStruct):
 
 class DownloadExt(ProtoStruct):
     pic_ext: Optional[bytes] = proto_field(1, default=None)
-    video_ext: DownloadVideoExt = proto_field(2, default=DownloadVideoExt())
+    video_ext: DownloadVideoExt = proto_field(2, default_factory=DownloadVideoExt)
     ptt_ext: Optional[bytes] = proto_field(3, default=None)
 
 
 class DownloadReq(ProtoStruct):
     node: IndexNode = proto_field(1)
-    ext: DownloadExt = proto_field(2, default=DownloadExt())
+    ext: DownloadExt = proto_field(2, default_factory=DownloadExt)
 
 
 class NTV2RichMediaReq(ProtoStruct):

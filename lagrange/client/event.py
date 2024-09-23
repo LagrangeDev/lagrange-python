@@ -32,7 +32,7 @@ class Events:
         try:
             await handler(client, event)
         except Exception as e:
-            log.root.error(
+            log.root.exception(
                 f"Unhandled exception on task {event}", exc_info=e
             )
 
