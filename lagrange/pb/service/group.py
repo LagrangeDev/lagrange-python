@@ -396,7 +396,7 @@ class GrpInfo(ProtoStruct):
 
 
 class GetGrpListResponse(ProtoStruct):
-    grp_list: list[GrpInfo] = proto_field(2, default=[])
+    grp_list: list[GrpInfo] = proto_field(2, default_factory=list)
 
 
 class PBGetInfoFromUidReq(ProtoStruct):
@@ -425,8 +425,8 @@ class GetInfoRspF2(ProtoStruct):
 
 
 class GetInfoRspField(ProtoStruct, debug=True):
-    int_t: list[GetInfoRspF1] = proto_field(1, default=[])
-    str_t: list[GetInfoRspF2] = proto_field(2, default=[])
+    int_t: list[GetInfoRspF1] = proto_field(1, default_factory=list)
+    str_t: list[GetInfoRspF2] = proto_field(2, default_factory=list)
 
 
 class GetInfoRspBody(ProtoStruct):

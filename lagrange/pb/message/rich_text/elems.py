@@ -110,7 +110,7 @@ class SrcMsg(ProtoStruct):
     seq: int = proto_field(1)
     uin: int = proto_field(2, default=0)
     timestamp: int = proto_field(3)
-    elems: list[dict] = proto_field(5, default=[{}])
+    elems: list[dict] = proto_field(5, default_factory=lambda: [{}])
     pb_reserved: Optional[SrcMsgArgs] = proto_field(8, default=None)
     to_uin: int = proto_field(10, default=0)
 
