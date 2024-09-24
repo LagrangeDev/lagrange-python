@@ -34,6 +34,7 @@ from ..events.group import (
     GroupReaction,
     GroupSign,
     GroupAlbumUpdate,
+    GroupInviteAccept
 )
 from ..wtlogin.sso import SSOPacket
 from .log import logger
@@ -106,6 +107,12 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         attrs[k.decode()] = int(v.decode())
                     else:
                         attrs[k.decode()] = v.decode()
+                if pb.body.type == 1:
+                    return GroupInviteAccept(
+                        grp_id,
+                        attrs["invitor"],
+                        attrs["invitee"]
+                    )
                 if pb.body.type == 12:
                     return GroupNudge(
                         grp_id,
