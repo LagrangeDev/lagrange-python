@@ -41,8 +41,8 @@ class DownloadInfo(ProtoStruct):
     domain: str = proto_field(1)
     url_path: str = proto_field(2)
     https_port: Optional[int] = proto_field(3, default=None)
-    v4_addrs: list[IPv4] = proto_field(4, default=[])
-    v6_addrs: list[IPv6] = proto_field(5, default=[])
+    v4_addrs: list[IPv4] = proto_field(4, default_factory=list)
+    v6_addrs: list[IPv6] = proto_field(5, default_factory=list)
     pic_info: Optional[PicUrlExtInfo] = proto_field(6, default=None)
     video_info: Optional[VideoExtInfo] = proto_field(7, default=None)
 

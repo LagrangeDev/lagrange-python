@@ -45,7 +45,7 @@ class PBGetFriendListRequest(ProtoStruct):
     f7: int = proto_field(7, default=2147483647)  # MaxValue
     body: list[GetFriendBody] = proto_field(
         10001,
-        default=[
+        default_factory=lambda: [
             GetFriendBody(type=1, f2=GetFriendNumbers(f1=[103, 102, 20002, 27394])),
             GetFriendBody(type=4, f2=GetFriendNumbers(f1=[100, 101, 102])),
         ],

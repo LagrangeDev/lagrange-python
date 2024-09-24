@@ -9,6 +9,7 @@ from .utils.log import install_loguru as install_loguru
 from .utils.sign import sign_provider
 from .info import InfoManager
 from .info.app import app_list
+from .utils.binary.protobuf.models import evaluate_all
 
 
 class Lagrange:
@@ -66,3 +67,6 @@ class Lagrange:
             log.root.info("Program exited by user")
         else:
             log.root.info("Program exited normally")
+
+
+evaluate_all()

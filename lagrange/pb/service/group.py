@@ -319,6 +319,12 @@ class MemberInfoLevel(ProtoStruct):
     num: int = proto_field(2)
 
 
+class GetGrpMemberInfoRsp(ProtoStruct):
+    grp_id: int = proto_field(1)
+    body: "list[GetGrpMemberInfoRspBody]" = proto_field(2)
+    next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
+
+
 class GetGrpMemberInfoRspBody(ProtoStruct):
     account: AccountInfo = proto_field(1)
     nickname: str = proto_field(10, default="")
@@ -340,12 +346,6 @@ class GetGrpMemberInfoRspBody(ProtoStruct):
     @property
     def is_owner(self) -> bool:
         return not self.is_admin and self.permission == 2
-
-
-class GetGrpMemberInfoRsp(ProtoStruct):
-    grp_id: int = proto_field(1)
-    body: list[GetGrpMemberInfoRspBody] = proto_field(2)
-    next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
 
 
 class GetGrpListReqBody(ProtoStruct):
@@ -396,7 +396,7 @@ class GrpInfo(ProtoStruct):
 
 
 class GetGrpListResponse(ProtoStruct):
-    grp_list: list[GrpInfo] = proto_field(2, default=[])
+    grp_list: list[GrpInfo] = proto_field(2, default_factory=list)
 
 
 class PBGetInfoFromUidReq(ProtoStruct):
@@ -425,17 +425,17 @@ class GetInfoRspF2(ProtoStruct):
 
 
 class GetInfoRspField(ProtoStruct, debug=True):
-    int_t: list[GetInfoRspF1] = proto_field(1, default=[])
-    str_t: list[GetInfoRspF2] = proto_field(2, default=[])
+    int_t: list[GetInfoRspF1] = proto_field(1, default_factory=list)
+    str_t: list[GetInfoRspF2] = proto_field(2, default_factory=list)
+
+
+class GetInfoFromUidRsp(ProtoStruct):
+    body: list["GetInfoRspBody"] = proto_field(1)
 
 
 class GetInfoRspBody(ProtoStruct):
     uid: str = proto_field(1)
     fields: GetInfoRspField = proto_field(2)
-
-
-class GetInfoFromUidRsp(ProtoStruct):
-    body: list[GetInfoRspBody] = proto_field(1)
 
 
 class Oidb88D0Args(ProtoStruct):

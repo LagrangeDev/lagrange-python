@@ -111,6 +111,13 @@ class GroupSub16Head(ProtoStruct):
     f44: Optional[PBGroupReaction] = proto_field(44, default=None)  # set reaction only
 
 
+class GroupSub20Head(ProtoStruct):
+    f1: int = proto_field(1)  # 20
+    grp_id: int = proto_field(4)
+    f13: int = proto_field(13)  # 19
+    body: "GroupSub20Body" = proto_field(26)
+
+
 class GroupSub20Body(ProtoStruct):
     type: int = proto_field(1)  # 12: nudge, 14: group_sign
     # f2: int = proto_field(2)  # 1061
@@ -119,13 +126,6 @@ class GroupSub20Body(ProtoStruct):
     attrs: list[dict] = proto_field(7, default_factory=list)
     attrs_xml: str = proto_field(8, default=None)
     f10: int = proto_field(10)  # rand?
-
-
-class GroupSub20Head(ProtoStruct):
-    f1: int = proto_field(1)  # 20
-    grp_id: int = proto_field(4)
-    f13: int = proto_field(13)  # 19
-    body: GroupSub20Body = proto_field(26)
 
 
 class PBGroupAlbumUpdateBody(ProtoStruct):
