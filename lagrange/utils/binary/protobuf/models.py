@@ -1,10 +1,10 @@
-import sys
 from dataclasses import MISSING
 from types import GenericAlias
-from typing import cast, TypeVar, Union, Any, Callable, overload, get_origin, ForwardRef, get_args
+from typing import cast, TypeVar, Union, Any, Callable, overload, get_origin, get_args, get_type_hints
 from collections.abc import Mapping
 from typing_extensions import Self, TypeAlias, dataclass_transform
 from typing import Optional, ClassVar
+import typing
 
 from .coder import Proto, proto_decode, proto_encode
 
@@ -14,6 +14,13 @@ T = TypeVar("T", bound=_ProtoTypes)
 V = TypeVar("V")
 NT: TypeAlias = dict[int, Union[_ProtoTypes, "NT"]]
 NoneType = type(None)
+
+
+def _get_all_args(tp):
+    if args := get_args(tp):
+        for arg in args:
+            yield from _get_all_args(arg)
+        yield from args
 
 
 class ProtoField:
@@ -26,10 +33,15 @@ class ProtoField:
         self.tag = tag
         self._default = default
         self._default_factory = default_factory
+        self._unevaluated = False
 
     def ensure_annotation(self, name: str, type_: Any) -> None:
         self.name = name
         self.type = type_
+        if isinstance(type_, str):
+            self._unevaluated = True
+        elif (args := [*_get_all_args(type_)]) and any(isinstance(a, str) for a in args):
+            self._unevaluated = True
 
     def get_default(self) -> Any:
         if self._default is not MISSING:
@@ -98,7 +110,10 @@ def proto_field(
 
 def _decode(typ: type[_ProtoTypes], raw):
     if isinstance(typ, str):
-        raise ValueError("ForwardRef not resolved. Please call ProtoStruct.update_forwardref() before decoding")
+        raise ValueError(
+            f"ForwardRef '{typ}' not resolved. "
+            f"Please call ProtoStruct.update_forwardref({{'{typ}': {typ}}}) before decoding"
+        )
     if issubclass(typ, ProtoStruct):
         return typ.decode(raw)
     elif typ is str:
@@ -128,7 +143,10 @@ def _decode(typ: type[_ProtoTypes], raw):
 
 def check_type(value: Any, typ: Any) -> bool:
     if isinstance(typ, str):
-        raise ValueError("ForwardRef not resolved. Please call ProtoStruct.update_forwardref() before decoding")
+        raise ValueError(
+            f"ForwardRef '{typ}' not resolved. "
+            f"Please call ProtoStruct.update_forwardref({{'{typ}': {typ}}}) before decoding"
+        )
     if typ is Any:
         return True
     if typ is list:
@@ -154,7 +172,7 @@ class ProtoStruct:
     __proto_debug__: ClassVar[bool]
     __proto_evaluated__: ClassVar[bool] = False
 
-    def __init__(self, __from_raw: bool = False, **kwargs):
+    def __init__(self, __from_raw: bool = False, /, **kwargs):
         undefined_params: list[ProtoField] = []
         self._evaluate()
         for name, field in self.__proto_fields__.items():
@@ -214,25 +232,21 @@ class ProtoStruct:
                 continue
             if getattr(base, '__proto_evaluated__', False):
                 continue
-            base_globals = getattr(sys.modules.get(base.__module__, None), '__dict__', {})
-            base_locals = dict(vars(base))
-            base_globals, base_locals = base_locals, base_globals
+            try:
+                annotations = get_type_hints(base)
+            except NameError:
+                annotations = {}
             for field in base.__proto_fields__.values():
-                if isinstance(field.type, str):
-                    try:
-                        field.type = ForwardRef(field.type, is_argument=False, is_class=True)._evaluate(
-                            base_globals, base_locals, recursive_guard=frozenset()
-                        )
-                    except NameError:
-                        pass
+                if field._unevaluated and field.name in annotations:
+                    field.type = annotations[field.name]
             base.__proto_evaluated__ = True
 
     @classmethod
     def update_forwardref(cls, mapping: dict[str, "type[ProtoStruct]"]):
         """更新 ForwardRef"""
         for field in cls.__proto_fields__.values():
-            if isinstance(field.type, str) and field.type in mapping:
-                field.type = mapping[field.type]
+            if field._unevaluated:
+                field.type = typing._eval_type(field.type, mapping, mapping)  # type: ignore
 
     def __init_subclass__(cls, **kwargs):
         cls.__proto_debug__ = kwargs.pop("debug") if "debug" in kwargs else False

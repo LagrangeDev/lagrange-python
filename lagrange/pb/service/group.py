@@ -319,6 +319,12 @@ class MemberInfoLevel(ProtoStruct):
     num: int = proto_field(2)
 
 
+class GetGrpMemberInfoRsp(ProtoStruct):
+    grp_id: int = proto_field(1)
+    body: list["GetGrpMemberInfoRspBody"] = proto_field(2)
+    next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
+
+
 class GetGrpMemberInfoRspBody(ProtoStruct):
     account: AccountInfo = proto_field(1)
     nickname: str = proto_field(10, default="")
@@ -340,12 +346,6 @@ class GetGrpMemberInfoRspBody(ProtoStruct):
     @property
     def is_owner(self) -> bool:
         return not self.is_admin and self.permission == 2
-
-
-class GetGrpMemberInfoRsp(ProtoStruct):
-    grp_id: int = proto_field(1)
-    body: list[GetGrpMemberInfoRspBody] = proto_field(2)
-    next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
 
 
 class GetGrpListReqBody(ProtoStruct):
