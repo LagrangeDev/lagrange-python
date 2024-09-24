@@ -321,7 +321,7 @@ class MemberInfoLevel(ProtoStruct):
 
 class GetGrpMemberInfoRsp(ProtoStruct):
     grp_id: int = proto_field(1)
-    body: list["GetGrpMemberInfoRspBody"] = proto_field(2)
+    body: "list[GetGrpMemberInfoRspBody]" = proto_field(2)
     next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
 
 
@@ -429,13 +429,13 @@ class GetInfoRspField(ProtoStruct, debug=True):
     str_t: list[GetInfoRspF2] = proto_field(2, default_factory=list)
 
 
+class GetInfoFromUidRsp(ProtoStruct):
+    body: list["GetInfoRspBody"] = proto_field(1)
+
+
 class GetInfoRspBody(ProtoStruct):
     uid: str = proto_field(1)
     fields: GetInfoRspField = proto_field(2)
-
-
-class GetInfoFromUidRsp(ProtoStruct):
-    body: list[GetInfoRspBody] = proto_field(1)
 
 
 class Oidb88D0Args(ProtoStruct):

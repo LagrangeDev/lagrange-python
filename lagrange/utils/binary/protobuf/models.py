@@ -1,6 +1,7 @@
+import sys
 from dataclasses import MISSING
 from types import GenericAlias
-from typing import cast, TypeVar, Union, Any, Callable, overload, get_origin, get_args, get_type_hints
+from typing import cast, TypeVar, Union, Any, Callable, overload, get_origin, get_args, ForwardRef
 from collections.abc import Mapping
 from typing_extensions import Self, TypeAlias, dataclass_transform
 from typing import Optional, ClassVar
@@ -31,8 +32,8 @@ class ProtoField:
         if tag <= 0:
             raise ValueError("Tag must be a positive integer")
         self.tag = tag
-        self._default = default
-        self._default_factory = default_factory
+        self.default = default
+        self.default_factory = default_factory
         self._unevaluated = False
 
     def ensure_annotation(self, name: str, type_: Any) -> None:
@@ -44,10 +45,10 @@ class ProtoField:
             self._unevaluated = True
 
     def get_default(self) -> Any:
-        if self._default is not MISSING:
-            return self._default
-        elif self._default_factory is not MISSING:
-            return self._default_factory()
+        if self.default is not MISSING:
+            return self.default
+        elif self.default_factory is not MISSING:
+            return self.default_factory()
         return MISSING
 
     @property
@@ -166,15 +167,16 @@ def check_type(value: Any, typ: Any) -> bool:
     return False  # or True if value is None else False
 
 
+_unevaluated_classes: set[type["ProtoStruct"]] = set()
+
+
 @dataclass_transform(kw_only_default=True, field_specifiers=(proto_field,))
 class ProtoStruct:
     __proto_fields__: ClassVar[dict[str, ProtoField]]
     __proto_debug__: ClassVar[bool]
-    __proto_evaluated__: ClassVar[bool] = False
 
     def __init__(self, __from_raw: bool = False, /, **kwargs):
         undefined_params: list[ProtoField] = []
-        self._evaluate()
         for name, field in self.__proto_fields__.items():
             if name in kwargs:
                 value = kwargs.pop(name)
@@ -212,11 +214,13 @@ class ProtoStruct:
             if field is MISSING:
                 raise TypeError(f'{name!r} should define its proto_field!')
             field.ensure_annotation(name, typ)
+            if field._unevaluated:
+                _unevaluated_classes.add(cls)
             cls_fields.append(field)
 
         for f in cls_fields:
             fields[f.name] = f
-            if f._default is MISSING:
+            if f.default is MISSING:
                 delattr(cls, f.name)
 
         for name, value in cls.__dict__.items():
@@ -226,27 +230,19 @@ class ProtoStruct:
         cls.__proto_fields__ = fields
 
     @classmethod
-    def _evaluate(cls):
-        for base in reversed(cls.__mro__):
-            if base in (ProtoStruct, object):
-                continue
-            if getattr(base, '__proto_evaluated__', False):
-                continue
-            try:
-                annotations = get_type_hints(base)
-            except NameError:
-                annotations = {}
-            for field in base.__proto_fields__.values():
-                if field._unevaluated and field.name in annotations:
-                    field.type = annotations[field.name]
-            base.__proto_evaluated__ = True
-
-    @classmethod
     def update_forwardref(cls, mapping: dict[str, "type[ProtoStruct]"]):
         """更新 ForwardRef"""
         for field in cls.__proto_fields__.values():
-            if field._unevaluated:
-                field.type = typing._eval_type(field.type, mapping, mapping)  # type: ignore
+            if not field._unevaluated:
+                continue
+            try:
+                typ = field.type
+                if isinstance(typ, str):
+                    typ = ForwardRef(typ, is_argument=False, is_class=True)
+                field.type = typing._eval_type(typ, mapping, mapping)  # type: ignore
+                field._unevaluated = False
+            except NameError:
+                pass
 
     def __init_subclass__(cls, **kwargs):
         cls.__proto_debug__ = kwargs.pop("debug") if "debug" in kwargs else False
@@ -295,3 +291,21 @@ class ProtoStruct:
         if pb_dict and cls.__proto_debug__:  # unhandled tags
             pass
         return cls(True, **kwargs)
+
+
+def evaluate_all():
+    modules = set()
+    for cls in _unevaluated_classes:
+        modules.add(cls.__module__)
+        for base in cls.__mro__[-1:0:-1][2:]:
+            modules.add(base.__module__)
+    globalns = {}
+    for module in modules:
+        globalns.update(getattr(sys.modules.get(module, None), "__dict__", {}))
+    for cls in _unevaluated_classes:
+        cls.update_forwardref(globalns)
+    _unevaluated_classes.clear()
+    modules.clear()
+    globalns.clear()
+    del modules
+    del globalns
