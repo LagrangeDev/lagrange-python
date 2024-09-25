@@ -17,6 +17,9 @@ from lagrange.pb.status.group import (
     PBGroupAlbumUpdate,
     PBGroupInvite,
 )
+from lagrange.pb.status.friend import (
+    PBFriendRecall
+)
 from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct, proto_encode
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.operator import unpack_dict, timestamp
@@ -34,6 +37,10 @@ from ..events.group import (
     GroupReaction,
     GroupSign,
     GroupAlbumUpdate,
+    GroupInviteAccept
+)
+from ..events.friend import (
+    FriendRecall
 )
 from ..wtlogin.sso import SSOPacket
 from .log import logger
@@ -90,7 +97,18 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         if pb.cmd == 87:
             inn = pb.info.inner
             return GroupMemberJoinRequest(grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid)
-    elif typ == 0x210:  # friend event / group file upload notice event
+    elif typ == 0x210:  # friend event, 528 / group file upload notice event
+        if sub_typ == 138: # friend recall
+            pb = PBFriendRecall.decode(pkg.message.buf2)
+            return FriendRecall(
+                pkg.response_head.from_uin,
+                pb.info.from_uid,
+                pkg.response_head.to_uin,
+                pb.info.to_uid,
+                pb.info.seq,
+                pb.info.random,
+                pb.info.time
+            )
         logger.debug(f"unhandled friend event / group file upload notice event: {pkg}")  # TODO: paste
     elif typ == 0x2DC:  # grp event, 732
         if sub_typ == 20:  # nudge and group_sign(群打卡)
@@ -106,6 +124,12 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         attrs[k.decode()] = int(v.decode())
                     else:
                         attrs[k.decode()] = v.decode()
+                if pb.body.type == 1:
+                    return GroupInviteAccept(
+                        grp_id,
+                        attrs["invitor"],
+                        attrs["invitee"]
+                    )
                 if pb.body.type == 12:
                     return GroupNudge(
                         grp_id,
