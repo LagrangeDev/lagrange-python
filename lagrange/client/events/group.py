@@ -150,6 +150,6 @@ class GroupInvite(GroupEvent):
 
 
 @dataclass
-class GroupInviteAccept(GroupEvent):
+class GroupMemberJoinedByInvite(GroupEvent):
     invitor_uin: int
     uin: int

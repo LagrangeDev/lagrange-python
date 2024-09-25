@@ -37,7 +37,7 @@ from ..events.group import (
     GroupReaction,
     GroupSign,
     GroupAlbumUpdate,
-    GroupInviteAccept
+    GroupMemberJoinedByInvite
 )
 from ..events.friend import (
     FriendRecall
@@ -127,7 +127,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 if pb.body.type == 1:
                     if "invitor" in attrs:
                         # reserve: attrs["msg_nums"]
-                        return GroupInviteAccept(
+                        return GroupMemberJoinedByInvite(
                             grp_id,
                             attrs["invitor"],
                             attrs["invitee"]
