@@ -23,3 +23,10 @@ class FriendMessage(FriendEvent):
     timestamp: int
     msg: str
     msg_chain: list[Element]
+
+
+@dataclass
+class FriendRecall(FriendEvent):
+    seq: int
+    msg_id: int
+    timestamp: int
