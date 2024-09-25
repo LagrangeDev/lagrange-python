@@ -125,12 +125,19 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                     else:
                         attrs[k.decode()] = v.decode()
                 if pb.body.type == 1:
-                    return GroupInviteAccept(
-                        grp_id,
-                        attrs["invitor"],
-                        attrs["invitee"]
-                    )
-                if pb.body.type == 12:
+                    if "invitor" in attrs:
+                        # reserve: attrs["msg_nums"]
+                        return GroupInviteAccept(
+                            grp_id,
+                            attrs["invitor"],
+                            attrs["invitee"]
+                        )
+                    elif "user" in attrs and "uin" in attrs:
+                        # todo: 群代办
+                        pass
+                    else:
+                        raise TypeError(f"Unhandled GrayTips with attribute: {attrs}")
+                elif pb.body.type == 12:
                     return GroupNudge(
                         grp_id,
                         attrs["uin_str1"],
