@@ -30,3 +30,10 @@ class FriendRecall(FriendEvent):
     seq: int
     msg_id: int
     timestamp: int
+
+@dataclass
+class FriendRequest(FriendEvent):
+    from_uid: str
+    to_uid: str
+    message: str
+    source: str
