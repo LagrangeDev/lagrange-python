@@ -178,3 +178,13 @@ class File(Text):
     @classmethod
     def pri_paste_build(cls, file_size: int, file_name: str, file_md5: bytes, file_uuid: str, file_hash: str) -> "File":
         return cls._paste_build(file_size, file_name, file_md5, file_uuid=file_uuid, file_hash=file_hash)
+
+
+@dataclass
+class GreyTips(Text):
+    """
+    奇怪的整活元素
+    建议搭配Text使用
+    冷却3分钟左右？
+    """
+    ...

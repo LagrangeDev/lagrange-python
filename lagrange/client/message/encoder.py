@@ -1,3 +1,4 @@
+import json
 import struct
 import zlib
 from typing import Optional
@@ -16,6 +17,8 @@ from lagrange.pb.message.rich_text.elems import (
     MarketFace as PBMarketFace,
     NotOnlineImage,
     SrcMsgArgs,
+    PBGreyTips,
+    GeneralFlags,
 )
 from lagrange.pb.message.rich_text.elems import Text as PBText
 
@@ -33,6 +36,7 @@ from .elems import (
     Text,
     Poke,
     MarketFace,
+    GreyTips,
 )
 from .types import Element
 
@@ -172,6 +176,20 @@ def build_message(msg_chain: list[Element], compatible=True) -> RichText:
                             width=msg.width,
                             height=msg.height,
                             pb_reserved={1: {1: msg.width, 2: msg.height}, 8: 1},
+                        )
+                    )
+                )
+            elif isinstance(msg, GreyTips):
+                content = json.dumps({
+                    "gray_tip": msg.text,
+                    "object_type": 3,
+                    "sub_type": 2,
+                    "type": 4,
+                })
+                msg_pb.append(
+                    Elems(
+                        general_flags=GeneralFlags(
+                            PbReserve=PBGreyTips.build(content).encode()
                         )
                     )
                 )

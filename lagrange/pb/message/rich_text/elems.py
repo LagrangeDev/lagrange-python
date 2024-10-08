@@ -196,3 +196,47 @@ class GroupFileExtra(ProtoStruct):
     file_name: str = proto_field(2)
     display: str = proto_field(3)
     inner: GroupFileExtraInner = proto_field(7)
+
+
+class GeneralFlags(ProtoStruct):
+    BubbleDiyTextId: Optional[int] = proto_field(1, default=None)
+    GroupFlagNew: Optional[int] = proto_field(2, default=None)
+    Uin: Optional[int] = proto_field(3, default=None)
+    RpId: Optional[bytes] = proto_field(4, default=None)
+    PrpFold: Optional[int] = proto_field(5, default=None)
+    LongTextFlag: Optional[int] = proto_field(6, default=None)
+    LongTextResId: Optional[str] = proto_field(7, default=None)
+    GroupType: Optional[int] = proto_field(8, default=None)
+    ToUinFlag: Optional[int] = proto_field(9, default=None)
+    GlamourLevel: Optional[int] = proto_field(10, default=None)
+    MemberLevel: Optional[int] = proto_field(11, default=None)
+    GroupRankSeq: Optional[int] = proto_field(12, default=None)
+    OlympicTorch: Optional[int] = proto_field(13, default=None)
+    BabyqGuideMsgCookie: Optional[bytes] = proto_field(14, default=None)
+    Uin32ExpertFlag: Optional[int] = proto_field(15, default=None)
+    BubbleSubId: Optional[int] = proto_field(16, default=None)
+    PendantId: Optional[int] = proto_field(17, default=None)
+    RpIndex: Optional[bytes] = proto_field(18, default=None)
+    PbReserve: Optional[bytes] = proto_field(19)
+
+
+class GreyTipsExtraInfo(ProtoStruct):
+    typ: int = proto_field(1, default=1)
+    content: str = proto_field(2)  # json
+
+
+class GreyTipsExtra(ProtoStruct):
+    body: GreyTipsExtraInfo = proto_field(1)
+
+class PBGreyTips(ProtoStruct):
+    grey: GreyTipsExtra = proto_field(101)
+
+    @classmethod
+    def build(cls, content: str) -> "PBGreyTips":
+        return cls(
+            grey=GreyTipsExtra(
+                body=GreyTipsExtraInfo(
+                    content=content,
+                )
+            )
+        )
