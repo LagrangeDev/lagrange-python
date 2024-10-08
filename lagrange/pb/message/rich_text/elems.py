@@ -198,6 +198,28 @@ class GroupFileExtra(ProtoStruct):
     inner: GroupFileExtraInner = proto_field(7)
 
 
+class GreyTipsExtraInfo(ProtoStruct):
+    typ: int = proto_field(1, default=1)
+    content: str = proto_field(2)  # json
+
+
+class GreyTipsExtra(ProtoStruct):
+    body: GreyTipsExtraInfo = proto_field(1)
+
+class PBGreyTips(ProtoStruct):
+    grey: Optional[GreyTipsExtra] = proto_field(101, default=None)
+
+    @classmethod
+    def build(cls, content: str) -> "PBGreyTips":
+        return cls(
+            grey=GreyTipsExtra(
+                body=GreyTipsExtraInfo(
+                    content=content,
+                )
+            )
+        )
+
+
 class GeneralFlags(ProtoStruct):
     BubbleDiyTextId: Optional[int] = proto_field(1, default=None)
     GroupFlagNew: Optional[int] = proto_field(2, default=None)
@@ -217,26 +239,4 @@ class GeneralFlags(ProtoStruct):
     BubbleSubId: Optional[int] = proto_field(16, default=None)
     PendantId: Optional[int] = proto_field(17, default=None)
     RpIndex: Optional[bytes] = proto_field(18, default=None)
-    PbReserve: Optional[bytes] = proto_field(19)
-
-
-class GreyTipsExtraInfo(ProtoStruct):
-    typ: int = proto_field(1, default=1)
-    content: str = proto_field(2)  # json
-
-
-class GreyTipsExtra(ProtoStruct):
-    body: GreyTipsExtraInfo = proto_field(1)
-
-class PBGreyTips(ProtoStruct):
-    grey: GreyTipsExtra = proto_field(101)
-
-    @classmethod
-    def build(cls, content: str) -> "PBGreyTips":
-        return cls(
-            grey=GreyTipsExtra(
-                body=GreyTipsExtraInfo(
-                    content=content,
-                )
-            )
-        )
+    PbReserve: Optional[PBGreyTips] = proto_field(19, default=None)

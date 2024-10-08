@@ -189,7 +189,7 @@ def build_message(msg_chain: list[Element], compatible=True) -> RichText:
                 msg_pb.append(
                     Elems(
                         general_flags=GeneralFlags(
-                            PbReserve=PBGreyTips.build(content).encode()
+                            PbReserve=PBGreyTips.build(content)
                         )
                     )
                 )

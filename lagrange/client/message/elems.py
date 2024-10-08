@@ -187,4 +187,6 @@ class GreyTips(Text):
     建议搭配Text使用
     冷却3分钟左右？
     """
-    ...
+    @property
+    def display(self) -> str:
+        return f"<GreyTips: {self.text}>"
