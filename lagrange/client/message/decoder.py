@@ -293,7 +293,7 @@ async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
     msg_id = pkg.content_head.msg_id
     timestamp = pkg.content_head.timestamp
     parsed_msg = await parse_msg_new(client, pkg, fri_id=from_uid, grp_id=None)
-    msg_text = "".join([getattr(msg, "text", "") for msg in parsed_msg])
+    msg_text = "".join([getattr(msg, "display", "") for msg in parsed_msg])
 
     return FriendMessage(
         from_uin=from_uin,
@@ -321,7 +321,7 @@ async def parse_grp_msg(client: "Client", pkg: MsgPushBody) -> GroupMessage:
         grp_name = grp_name.decode("utf-8", errors="ignore")
 
     parsed_msg = await parse_msg_new(client, pkg, fri_id=None, grp_id=grp_id)
-    msg_text = "".join([getattr(msg, "text", "") for msg in parsed_msg])
+    msg_text = "".join([getattr(msg, "display", "") for msg in parsed_msg])
 
     return GroupMessage(
         uin=user_id,
