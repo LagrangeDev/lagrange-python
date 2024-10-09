@@ -101,10 +101,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
             return GroupMemberJoinRequest(grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid)
     elif typ == 0x210:  # friend event, 528 / group file upload notice event
         if sub_typ == 35: # friend request
-            try:
-                pb = PBFriendRequest.decode(pkg.message.buf2)
-            except KeyError: # 空包wdnmd
-                return
+            pb = PBFriendRequest.decode(pkg.message.buf2)
             return FriendRequest(
                 pkg.response_head.from_uin,
                 pb.info.from_uid,
