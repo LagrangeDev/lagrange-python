@@ -18,7 +18,8 @@ from lagrange.pb.status.group import (
     PBGroupInvite,
 )
 from lagrange.pb.status.friend import (
-    PBFriendRecall
+    PBFriendRecall,
+    PBFriendRequest
 )
 from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct, proto_encode
 from lagrange.utils.binary.reader import Reader
@@ -40,7 +41,8 @@ from ..events.group import (
     GroupMemberJoinedByInvite
 )
 from ..events.friend import (
-    FriendRecall
+    FriendRecall,
+    FriendRequest
 )
 from ..wtlogin.sso import SSOPacket
 from .log import logger
@@ -98,7 +100,17 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
             inn = pb.info.inner
             return GroupMemberJoinRequest(grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid)
     elif typ == 0x210:  # friend event, 528 / group file upload notice event
-        if sub_typ == 138: # friend recall
+        if sub_typ == 35: # friend request
+            pb = PBFriendRequest.decode(pkg.message.buf2)
+            return FriendRequest(
+                pkg.response_head.from_uin,
+                pb.info.from_uid,
+                pkg.response_head.to_uin,
+                pb.info.to_uid,
+                pb.info.verify,
+                pb.info.source
+            )
+        elif sub_typ == 138: # friend recall
             pb = PBFriendRecall.decode(pkg.message.buf2)
             return FriendRecall(
                 pkg.response_head.from_uin,
