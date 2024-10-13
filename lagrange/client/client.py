@@ -52,6 +52,7 @@ from lagrange.pb.service.group import (
     PBGetInfoFromUidReq,
     PBGetGrpLastSeq,
     GetGrpLastSeqRsp,
+    PBGetInfoFromUinReq,
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.pb.highway.comm import IndexNode
@@ -495,10 +496,31 @@ class Client(BaseClient):
     @overload
     async def get_user_info(self, uid: list[str]) -> list[UserInfo]: ...
 
-    async def get_user_info(self, uid: Union[str, list[str]]) -> Union[UserInfo, list[UserInfo]]:
-        if isinstance(uid, str):
-            uid = [uid]
-        rsp = GetInfoFromUidRsp.decode((await self.send_oidb_svc(0xFE1, 8, PBGetInfoFromUidReq(uid=uid).encode())).data)
+    @overload
+    async def get_user_info(self, uin: int) -> UserInfo:
+        ...
+
+    @overload
+    async def get_user_info(self, uin: list[int]) -> list[UserInfo]:
+        ...
+
+    async def get_user_info(
+            self,
+            uid: Union[str, list[str]] = None,
+            uin: Union[int, list[int]] = None,
+    ) -> Union[UserInfo, list[UserInfo]]:
+        userid = uid or uin
+        assert userid, "empty uid or uin"
+        if not isinstance(userid, list):
+            userid = [userid]
+        if isinstance(userid[0], int):
+            req, sc = PBGetInfoFromUinReq(uin=userid).encode(), 2
+        elif isinstance(userid[0], str):
+            req, sc = PBGetInfoFromUidReq(uid=userid).encode(), 8
+        else:
+            raise TypeError(userid[0])
+
+        rsp = GetInfoFromUidRsp.decode((await self.send_oidb_svc(0xFE1, sc, req)).data)
         if not rsp.body:
             raise AssertionError("Empty response")
         elif len(rsp.body) == 1:

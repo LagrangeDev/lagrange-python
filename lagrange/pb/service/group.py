@@ -399,8 +399,7 @@ class GetGrpListResponse(ProtoStruct):
     grp_list: list[GrpInfo] = proto_field(2, default_factory=list)
 
 
-class PBGetInfoFromUidReq(ProtoStruct):
-    uid: list[str] = proto_field(1)
+class _GetInfoCfg(ProtoStruct):
     cfg: bytes = proto_field(
         3,
         default=bytes.fromhex(
@@ -408,6 +407,13 @@ class PBGetInfoFromUidReq(ProtoStruct):
             "0108ab9c0108b49c0108b59c0108ba9c0108bf9c0108c59c011802"
         ),
     )
+
+class PBGetInfoFromUidReq(_GetInfoCfg):
+    uid: list[str] = proto_field(1)
+
+
+class PBGetInfoFromUinReq(_GetInfoCfg):
+    uin: list[int] = proto_field(1)
 
 
 class GetInfoRspF1(ProtoStruct):
