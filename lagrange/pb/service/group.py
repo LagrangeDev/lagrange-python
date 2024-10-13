@@ -440,7 +440,7 @@ class GetInfoFromUidRsp(ProtoStruct):
 
 
 class GetInfoRspBody(ProtoStruct):
-    uid: str = proto_field(1)
+    # uid: str = proto_field(1)  # query value
     fields: GetInfoRspField = proto_field(2)
 
 
