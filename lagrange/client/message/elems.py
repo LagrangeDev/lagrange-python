@@ -157,9 +157,15 @@ class File(Text):
     file_hash: Optional[str]
 
     @classmethod
-    def _paste_build(cls, file_size: int, file_name: str,
-                     file_md5: bytes, file_id: Optional[str] = None,
-                     file_uuid: Optional[str] = None, file_hash: Optional[str] = None) -> "File":
+    def _paste_build(
+        cls,
+        file_size: int,
+        file_name: str,
+        file_md5: bytes,
+        file_id: Optional[str] = None,
+        file_uuid: Optional[str] = None,
+        file_hash: Optional[str] = None,
+    ) -> "File":
         return cls(
             text=f"[file:{file_name}]",
             file_size=file_size,
@@ -178,3 +184,52 @@ class File(Text):
     @classmethod
     def pri_paste_build(cls, file_size: int, file_name: str, file_md5: bytes, file_uuid: str, file_hash: str) -> "File":
         return cls._paste_build(file_size, file_name, file_md5, file_uuid=file_uuid, file_hash=file_hash)
+
+
+@dataclass
+class Markdown(Text):
+    content: str
+
+
+class Permission:
+    type: int
+    specify_role_ids: Optional[list[str]]
+    specify_user_ids: Optional[list[str]]
+
+
+class RenderData:
+    label: Optional[str]
+    visited_label: Optional[str]
+    style: int
+
+
+class Action:
+    type: Optional[int]
+    permission: Optional[Permission]
+    data: str
+    reply: bool
+    enter: bool
+    anchor: Optional[int]
+    unsupport_tips: Optional[str]
+    click_limit: Optional[int]  # deprecated
+    at_bot_show_channel_list: bool  # deprecated
+
+
+class Button:
+    id: Optional[str]
+    render_data: Optional[RenderData]
+    action: Optional[Action]
+
+
+class InlineKeyboardRow:
+    buttons: Optional[list[Button]]
+
+
+class InlineKeyboard:
+    rows: list[InlineKeyboardRow]
+
+
+@dataclass
+class Keyboard(Text):
+    content: Optional[list[InlineKeyboard]]
+    bot_appid: int

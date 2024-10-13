@@ -11,7 +11,7 @@ from . import elems
 from .types import Element
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.binary.protobuf import proto_encode
-from lagrange.pb.message.rich_text.elems import GroupFileExtra, FileExtra
+from lagrange.pb.message.rich_text.elems import GroupFileExtra, FileExtra, PBKeyboard
 from lagrange.pb.highway.comm import MsgInfo
 
 if TYPE_CHECKING:
@@ -158,6 +158,12 @@ async def parse_msg_new(
                         f8=common.pb_elem[8],
                     )
                 )
+            if common.service_type == 45:
+                md_c: bytes = common.pb_elem[1]
+                msg_chain.append(elems.Markdown(text=f"[markdown:{md_c.decode()}]", content=md_c.decode()))
+            if common.service_type == 46:
+                kb = PBKeyboard.decode(proto_encode(common.pb_elem)).keyboard
+                msg_chain.append(elems.Keyboard(text="[button]", content=kb.content, bot_appid=kb.bot_appid))
             if common.bus_type in [10, 20]:  # 10: friend, 20: group
                 extra = MsgInfo.decode(proto_encode(raw.common_elem.pb_elem))
                 index = extra.body[0].index
