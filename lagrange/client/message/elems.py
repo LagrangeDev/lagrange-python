@@ -18,6 +18,17 @@ class BaseElem(JsonSerializer):
 
 
 @dataclass
+class CompatibleText(BaseElem):
+    """仅用于兼容性变更，不应作为判断条件"""
+    @property
+    def text(self) -> str:
+        return self.display
+
+    @text.setter
+    def text(self, text: str):
+        """ignore"""
+
+@dataclass
 class MediaInfo:
     name: str
     size: int
@@ -37,7 +48,7 @@ class Text(BaseElem):
 
 
 @dataclass
-class Quote(Text):
+class Quote(CompatibleText):
     seq: int
     uin: int
     timestamp: int
@@ -47,7 +58,6 @@ class Quote(Text):
     @classmethod
     def build(cls, ev: GroupMessage) -> "Quote":
         return cls(
-            text=f"[quote:{ev.msg}]",
             seq=ev.seq,
             uid=ev.uid,
             uin=ev.uin,
@@ -55,26 +65,44 @@ class Quote(Text):
             msg=ev.msg,
         )
 
+    @property
+    def display(self) -> str:
+        return f"[quote:{self.msg}]"
+
 
 @dataclass
-class Json(Text):
+class Json(CompatibleText):
     raw: bytes
 
     def to_dict(self) -> dict:
         return json.loads(self.raw)
+
+    @property
+    def display(self) -> str:
+        return f"[json:{len(self.raw)}]"
 
 
 @dataclass
 class Service(Json):
     id: int
 
+    @property
+    def display(self) -> str:
+        return f"[service:{self.id}]"
+
 
 @dataclass
-class AtAll(Text): ...
+class AtAll(BaseElem):
+    text: str
+
+    @property
+    def display(self) -> str:
+        return self.text
 
 
 @dataclass
-class At(Text):
+class At(BaseElem):
+    text: str
     uin: int
     uid: str
 
@@ -84,37 +112,54 @@ class At(Text):
 
 
 @dataclass
-class Image(Text, MediaInfo):
+class Image(CompatibleText, MediaInfo):
     width: int
     height: int
     is_emoji: bool
+    display_name: str
+
+    @property
+    def display(self) -> str:
+        return self.display_name
 
 
 @dataclass
-class Video(Text, MediaInfo):
+class Video(CompatibleText, MediaInfo):
     width: int
     height: int
     time: int
     file_key: str = field(repr=True)
 
+    @property
+    def display(self) -> str:
+        return f"[video:{self.width}x{self.height},{self.time}s]"
+
 
 @dataclass
-class Audio(Text, MediaInfo):
+class Audio(CompatibleText, MediaInfo):
     time: int
     file_key: str = field(repr=True)
 
+    @property
+    def display(self) -> str:
+        return f"[audio:{self.time}]"
+
 
 @dataclass
-class Raw(Text):
+class Raw(CompatibleText):
     data: bytes
 
+    @property
+    def display(self) -> str:
+        return f"[raw:{len(self.data)}]"
+
 
 @dataclass
-class Emoji(BaseElem):
+class Emoji(CompatibleText):
     id: int
 
     @property
-    def text(self) -> str:
+    def display(self) -> str:
         return f"[emoji:{self.id}]"
 
 
@@ -127,14 +172,19 @@ class Reaction(Emoji):
 
 
 @dataclass
-class Poke(Text):
+class Poke(CompatibleText):
     id: int
     f7: int = 0
     f8: int = 0
 
+    @property
+    def display(self) -> str:
+        return f"[poke:{self.id}]"
+
 
 @dataclass
-class MarketFace(Text):
+class MarketFace(CompatibleText):
+    name: str
     face_id: bytes
     tab_id: int
     width: int
@@ -145,9 +195,13 @@ class MarketFace(Text):
         pic_id = self.face_id.hex()
         return f"https://i.gtimg.cn/club/item/parcel/item/{pic_id[:2]}/{pic_id}/{self.width}x{self.height}.png"
 
+    @property
+    def display(self) -> str:
+        return f"[marketface:{self.name}]"
+
 
 @dataclass
-class File(Text):
+class File(CompatibleText):
     file_size: int
     file_name: str
     file_md5: bytes
@@ -156,12 +210,15 @@ class File(Text):
     file_uuid: Optional[str]  # only in private
     file_hash: Optional[str]
 
+    @property
+    def display(self) -> str:
+        return f"[file:{self.file_name}]"
+
     @classmethod
     def _paste_build(cls, file_size: int, file_name: str,
                      file_md5: bytes, file_id: Optional[str] = None,
                      file_uuid: Optional[str] = None, file_hash: Optional[str] = None) -> "File":
         return cls(
-            text=f"[file:{file_name}]",
             file_size=file_size,
             file_name=file_name,
             file_md5=file_md5,
@@ -181,12 +238,14 @@ class File(Text):
 
 
 @dataclass
-class GreyTips(Text):
+class GreyTips(BaseElem):
     """
     奇怪的整活元素
     建议搭配Text使用
     冷却3分钟左右？
     """
+    text: str
+
     @property
     def display(self) -> str:
         return f"<GreyTips: {self.text}>"

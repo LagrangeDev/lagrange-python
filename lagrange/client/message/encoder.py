@@ -116,7 +116,7 @@ def build_message(msg_chain: list[Element], compatible=True) -> RichText:
                                 size=msg.size,
                                 args=ImageReserveArgs(
                                     is_emoji=msg.is_emoji,
-                                    display_name=msg.text
+                                    display_name=msg.display_name
                                     or ("[动画表情]" if msg.is_emoji else "[图片]"),
                                 ),
                             )
@@ -166,7 +166,7 @@ def build_message(msg_chain: list[Element], compatible=True) -> RichText:
                 msg_pb.append(
                     Elems(
                         market_face=PBMarketFace(
-                            name=msg.text,
+                            name=msg.name,
                             item_type=6,
                             face_info=1,
                             face_id=msg.face_id,

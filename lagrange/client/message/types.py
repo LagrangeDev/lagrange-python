@@ -14,6 +14,10 @@ if TYPE_CHECKING:
         Audio,
         Poke,
         MarketFace,
+        GreyTips,
+        Video,
+        Service,
+        File
     )
 
 # T = TypeVar(
@@ -42,4 +46,8 @@ Element: TypeAlias = Union[
     "Audio",
     "Poke",
     "MarketFace",
+    "GreyTips",
+    "Video",
+    "Service",
+    "File"
 ]
