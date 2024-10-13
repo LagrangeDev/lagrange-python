@@ -520,7 +520,9 @@ class Client(BaseClient):
         else:
             raise TypeError(userid[0])
 
-        rsp = GetInfoFromUidRsp.decode((await self.send_oidb_svc(0xFE1, sc, req)).data)
+        rsp = GetInfoFromUidRsp.decode(
+            (await self.send_oidb_svc(0xFE1, sc, req, is_uid=True if sc == 2 else False)).data
+        )
         if not rsp.body:
             raise AssertionError("Empty response")
         elif len(rsp.body) == 1:
