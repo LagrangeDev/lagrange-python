@@ -14,17 +14,21 @@ from lagrange.pb.status.group import (
     MemberJoinRequest,
     MemberRecallMsg,
     GroupSub20Head,
+    PBBotGrayTip,
     PBGroupAlbumUpdate,
+    PBGroupBotAdded,
     PBGroupInvite,
+    PBSelfJoinInGroup,
 )
-from lagrange.pb.status.friend import (
-    PBFriendRecall
-)
+from lagrange.pb.status.friend import PBFriendRecall
 from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct, proto_encode
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.operator import unpack_dict, timestamp
 
 from ..events.group import (
+    BotGrayTip,
+    GroupBotAdded,
+    GroupBotJoined,
     GroupInvite,
     GroupMemberGotSpecialTitle,
     GroupMemberJoined,
@@ -35,13 +39,13 @@ from ..events.group import (
     GroupRecall,
     GroupNudge,
     GroupReaction,
+    GroupSelfJoined,
+    GroupSelfRequireReject,
     GroupSign,
     GroupAlbumUpdate,
-    GroupMemberJoinedByInvite
+    GroupMemberJoinedByInvite,
 )
-from ..events.friend import (
-    FriendRecall
-)
+from ..events.friend import FriendRecall
 from ..wtlogin.sso import SSOPacket
 from .log import logger
 
@@ -72,10 +76,9 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     elif typ == 33:  # member joined
         pb = MemberChanged.decode(pkg.message.buf2)
         return GroupMemberJoined(
-            grp_id=pkg.response_head.from_uin,
-            uin=pb.uin,
-            uid=pb.uid,
-            join_type=pb.join_type,
+            grp_id=pb.uin,
+            uid=pb.uid,  # right u cant get uin
+            join_type=pb.join_type_new,
         )
     elif typ == 34:  # member exit
         pb = MemberChanged.decode(pkg.message.buf2)
@@ -89,16 +92,25 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     elif typ == 84:
         pb = MemberJoinRequest.decode(pkg.message.buf2)
         return GroupMemberJoinRequest(grp_id=pb.grp_id, uid=pb.uid, answer=pb.request_field)
+    elif typ == 85:
+        pb = PBSelfJoinInGroup.decode(pkg.message.buf2)
+        return GroupSelfJoined(grp_id=pb.gid, op_uid=pb.operator_uid)
+    elif typ == 86:
+        reader = Reader(pkg.message.buf2)
+        grp_id = reader.read_u32()  # it should have more infomation,but i cant guess it
+        return GroupSelfRequireReject(grp_id, "")
     elif typ == 87:
         pb = PBGroupInvite.decode(pkg.message.buf2)
         return GroupInvite(grp_id=pb.gid, invitor_uid=pb.invitor_uid)
+    elif typ == 167:
+        print(pkg.message.encode().hex())
     elif typ == 525:
         pb = MemberInviteRequest.decode(pkg.message.buf2)
         if pb.cmd == 87:
             inn = pb.info.inner
             return GroupMemberJoinRequest(grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid)
     elif typ == 0x210:  # friend event, 528 / group file upload notice event
-        if sub_typ == 138: # friend recall
+        if sub_typ == 138:  # friend recall
             pb = PBFriendRecall.decode(pkg.message.buf2)
             return FriendRecall(
                 pkg.response_head.from_uin,
@@ -107,10 +119,16 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 pb.info.to_uid,
                 pb.info.seq,
                 pb.info.random,
-                pb.info.time
+                pb.info.time,
             )
+        if sub_typ == 368:
+            pass
+            # print(pkg.message.encode().hex())
         logger.debug(f"unhandled friend event / group file upload notice event: {pkg}")  # TODO: paste
     elif typ == 0x2DC:  # grp event, 732
+        if sub_typ == 1:
+            # print(pkg.encode().hex())
+            pass
         if sub_typ == 20:  # nudge and group_sign(群打卡)
             if pkg.message:
                 grp_id, pb = unpack(pkg.message.buf2, GroupSub20Head)
@@ -124,14 +142,19 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         attrs[k.decode()] = int(v.decode())
                     else:
                         attrs[k.decode()] = v.decode()
+                if pb.body.f2 == 19217:
+                    return GroupBotJoined(
+                        grp_id,
+                        attrs["mqq_uin"],
+                        attrs["nick_name"],
+                        attrs["robot_name"],
+                        attrs["robot_schema"],
+                        attrs["user_schema"],
+                    )
                 if pb.body.type == 1:
                     if "invitor" in attrs:
                         # reserve: attrs["msg_nums"]
-                        return GroupMemberJoinedByInvite(
-                            grp_id,
-                            attrs["invitor"],
-                            attrs["invitee"]
-                        )
+                        return GroupMemberJoinedByInvite(grp_id, attrs["invitor"], attrs["invitee"])
                     elif "user" in attrs and "uin" in attrs:
                         # todo: 群代办
                         pass
@@ -157,13 +180,17 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         pb.body.attrs_xml,
                     )
                 else:
-                    raise ValueError(f"unknown type({pb.body.type}) on GroupSub20: {attrs}")
+                    raise ValueError(f"unknown type({pb.body.type}) f2({pb.body.f2}) on GroupSub20: {attrs}")
             else:
                 # print(pkg.encode().hex(), 2)
                 return
         elif sub_typ == 16:  # rename & special_title & reaction
+            # print(sso.data.hex())
             if pkg.message:
                 grp_id, pb = unpack(pkg.message.buf2, GroupSub16Head)
+                if pb.flag is None:
+                    _, pb = unpack(pkg.message.buf2, PBBotGrayTip)  # 傻逼tx，我13号位呢
+                    return BotGrayTip(grp_id, pb.body.message)
                 if pb.flag == 6:  # special_title
                     body = MemberGotTitleBody.decode(pb.body)
                     for el in re.findall(r"<(\{.*?})>", body.string):
@@ -210,6 +237,9 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                         timestamp=pb.timestamp,
                         image_id=q["i"],
                     )
+                elif pb.flag == 38:
+                    _, pb = unpack(pkg.message.buf2, PBGroupBotAdded)
+                    return GroupBotAdded(pb.body.grp_id, pb.body.bot_uid_1 or pb.body.bot_uid_2)
                 else:
                     raise ValueError(f"Unknown subtype_12 flag: {pb.flag}: {pb.body.hex() if pb.body else pb}")
         elif sub_typ == 17:  # recall
