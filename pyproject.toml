@@ -1,6 +1,6 @@
 [project]
 name = "lagrange-python"
-version = "0.1.3"
+version = "0.1.4"
 description = "An Python Implementation of NTQQ PC Protocol"
 authors = [
     {name="linwenxuan05"},
