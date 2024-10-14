@@ -8,6 +8,7 @@ from typing import Optional, ClassVar
 import typing
 
 from .coder import Proto, proto_decode, proto_encode
+from .util import eval_type
 
 _ProtoTypes = Union[str, list, dict, bytes, int, float, bool, "ProtoStruct"]
 
@@ -239,7 +240,7 @@ class ProtoStruct:
                 typ = field.type
                 if isinstance(typ, str):
                     typ = ForwardRef(typ, is_argument=False, is_class=True)
-                field.type = typing._eval_type(typ, mapping, mapping)  # type: ignore
+                field.type = eval_type(typ, mapping, mapping)  # type: ignore
                 field._unevaluated = False
             except NameError:
                 pass
