@@ -308,7 +308,7 @@ class InlineKeyboard:
 
 
 @dataclass
-class Keyboard(Text):
+class Keyboard(BaseElem):
     content: Optional[list[InlineKeyboard]]
     bot_appid: int
 
