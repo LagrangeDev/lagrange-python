@@ -9,6 +9,8 @@ from typing import (
     Union,
     overload,
     Literal,
+    TYPE_CHECKING,
+    cast,
 )
 from collections.abc import Coroutine
 
@@ -491,31 +493,30 @@ class Client(BaseClient):
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     @overload
-    async def get_user_info(self, uid: str) -> UserInfo: ...
-
-    @overload
-    async def get_user_info(self, uid: list[str]) -> list[UserInfo]: ...
-
-    @overload
-    async def get_user_info(self, uin: int) -> UserInfo:
+    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo:
         ...
 
     @overload
-    async def get_user_info(self, uin: list[int]) -> list[UserInfo]:
+    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]:
         ...
 
     async def get_user_info(
-            self,
-            uid: Union[str, list[str]] = None,
-            uin: Union[int, list[int]] = None,
+        self,
+        uid_or_uin: Union[str, int, list[str], list[int]],
+        /
     ) -> Union[UserInfo, list[UserInfo]]:
-        userid = uid or uin
-        assert userid, "empty uid or uin"
-        if not isinstance(userid, list):
-            userid = [userid]
+        if isinstance(uid_or_uin, list):
+            assert uid_or_uin, "empty uid or uin"
+            userid = uid_or_uin
+        else:
+            userid = [uid_or_uin]
         if isinstance(userid[0], int):
+            if TYPE_CHECKING:
+                userid = cast(list[int], userid)
             req, sc = PBGetInfoFromUinReq(uin=userid).encode(), 2
         elif isinstance(userid[0], str):
+            if TYPE_CHECKING:
+                userid = cast(list[str], userid)
             req, sc = PBGetInfoFromUidReq(uid=userid).encode(), 8
         else:
             raise TypeError(userid[0])
