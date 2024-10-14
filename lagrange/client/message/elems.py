@@ -261,8 +261,12 @@ class GreyTips(BaseElem):
 
 
 @dataclass
-class Markdown(Text):
+class Markdown(BaseElem):
     content: str
+
+    @property
+    def display(self) -> str:
+        return f"[markdown:{self.md_c.decode()}]"
 
 
 class Permission:
@@ -307,3 +311,7 @@ class InlineKeyboard:
 class Keyboard(Text):
     content: Optional[list[InlineKeyboard]]
     bot_appid: int
+
+    @property
+    def display(self) -> str:
+        return f"[keyboard:{self.bot_appid}]"
