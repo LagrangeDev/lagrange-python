@@ -1,3 +1,4 @@
+import json
 import zlib
 from typing import TYPE_CHECKING, cast, Literal, Union
 from collections.abc import Sequence
@@ -63,7 +64,6 @@ async def parse_msg_new(
                 size=ptt.size,
                 id=ptt.file_id,
                 md5=ptt.md5,
-                text=f"[audio:{ptt.name}]",
                 time=ptt.time,
                 file_key=ptt.group_file_key if ptt.group_file_key else ptt.friend_file_key,
                 qmsg=None,
@@ -76,7 +76,7 @@ async def parse_msg_new(
     for raw in el:
         if not raw or raw == Elems():
             continue
-        elif raw.elem_flags2 or raw.general_flags or raw.extra_info:
+        elif raw.elem_flags2 or raw.extra_info:
             # unused flags
             continue
         elif ignore_next:
@@ -100,6 +100,11 @@ async def parse_msg_new(
                     )
             else:
                 raise AssertionError("Invalid message")
+        elif raw.general_flags and raw.general_flags.PbReserve:
+            gf = raw.general_flags
+            if gf.PbReserve.grey:
+                content = json.loads(gf.PbReserve.grey.body.content)
+                msg_chain.append(elems.GreyTips(text=content["gray_tip"]))
         elif raw.face:  # q emoji
             emo = raw.face
             msg_chain.append(elems.Emoji(id=emo.index))
@@ -107,7 +112,7 @@ async def parse_msg_new(
             mf = raw.market_face
             msg_chain.append(
                 elems.MarketFace(
-                    text=mf.name,
+                    name=mf.name,
                     face_id=mf.face_id,
                     tab_id=mf.tab_id,
                     width=mf.width,
@@ -123,7 +128,7 @@ async def parse_msg_new(
                     size=img.size,
                     id=img.fileid,
                     md5=img.md5,
-                    text=img.args.display_name,
+                    display_name=img.args.display_name,
                     width=img.width,
                     height=img.height,
                     url="https://gchat.qpic.cn" + img.original_url,
@@ -139,7 +144,7 @@ async def parse_msg_new(
                     size=img.file_len,
                     id=int(img.download_path.split("-")[1]),
                     md5=img.file_md5,
-                    text=img.args.display_name,
+                    display_name=img.args.display_name,
                     width=img.width,
                     height=img.height,
                     url="https://gchat.qpic.cn" + img.origin_path,
@@ -152,7 +157,7 @@ async def parse_msg_new(
             if common.service_type == 2:
                 msg_chain.append(
                     elems.Poke(
-                        text=f"[poke:{common.pb_elem[1]}]",
+                        # text=f"[poke:{common.pb_elem[1]}]",
                         id=common.pb_elem[1],
                         f7=common.pb_elem[7],
                         f8=common.pb_elem[8],
@@ -181,7 +186,7 @@ async def parse_msg_new(
                         size=index.info.size,
                         id=0,
                         md5=bytes.fromhex(index.info.hash),
-                        text=extra.biz_info.pic.summary if extra.biz_info.pic.summary else "[图片]",
+                        display_name=extra.biz_info.pic.summary if extra.biz_info.pic.summary else "[图片]",
                         width=index.info.width,
                         height=index.info.height,
                         url=url,
@@ -213,10 +218,10 @@ async def parse_msg_new(
                     content = zlib.decompress(jr[1:])
                 else:
                     content = jr[1:]
-                msg_chain.append(elems.Service(id=sid, raw=content, text=f"[service:{sid}]"))
+                msg_chain.append(elems.Service(id=sid, raw=content))
             ignore_next = True
         elif raw.open_data:
-            msg_chain.append(elems.Raw(text=f"[raw:{len(raw.open_data.data)}]", data=raw.open_data.data))
+            msg_chain.append(elems.Raw(data=raw.open_data.data))
         elif raw.src_msg:  # msg source info
             src = raw.src_msg
             msg_text = ""
@@ -230,7 +235,6 @@ async def parse_msg_new(
             # src[10]: optional[grp_id]
             msg_chain.append(
                 elems.Quote(
-                    text=f"[quote:{msg_text}]",
                     seq=src.seq,
                     uin=src.uin,
                     timestamp=src.timestamp,
@@ -246,7 +250,7 @@ async def parse_msg_new(
                 content = zlib.decompress(service[1:])
             else:
                 content = service[1:]
-            msg_chain.append(elems.Json(text=f"[json:{len(content)}]", raw=content))
+            msg_chain.append(elems.Json(raw=content))
             ignore_next = True
         # elif 53 in raw:  # q emoji
         #     qe = raw[53]
@@ -275,7 +279,6 @@ async def parse_msg_new(
                 elems.Video(
                     id=0,
                     time=video.length,
-                    text="[视频]",
                     name=video.name,
                     size=video.size,
                     file_key=video.id,
@@ -299,7 +302,7 @@ async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
     msg_id = pkg.content_head.msg_id
     timestamp = pkg.content_head.timestamp
     parsed_msg = await parse_msg_new(client, pkg, fri_id=from_uid, grp_id=None)
-    msg_text = "".join([getattr(msg, "text", "") for msg in parsed_msg])
+    msg_text = "".join([getattr(msg, "display", "") for msg in parsed_msg])
 
     return FriendMessage(
         from_uin=from_uin,
@@ -327,7 +330,7 @@ async def parse_grp_msg(client: "Client", pkg: MsgPushBody) -> GroupMessage:
         grp_name = grp_name.decode("utf-8", errors="ignore")
 
     parsed_msg = await parse_msg_new(client, pkg, fri_id=None, grp_id=grp_id)
-    msg_text = "".join([getattr(msg, "text", "") for msg in parsed_msg])
+    msg_text = "".join([getattr(msg, "display", "") for msg in parsed_msg])
 
     return GroupMessage(
         uin=user_id,

@@ -2,7 +2,25 @@ from typing import Union, TYPE_CHECKING
 from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
-    from .elems import Text, At, AtAll, Image, Emoji, Json, Quote, Raw, Audio, Poke, MarketFace, Markdown, Keyboard
+    from .elems import (
+        Text,
+        At,
+        AtAll,
+        Image,
+        Emoji,
+        Json,
+        Quote,
+        Raw,
+        Audio,
+        Poke,
+        MarketFace,
+        GreyTips,
+        Video,
+        Service,
+        File,
+        Markdown,
+        Keyboard,
+    )
 
 # T = TypeVar(
 #     "T",
@@ -30,6 +48,10 @@ Element: TypeAlias = Union[
     "Audio",
     "Poke",
     "MarketFace",
+    "GreyTips",
+    "Video",
+    "Service",
+    "File",
     "Markdown",
     "Keyboard",
 ]

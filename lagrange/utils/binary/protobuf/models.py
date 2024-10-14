@@ -164,7 +164,7 @@ def check_type(value: Any, typ: Any) -> bool:
         return check_type(value, get_args(typ)[0]) if value is not None else True
     if isinstance(value, typ):
         return True
-    return False  # or True if value is None else False
+    return True if value is None else False  # proto3 std
 
 
 _unevaluated_classes: set[type["ProtoStruct"]] = set()
@@ -255,7 +255,7 @@ class ProtoStruct:
             if k.startswith("_"):
                 continue
             attrs += f"{k}={v!r}, "
-        return f"{self.__class__.__name__}({attrs})"
+        return f"{self.__class__.__name__}({attrs[:-2]})"
 
     def encode(self) -> bytes:
         pb_dict: NT = {}
@@ -289,7 +289,7 @@ class ProtoStruct:
         }
 
         if pb_dict and cls.__proto_debug__:  # unhandled tags
-            pass
+            print(f"DEBUG: unhandled tags '{pb_dict}' on {cls}")
         return cls(True, **kwargs)
 
 

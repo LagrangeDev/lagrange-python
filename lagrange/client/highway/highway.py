@@ -226,7 +226,7 @@ class HighWaySession:
 
         return Image(
             id=fileid,
-            text="[图片]" if info.pic_type.name != "gif" else "[动画表情]",
+            display_name="[图片]" if info.pic_type.name != "gif" else "[动画表情]",
             name=f"{fmd5.hex()}.{info.pic_type.name}",
             size=fl,
             width=w,
@@ -329,7 +329,6 @@ class HighWaySession:
         # print(f"https://grouptalk.c2c.qq.com/?ver=0&rkey={compat[18].hex()}&filetype=4%voice_codec=0")
 
         return Audio(
-            text="[语音]",
             time=info.seconds,
             name=f"{fmd5.hex()}.amr",
             id=file_id,
