@@ -491,35 +491,13 @@ class Client(BaseClient):
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
-    #
-    # @overload
-    # async def get_user_info(self, uid: str) -> UserInfo: ...
-    #
-    # @overload
-    # async def get_user_info(self, uid: list[str]) -> list[UserInfo]: ...
-    #
-    # @overload
-    # async def get_user_info(self, uin: int) -> UserInfo:
-    #     ...
-    #
-    # @overload
-    # async def get_user_info(self, uin: list[int]) -> list[UserInfo]:
-    #     ...
 
     @overload
-    async def get_user_info(self, uid: str, /) -> UserInfo:
+    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo:
         ...
 
     @overload
-    async def get_user_info(self, uids: list[str], /) -> list[UserInfo]:
-        ...
-
-    @overload
-    async def get_user_info(self, uin: int, /) -> UserInfo:
-        ...
-
-    @overload
-    async def get_user_info(self, uins: list[int], /) -> list[UserInfo]:
+    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]:
         ...
 
     async def get_user_info(
