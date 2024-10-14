@@ -206,6 +206,7 @@ class GreyTipsExtraInfo(ProtoStruct):
 class GreyTipsExtra(ProtoStruct):
     body: GreyTipsExtraInfo = proto_field(1)
 
+
 class PBGreyTips(ProtoStruct):
     grey: Optional[GreyTipsExtra] = proto_field(101, default=None)
 
@@ -240,3 +241,54 @@ class GeneralFlags(ProtoStruct):
     PendantId: Optional[int] = proto_field(17, default=None)
     RpIndex: Optional[bytes] = proto_field(18, default=None)
     PbReserve: Optional[PBGreyTips] = proto_field(19, default=None)
+
+
+# class Markdown(ProtoStruct):
+#     content: str = proto_field(1)
+
+
+class Permission(ProtoStruct):
+    type: int = proto_field(1, default=0)
+    specify_role_ids: Optional[list[str]] = proto_field(2, default=None)
+    specify_user_ids: Optional[list[str]] = proto_field(3, default=None)
+
+
+class RenderData(ProtoStruct):
+    label: Optional[str] = proto_field(1, default=None)
+    visited_label: Optional[str] = proto_field(2, default=None)
+    style: int = proto_field(3, default=0)
+
+
+class Action(ProtoStruct):
+    type: Optional[int] = proto_field(1, default=None)
+    permission: Optional[Permission] = proto_field(2, default=None)
+    data: str = proto_field(5)
+    reply: bool = proto_field(7, default=False)
+    enter: bool = proto_field(8, default=False)
+    anchor: Optional[int] = proto_field(9, default=None)
+    unsupport_tips: Optional[str] = proto_field(4, default=None)
+    click_limit: Optional[int] = proto_field(3)  # deprecated
+    at_bot_show_channel_list: bool = proto_field(6, default=False)  # deprecated
+
+
+class Button(ProtoStruct):
+    id: Optional[str] = proto_field(1, default=None)
+    render_data: Optional[RenderData] = proto_field(2, default=None)
+    action: Optional[Action] = proto_field(3, default=None)
+
+
+class InlineKeyboardRow(ProtoStruct):
+    buttons: Optional[list[Button]] = proto_field(1, default=None)
+
+
+class InlineKeyboard(ProtoStruct):
+    rows: list[InlineKeyboardRow] = proto_field(1)
+
+
+class Keyboard(ProtoStruct):
+    content: Optional[list[InlineKeyboard]] = proto_field(1, default=None)
+    bot_appid: int = proto_field(2)
+
+
+class PBKeyboard(ProtoStruct):
+    keyboard: Keyboard = proto_field(1)

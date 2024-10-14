@@ -12,7 +12,10 @@ class MemberChanged(ProtoStruct):
     uid: str = proto_field(3)
     exit_type: Optional[int] = proto_field(4, default=None)  # 3kick_me, 131kick, 130exit
     operator_uid: str = proto_field(5, default="")
-    join_type: Optional[int] = proto_field(6, default=None)  # 6scanqr,
+    join_type: Optional[int] = proto_field(6, default=None)  # 6other, 0slef_invite
+    join_type_new: Optional[int] = proto_field(
+        4, default=None
+    )  # 130 by_other(click url,scan qr,input grpid), 131 by_invite
 
 
 class MemberJoinRequest(ProtoStruct):
@@ -106,21 +109,23 @@ class GroupSub16Head(ProtoStruct):
     timestamp: int = proto_field(2, default=0)
     uin: Optional[int] = proto_field(4, default=None)
     body: Optional[bytes] = proto_field(5, default=None)
-    flag: int = proto_field(13)  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction
+    flag: Optional[int] = proto_field(
+        13, default=None
+    )  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction, 38: bot add
     operator_uid: str = proto_field(21, default="")
     f44: Optional[PBGroupReaction] = proto_field(44, default=None)  # set reaction only
 
 
 class GroupSub20Head(ProtoStruct):
-    f1: int = proto_field(1)  # 20
+    f1: int = proto_field(1, default=None)  # 20
     grp_id: int = proto_field(4)
     f13: int = proto_field(13)  # 19
     body: "GroupSub20Body" = proto_field(26)
 
 
 class GroupSub20Body(ProtoStruct):
-    type: int = proto_field(1)  # 12: nudge, 14: group_sign
-    # f2: int = proto_field(2)  # 1061
+    type: Optional[int] = proto_field(1, default=None)  # 12: nudge, 14: group_sign
+    f2: int = proto_field(2)  # 1061 ,  bot added group:19217
     # f3: int = proto_field(3)  # 7
     # f6: int = proto_field(6)  # 1132
     attrs: list[dict] = proto_field(7, default_factory=list)
@@ -160,3 +165,37 @@ class PBGroupInvite(ProtoStruct):
     f4: int = proto_field(4)  # 0
     invitor_uid: str = proto_field(5)
     invite_info: bytes = proto_field(6)
+
+
+class PBSelfJoinInGroup(ProtoStruct):
+    gid: int = proto_field(1)
+    f2: int = proto_field(2)
+    f4: int = proto_field(4)  # 0
+    f6: int = proto_field(6)  # 48
+    f7: str = proto_field(7)
+    operator_uid: str = proto_field(3)
+
+
+class PBGroupBotAddedBody(ProtoStruct):
+    grp_id: int = proto_field(1)
+    bot_uid_1: Optional[str] = proto_field(2, default=None)
+    bot_uid_2: Optional[str] = proto_field(3, default=None)  # f**k tx
+    flag: int = proto_field(4)
+
+
+class PBGroupBotAdded(ProtoStruct):
+    # f1: 39
+    grp_id: int = proto_field(4)
+    # f13: 38
+    body: PBGroupBotAddedBody = proto_field(47)
+
+
+class PBGroupGrayTipBody(ProtoStruct):
+    message: str = proto_field(2)
+    flag: int = proto_field(3)
+
+
+class PBBotGrayTip(ProtoStruct):
+    # f1: 1
+    grp_id: int = proto_field(4)
+    body: PBGroupGrayTipBody = proto_field(5)
