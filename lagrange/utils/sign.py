@@ -56,13 +56,21 @@ def sign_provider(upstream_url: str):
         headers = {
             "Content-Type": "application/json"
         }
-        start_time = time.time()
-        ret = await HttpCat.request("POST", upstream_url, body=body, header=headers)
-        _logger.debug(
-            f"signed for [{cmd}:{seq}]({round((time.time() - start_time) * 1000, 2)}ms)"
-        )
-        if ret.code != 200:
-            raise ConnectionError(ret.code, ret.body)
+        for _ in range(3):
+            try:
+                start_time = time.time()
+                ret = await HttpCat.request("POST", upstream_url, body=body, header=headers)
+                if ret.code != 200:
+                    raise ConnectionAbortedError(ret.code, ret.body)
+                _logger.debug(
+                    f"signed for [{cmd}:{seq}]({(time.time() - start_time) * 1000:.2f}ms)"
+                )
+            except Exception:
+                _logger.exception("Unexpected error on sign request:")
+                continue
+            break
+        else:
+            raise ConnectionError("Max retries exceeded")
 
         return ret.json()["value"]
 
