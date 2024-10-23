@@ -27,12 +27,12 @@ class ProtoDecoded:
 
     def into(self, field: Union[int, tuple[int, ...]], tp: type[TProtoEncodable]) -> TProtoEncodable:
         if isinstance(field, int):
-            return cast(tp, self.proto[field])
+            return self.proto[field]  # type: ignore
         else:
             data = self.proto
             for f in field:
                 data = data[f]  # type: ignore
-            return cast(tp, data)
+            return data # type: ignore
 
 
 class ProtoBuilder(Builder):

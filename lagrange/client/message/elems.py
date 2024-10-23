@@ -20,6 +20,7 @@ class BaseElem(JsonSerializer):
 @dataclass
 class CompatibleText(BaseElem):
     """仅用于兼容性变更，不应作为判断条件"""
+
     @property
     def text(self) -> str:
         return self.display
@@ -27,6 +28,7 @@ class CompatibleText(BaseElem):
     @text.setter
     def text(self, text: str):
         """ignore"""
+
 
 @dataclass
 class MediaInfo:
@@ -215,9 +217,15 @@ class File(CompatibleText):
         return f"[file:{self.file_name}]"
 
     @classmethod
-    def _paste_build(cls, file_size: int, file_name: str,
-                     file_md5: bytes, file_id: Optional[str] = None,
-                     file_uuid: Optional[str] = None, file_hash: Optional[str] = None) -> "File":
+    def _paste_build(
+        cls,
+        file_size: int,
+        file_name: str,
+        file_md5: bytes,
+        file_id: Optional[str] = None,
+        file_uuid: Optional[str] = None,
+        file_hash: Optional[str] = None,
+    ) -> "File":
         return cls(
             file_size=file_size,
             file_name=file_name,
@@ -244,8 +252,66 @@ class GreyTips(BaseElem):
     建议搭配Text使用
     冷却3分钟左右？
     """
+
     text: str
 
     @property
     def display(self) -> str:
         return f"<GreyTips: {self.text}>"
+
+
+@dataclass
+class Markdown(BaseElem):
+    content: str
+
+    @property
+    def display(self) -> str:
+        return f"[markdown:{self.content}]"
+
+
+class Permission:
+    type: int
+    specify_role_ids: Optional[list[str]]
+    specify_user_ids: Optional[list[str]]
+
+
+class RenderData:
+    label: Optional[str]
+    visited_label: Optional[str]
+    style: int
+
+
+class Action:
+    type: Optional[int]
+    permission: Optional[Permission]
+    data: str
+    reply: bool
+    enter: bool
+    anchor: Optional[int]
+    unsupport_tips: Optional[str]
+    click_limit: Optional[int]  # deprecated
+    at_bot_show_channel_list: bool  # deprecated
+
+
+class Button:
+    id: Optional[str]
+    render_data: Optional[RenderData]
+    action: Optional[Action]
+
+
+class InlineKeyboardRow:
+    buttons: Optional[list[Button]]
+
+
+class InlineKeyboard:
+    rows: list[InlineKeyboardRow]
+
+
+@dataclass
+class Keyboard(BaseElem):
+    content: Optional[list[InlineKeyboard]]
+    bot_appid: int
+
+    @property
+    def display(self) -> str:
+        return f"[keyboard:{self.bot_appid}]"

@@ -17,7 +17,9 @@ if TYPE_CHECKING:
         GreyTips,
         Video,
         Service,
-        File
+        File,
+        Markdown,
+        Keyboard,
     )
 
 # T = TypeVar(
@@ -49,5 +51,7 @@ Element: TypeAlias = Union[
     "GreyTips",
     "Video",
     "Service",
-    "File"
+    "File",
+    "Markdown",
+    "Keyboard",
 ]

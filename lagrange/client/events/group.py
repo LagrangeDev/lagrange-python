@@ -81,7 +81,7 @@ class GroupMemberJoinRequest(GroupEvent):
 
 @dataclass
 class GroupMemberJoined(GroupEvent):
-    uin: int
+    # uin: int //it cant get
     uid: str
     join_type: int
 
@@ -153,3 +153,34 @@ class GroupInvite(GroupEvent):
 class GroupMemberJoinedByInvite(GroupEvent):
     invitor_uin: int
     uin: int
+
+
+@dataclass
+class GroupSelfJoined(GroupEvent):
+    grp_id: int
+    op_uid: str
+
+
+@dataclass
+class GroupSelfRequireReject(GroupEvent):
+    grp_id: int
+    message: str
+
+
+@dataclass
+class GroupBotAdded(GroupEvent):
+    bot_uid: str
+
+
+@dataclass
+class BotGrayTip(GroupEvent):
+    content: str
+
+
+@dataclass
+class GroupBotJoined(GroupEvent):
+    opqq_uin: int
+    nick_name: str
+    robot_name: str
+    robot_schema: str
+    user_schema: str
