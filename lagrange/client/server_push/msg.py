@@ -62,6 +62,17 @@ def unpack(buf2: bytes, decoder: type[T]) -> tuple[int, T]:
     return grp_id, decoder.decode(reader.read_bytes_with_length("u16", False))
 
 
+def parse_quoted_str(string: str) -> list[dict[str, Union[str, int]]]:
+    """
+    example data: 'test data <{"cmd": 1, "text": "updated"}> <{"cmd": 2}>!'
+    to: [{"cmd": 1, "text": "updated"}, {"cmd": 2}]
+    """
+    return [
+        json.loads(el)
+        for el in re.findall(r"<(\{.*?})>", string)
+    ]
+
+
 async def msg_push_handler(client: "Client", sso: SSOPacket):
     pkg = MsgPush.decode(sso.data).body
     typ = pkg.content_head.type
@@ -195,7 +206,6 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 # print(pkg.encode().hex(), 2)
                 return
         elif sub_typ == 16:  # rename & special_title & reaction
-            # print(sso.data.hex())
             if pkg.message:
                 grp_id, pb = unpack(pkg.message.buf2, GroupSub16Head)
                 if pb.flag is None:
@@ -203,8 +213,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                     return BotGrayTip(grp_id, pb.body.message)
                 if pb.flag == 6:  # special_title
                     body = MemberGotTitleBody.decode(pb.body)
-                    for el in re.findall(r"<(\{.*?})>", body.string):
-                        el = json.loads(el)
+                    for el in parse_quoted_str(body.string):
                         if el["cmd"] == 1:
                             title = el["text"]
                             url = el["data"]
@@ -239,6 +248,9 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                     )
                 elif pb.flag == 23:  # 群幸运字符？
                     pass
+                elif pb.flag == 21:  # 位置实时分享（不完整）
+                    pass
+                    #print(sso.data.hex())
                 elif pb.flag == 37:  # 群相册上传（手Q专用:(）
                     _, pb = unpack(pkg.message.buf2, PBGroupAlbumUpdate)  # 塞 就硬塞，可以把你的顾辉盒也给塞进来
                     q = dict(parse_qsl(pb.body.args))
