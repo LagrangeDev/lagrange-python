@@ -266,7 +266,7 @@ class Markdown(BaseElem):
 
     @property
     def display(self) -> str:
-        return f"[markdown:{self.md_c.decode()}]"
+        return f"[markdown:{self.content}]"
 
 
 class Permission:
