@@ -77,6 +77,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     pkg = MsgPush.decode(sso.data).body
     typ = pkg.content_head.type
     sub_typ = pkg.content_head.sub_type
+    if sub_typ is None:
+        sub_typ=-1
 
     logger.debug(f"msg_push received, type: {typ}.{sub_typ}")
     if typ == 82:  # grp msg

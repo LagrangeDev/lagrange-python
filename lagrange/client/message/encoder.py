@@ -7,8 +7,14 @@ import zlib
 from typing import TYPE_CHECKING, Any, Callable, Optional
 from collections.abc import Coroutine
 
-from lagrange.pb.message.heads import ContentHead, Forward, ResponseHead
-from lagrange.pb.message.longmsg import LongMsgAction, LongMsgActionBody, LongMsgRespResult, LongMsgResult, LongMsgRsp
+from lagrange.pb.message.heads import ContentHead, Forward, Grp, ResponseHead
+from lagrange.pb.message.longmsg import (
+    LongMsgAction,
+    LongMsgActionBody,
+    LongMsgResp,
+    LongMsgResult,
+    LongMsgRsp,
+)
 from lagrange.pb.message.msg import Message
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.rich_text import Elems, RichText
@@ -205,7 +211,7 @@ async def build_message(
                     if forward_func is None:
                         continue
                     msg.resid = await forward_func(msg)
-                fileid = uuid4()
+                fileid = str(uuid4())
                 template = {
                     "app": "com.tencent.multimsg",
                     "config": {"autosize": 1, "forward": 1, "round": 1, "type": "normal", "width": 300},
@@ -214,7 +220,9 @@ async def build_message(
                     "meta": {
                         "detail": {
                             "news": [
-                                {"text": "".join(element.raw_text for element in forward_node.content)}
+                                {
+                                    "text": f'{forward_node.sender_nick}:{"".join(element.raw_text for element in forward_node.content)}'
+                                }
                                 for forward_node in msg.messages
                             ],
                             "resid": msg.resid,
@@ -256,13 +264,18 @@ async def build_forward_msg(
             action_data=LongMsgActionBody(
                 action_list=[
                     MsgPushBody(
-                        response_head=ResponseHead(from_uin=node.sender_uin),
+                        response_head=ResponseHead(
+                            from_uin=node.sender_uin, rsp_grp=Grp(sender_name=node.sender_nick, f5=2)
+                        ),
                         content_head=ContentHead(
                             type=82,
                             random=random.randint(100000000, 2147483647),
                             seq=seq,
                             timestamp=node.timestamp,
-                            forward=Forward(),
+                            forward=Forward(
+                                custom_flag=b"666" if node.sender_nick or node.sender_avatar_url else b"",
+                                avatar_url=node.sender_avatar_url,
+                            ),
                         ),
                         message=Message(body=await build_message(node.content, forward_func=forward_func)),
                     )
@@ -278,12 +291,13 @@ async def _get_mulitmsg_resid(
     client: "Client", forword_msg: MulitMsg, target: str = "", grp_id: Optional[int] = None
 ) -> str:
     body = await build_forward_msg(forword_msg, get_resid_func(client, target, grp_id))
+
     packet = await client.send_uni_packet(
         "trpc.group.long_msg_interface.MsgService.SsoSendLongMsg",
         LongMsgRsp.build(gzip.compress(body.encode()), target, grp_id).encode(),
     )
-    result = LongMsgRespResult.decode(packet.data)
-    return result.resid
+    result = LongMsgResp.decode(packet.data)
+    return result.result.resid
 
 
 def get_resid_func(

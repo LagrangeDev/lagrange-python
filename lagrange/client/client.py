@@ -71,8 +71,8 @@ from .events.group import GroupMessage
 from .events.service import ClientOnline, ClientOffline
 from .highway import HighWaySession
 from .message.decoder import parse_grp_msg
-from .message.elems import Audio, Image
-from .message.encoder import build_message
+from .message.elems import Audio, Image, MulitMsg
+from .message.encoder import _get_mulitmsg_resid, build_message
 from .message.types import Element
 from .models import UserInfo, BotFriend
 from .server_push import PushDeliver, bind_services
@@ -217,6 +217,20 @@ class Client(BaseClient):
 
     async def send_friend_msg(self, msg_chain: list[Element], uid: str) -> int:
         result = await self._send_msg_raw({1: (await build_message(msg_chain)).encode()}, uid=uid)
+        if result.ret_code:
+            raise AssertionError(result.ret_code, result.err_msg)
+        return result.seq
+
+    async def send_grp_forward_msg(self, forward_msg: MulitMsg, grp_id: int):
+        forward_msg.resid = await _get_mulitmsg_resid(self, forward_msg, grp_id=grp_id)
+        result = await self._send_msg_raw({1: (await build_message([forward_msg])).encode()}, grp_id=grp_id)
+        if result.ret_code:
+            raise AssertionError(result.ret_code, result.err_msg)
+        return result.seq
+    
+    async def send_friend_forward_msg(self, forward_msg: MulitMsg, uid: str):
+        forward_msg.resid = await _get_mulitmsg_resid(self, forward_msg, target=uid)
+        result = await self._send_msg_raw({1: (await build_message([forward_msg])).encode()},uid=uid)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
@@ -493,17 +507,13 @@ class Client(BaseClient):
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo:
-        ...
+    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo: ...
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]:
-        ...
+    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]: ...
 
     async def get_user_info(
-        self,
-        uid_or_uin: Union[str, int, list[str], list[int]],
-        /
+        self, uid_or_uin: Union[str, int, list[str], list[int]], /
     ) -> Union[UserInfo, list[UserInfo]]:
         if isinstance(uid_or_uin, list):
             assert uid_or_uin, "empty uid or uin"

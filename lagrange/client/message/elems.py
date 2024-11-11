@@ -19,7 +19,7 @@ class BaseElem(JsonSerializer):
     @property
     def type(self) -> str:
         return self.__class__.__name__.lower()
-    
+
     @property
     def raw_text(self) -> str:
         return ""
@@ -55,7 +55,7 @@ class Text(BaseElem):
     @property
     def display(self) -> str:
         return self.text
-    
+
     @property
     def raw_text(self) -> str:
         return self.text
@@ -123,11 +123,11 @@ class At(BaseElem):
     @classmethod
     def build(cls, ev: GroupMessage) -> "At":
         return cls(uin=ev.uin, uid=ev.uid, text=f"@{ev.nickname or ev.uin}")
-    
+
     @property
     def display(self) -> str:
         return self.text
-    
+
     @property
     def raw_text(self) -> str:
         return self.text
@@ -239,6 +239,7 @@ class File(CompatibleText):
     @property
     def raw_text(self) -> str:
         return "[文件]"
+
     @classmethod
     def _paste_build(
         cls,
@@ -290,7 +291,7 @@ class Markdown(BaseElem):
     @property
     def display(self) -> str:
         return f"[markdown:{self.content}]"
-    
+
     @property
     def raw_text(self) -> str:
         return "[Markdown]"
@@ -346,11 +347,12 @@ class Keyboard(BaseElem):
 
 @dataclass
 class ForwardNode(BaseElem):
-    sender_uin: int
-    sender_nick: str
-    sender_avatar: str
-
     content: list["Element"]
+
+    sender_uin: int
+    sender_nick: str = "QQ用户"
+    sender_avatar_url: str = ""
+
     timestamp: int = field(default_factory=lambda: int(time.time()))
 
 

@@ -19,8 +19,27 @@ class LongMsgResp(ProtoStruct):
     cfg: LongMsgCfg = proto_field(15)
 
 
+class MulitMsgProperty(ProtoStruct):
+    value: str = proto_field(2)  # uid or grp_id
+
+
+class LongMsgBody(ProtoStruct):
+    f1: int = proto_field(1)  # grp 3,friend 1
+    gid_or_uid: MulitMsgProperty = proto_field(2)
+    grp_id: Optional[int] = proto_field(3, default=None)
+    msg_content: bytes = proto_field(4)
+
+    @classmethod
+    def build_friend(cls, target: str, msg_content: bytes):
+        return cls(f1=1, gid_or_uid=MulitMsgProperty(value=target), msg_content=msg_content)
+
+    @classmethod
+    def build_group(cls, grp_id: int, msg_content: bytes):
+        return cls(f1=3, gid_or_uid=MulitMsgProperty(value=str(grp_id)), grp_id=grp_id, msg_content=msg_content)
+
+
 class LongMsgRsp(ProtoStruct):
-    msg_info: "LongMsgBody" = proto_field(2)
+    msg_info: LongMsgBody = proto_field(2)
     cfg: LongMsgCfg = proto_field(15)
 
     @classmethod
@@ -34,33 +53,14 @@ class LongMsgRsp(ProtoStruct):
             raise ValueError("Must have target or grp_id")
 
 
-class LongMsgBody(ProtoStruct):
-    f1: int = proto_field(1)  # grp 3,friend 1
-    gid_or_uid: "MulitMsgProperty" = proto_field(2)
-    grp_id: Optional[int] = proto_field(3, default=None)
-    msg_content: bytes = proto_field(4)
-
-    @classmethod
-    def build_friend(cls, target: str, msg_content: bytes):
-        return cls(f1=1, gid_or_uid=MulitMsgProperty(value=target), msg_content=msg_content)
-
-    @classmethod
-    def build_group(cls, grp_id: int, msg_content: bytes):
-        return cls(f1=3, gid_or_uid=MulitMsgProperty(value=str(grp_id)), grp_id=grp_id, msg_content=msg_content)
-
-
-class MulitMsgProperty(ProtoStruct):
-    value: str = proto_field(2)  # uid or grp_id
-
-
-class LongMsgResult(ProtoStruct):
-    action: "LongMsgAction" = proto_field(2)
+class LongMsgActionBody(ProtoStruct):
+    action_list: list[MsgPushBody] = proto_field(1)
 
 
 class LongMsgAction(ProtoStruct):
     action_command: str = proto_field(1)
-    action_data: "LongMsgActionBody" = proto_field(2)
+    action_data: LongMsgActionBody = proto_field(2)
 
 
-class LongMsgActionBody(ProtoStruct):
-    action_list: list[MsgPushBody] = proto_field(1)
+class LongMsgResult(ProtoStruct):
+    action: LongMsgAction = proto_field(2)
