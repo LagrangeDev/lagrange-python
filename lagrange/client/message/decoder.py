@@ -299,7 +299,7 @@ async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
     from_uin, from_uid, to_uin, to_uid = parse_friend_info(pkg)
 
     seq = pkg.content_head.seq
-    msg_id = pkg.content_head.msg_id
+    msg_id = pkg.content_head.random
     timestamp = pkg.content_head.timestamp
     parsed_msg = await parse_msg_new(client, pkg, fri_id=from_uid, grp_id=None)
     msg_text = "".join([getattr(msg, "display", "") for msg in parsed_msg])

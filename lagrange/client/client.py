@@ -210,13 +210,13 @@ class Client(BaseClient):
         return SendMsgRsp.decode(packet.data)
 
     async def send_grp_msg(self, msg_chain: list[Element], grp_id: int) -> int:
-        result = await self._send_msg_raw({1: build_message(msg_chain).encode()}, grp_id=grp_id)
+        result = await self._send_msg_raw({1: (await build_message(msg_chain)).encode()}, grp_id=grp_id)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
 
     async def send_friend_msg(self, msg_chain: list[Element], uid: str) -> int:
-        result = await self._send_msg_raw({1: build_message(msg_chain).encode()}, uid=uid)
+        result = await self._send_msg_raw({1: (await build_message(msg_chain)).encode()}, uid=uid)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
