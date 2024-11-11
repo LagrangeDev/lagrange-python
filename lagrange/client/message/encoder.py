@@ -4,10 +4,9 @@ import random
 import struct
 from uuid import uuid4
 import zlib
-from typing import Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 from collections.abc import Coroutine
 
-from lagrange.client.client import Client
 from lagrange.pb.message.heads import ContentHead, Forward, ResponseHead
 from lagrange.pb.message.longmsg import LongMsgAction, LongMsgActionBody, LongMsgRespResult, LongMsgResult, LongMsgRsp
 from lagrange.pb.message.msg import Message
@@ -49,6 +48,9 @@ from .elems import (
     GreyTips,
 )
 from .types import Element
+
+if TYPE_CHECKING:
+    from ..client import Client as Client
 
 
 async def build_message(
@@ -271,9 +273,9 @@ async def build_forward_msg(
     )
 
 
-#it should be enterpoint
+# it should be enterpoint
 async def _get_mulitmsg_resid(
-    client: Client, forword_msg: MulitMsg, target: str = "", grp_id: Optional[int] = None
+    client: "Client", forword_msg: MulitMsg, target: str = "", grp_id: Optional[int] = None
 ) -> str:
     body = await build_forward_msg(forword_msg, get_resid_func(client, target, grp_id))
     packet = await client.send_uni_packet(
@@ -285,7 +287,7 @@ async def _get_mulitmsg_resid(
 
 
 def get_resid_func(
-    client: Client, target: str = "", grp_id: Optional[int] = None
+    client: "Client", target: str = "", grp_id: Optional[int] = None
 ) -> Callable[..., Coroutine[Any, Any, str]]:
     async def wrap(forword_msg: MulitMsg):
         return await _get_mulitmsg_resid(client, forword_msg, target, grp_id)
