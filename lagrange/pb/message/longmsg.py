@@ -58,9 +58,37 @@ class LongMsgActionBody(ProtoStruct):
 
 
 class LongMsgAction(ProtoStruct):
-    action_command: str = proto_field(1)
+    action_command: str = proto_field(1) # 接收时也可能是uniseq
     action_data: LongMsgActionBody = proto_field(2)
 
 
 class LongMsgResult(ProtoStruct):
-    action: LongMsgAction = proto_field(2)
+    action: list[LongMsgAction] = proto_field(2)
+
+
+class RecvLongMsgInfo(ProtoStruct):
+    uid: MulitMsgProperty = proto_field(1)
+    res_id: str = proto_field(2)
+    acquire: bool = proto_field(3, default=True)
+
+
+class RecvLongMsgReq(ProtoStruct):
+    info: RecvLongMsgInfo = proto_field(1)
+    settings: LongMsgCfg = proto_field(15)
+
+    @classmethod
+    def build(cls, uid: str, res_id: str):
+        return cls(
+            info=RecvLongMsgInfo(uid=MulitMsgProperty(value=uid), res_id=res_id),
+            settings=LongMsgCfg(f1=2, f2=0, f3=0, f4=0),
+        )
+
+
+class RecvLongMsgResult(ProtoStruct):
+    res_id: str = proto_field(3)
+    payload: bytes = proto_field(4)
+
+
+class RecvLongMsgRsp(ProtoStruct):
+    result: RecvLongMsgResult = proto_field(1)
+    settings: LongMsgCfg = proto_field(15)

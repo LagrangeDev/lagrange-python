@@ -113,6 +113,10 @@ class AtAll(BaseElem):
     def display(self) -> str:
         return self.text
 
+    @property
+    def raw_text(self) -> str:
+        return self.text
+
 
 @dataclass
 class At(BaseElem):
@@ -141,6 +145,10 @@ class Image(CompatibleText, MediaInfo):
     display_name: str
 
     @property
+    def raw_text(self) -> str:
+        return "[图片]"
+
+    @property
     def display(self) -> str:
         return self.display_name
 
@@ -153,6 +161,10 @@ class Video(CompatibleText, MediaInfo):
     file_key: str = field(repr=True)
 
     @property
+    def raw_text(self) -> str:
+        return "[视频]"
+
+    @property
     def display(self) -> str:
         return f"[video:{self.width}x{self.height},{self.time}s]"
 
@@ -161,6 +173,10 @@ class Video(CompatibleText, MediaInfo):
 class Audio(CompatibleText, MediaInfo):
     time: int
     file_key: str = field(repr=True)
+
+    @property
+    def raw_text(self) -> str:
+        return "[语音]"
 
     @property
     def display(self) -> str:
@@ -220,6 +236,10 @@ class MarketFace(CompatibleText):
     @property
     def display(self) -> str:
         return f"[marketface:{self.name}]"
+
+    @property
+    def raw_text(self) -> str:
+        return "[动画表情]"
 
 
 @dataclass
@@ -350,7 +370,7 @@ class ForwardNode(BaseElem):
     content: list["Element"]
 
     sender_uin: int
-    sender_nick: str = "QQ用户"
+    sender_nick: str = ""
     sender_avatar_url: str = ""
 
     timestamp: int = field(default_factory=lambda: int(time.time()))
@@ -364,3 +384,7 @@ class MulitMsg(BaseElem):
     @property
     def display(self) -> str:
         return f"[forward:{self.resid}]"
+
+    @property
+    def raw_text(self) -> str:
+        return "[聊天记录]"

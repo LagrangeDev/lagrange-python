@@ -1,3 +1,4 @@
+import gzip
 import os
 import struct
 import asyncio
@@ -15,6 +16,7 @@ from typing import (
 from collections.abc import Coroutine
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
+from lagrange.pb.message.longmsg import LongMsgResult, RecvLongMsgReq, RecvLongMsgRsp
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.send import SendMsgRsp
 from lagrange.pb.service.comm import (
@@ -70,7 +72,7 @@ from .event import Events
 from .events.group import GroupMessage
 from .events.service import ClientOnline, ClientOffline
 from .highway import HighWaySession
-from .message.decoder import parse_grp_msg
+from .message.decoder import parse_grp_msg, parse_msg_new
 from .message.elems import Audio, Image, MulitMsg
 from .message.encoder import _get_mulitmsg_resid, build_message
 from .message.types import Element
@@ -227,10 +229,10 @@ class Client(BaseClient):
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
-    
+
     async def send_friend_forward_msg(self, forward_msg: MulitMsg, uid: str):
         forward_msg.resid = await _get_mulitmsg_resid(self, forward_msg, target=uid)
-        result = await self._send_msg_raw({1: (await build_message([forward_msg])).encode()},uid=uid)
+        result = await self._send_msg_raw({1: (await build_message([forward_msg])).encode()}, uid=uid)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
@@ -623,3 +625,25 @@ class Client(BaseClient):
         rsp = await self.send_oidb_svc(0x9067, 202, proto_encode(body), True)
         temp = proto_decode(rsp.data).into((4, 1), dict[int, list[bytes]])
         return temp[0][1].decode(), temp[1][1].decode()
+
+    async def get_forward_msg(self, res_id: str) -> list[list[Element]]:
+        """
+        res_id: from MultiMsg
+        """
+        ret: list[list[Element]] = []
+        rsp = RecvLongMsgRsp.decode(
+            (
+                await self.send_uni_packet(
+                    "trpc.group.long_msg_interface.MsgService.SsoRecvLongMsg",
+                    RecvLongMsgReq.build(self.uid, res_id).encode(),
+                )
+            ).data
+        )
+        payload = gzip.decompress(rsp.result.payload)
+        awa = LongMsgResult.decode(payload)
+        for msg in awa.action:
+            for elem in msg.action_data.action_list:
+                ret.append(list(await parse_msg_new(self, elem)))
+                # 对，但是不是很对的解析
+                # 顺序对了，但是顺序不对
+        return ret  # TODO: retrun MulitMsg

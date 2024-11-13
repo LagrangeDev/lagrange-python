@@ -1,4 +1,5 @@
 import json
+from xml.dom import minidom
 import zlib
 from typing import TYPE_CHECKING, cast, Literal, Union
 from collections.abc import Sequence
@@ -218,7 +219,18 @@ async def parse_msg_new(
                     content = zlib.decompress(jr[1:])
                 else:
                     content = jr[1:]
-                msg_chain.append(elems.Service(id=sid, raw=content))
+                if sid == 35:
+                    # msg_chain.append(elems.MultiMsg(res_id=service))
+                    root: minidom.Document = minidom.parseString(content)
+                    msg_elem: minidom.Element = root.getElementsByTagName("msg")[0]
+                    return [
+                        elems.MulitMsg(
+                            msg_elem.getAttribute("m_fileName"),
+                            resid=msg_elem.getAttribute("m_resid"),
+                        )
+                    ]
+                else:
+                    msg_chain.append(elems.Service(id=sid, raw=content))
             ignore_next = True
         elif raw.open_data:
             msg_chain.append(elems.Raw(data=raw.open_data.data))
