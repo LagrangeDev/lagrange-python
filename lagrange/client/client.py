@@ -105,7 +105,7 @@ class Client(BaseClient):
         return self._push_deliver
 
     async def register(self) -> bool:
-        if await super().register():
+        if await super().register_new():
             self._events.emit(ClientOnline(), self)
             return True
         self._events.emit(ClientOffline(recoverable=False), self)

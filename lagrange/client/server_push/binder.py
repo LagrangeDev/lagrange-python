@@ -21,6 +21,6 @@ class PushDeliver:
 
     async def execute(self, cmd: str, sso: SSOPacket):
         if cmd not in self._handle_map:
-            logger.warning(f"Unsupported command: {cmd}")
+            logger.warning(f"Unsupported command: {cmd}({len(sso.data)})")
         else:
             return await self._handle_map[cmd](self._client, sso)

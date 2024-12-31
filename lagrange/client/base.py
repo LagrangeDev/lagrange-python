@@ -29,6 +29,8 @@ from .wtlogin.status_service import (
     build_register_request,
     build_sso_heartbeat_request,
     parse_register_response,
+    build_sso_info_sync,
+    parse_sso_info_sync_rsp,
 )
 from .wtlogin.tlv import CommonTlvBuilder, QrCodeTlvBuilder
 
@@ -405,6 +407,18 @@ class BaseClient:
             log.login.info("Register successful")
             return True
         log.login.error("Register failure")
+        return False
+
+    async def register_new(self) -> bool:
+        response = await self.send_uni_packet(
+            "trpc.msg.register_proxy.RegisterProxy.SsoInfoSync",
+            build_sso_info_sync(self.app_info, self.device_info),
+        )
+        if parse_sso_info_sync_rsp(response.data):
+            self._online.set()
+            log.login.info("Register(new) successful")
+            return True
+        log.login.error("Register(new) failure")
         return False
 
     async def sso_heartbeat(self, calc_latency=False, timeout=10) -> float:
