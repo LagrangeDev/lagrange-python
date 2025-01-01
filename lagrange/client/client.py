@@ -191,7 +191,7 @@ class Client(BaseClient):
             sendto[1] = {2: uid}
         elif grp_id:  # grp
             sendto[2] = {1: grp_id}
-        elif uid and grp_id:  # temp msg, untest
+        elif uid and grp_id:  # temp msg, untested
             assert uid or grp_id, "uid and grp_id"
             sendto[3] = {1: grp_id, 2: uid}
         else:
