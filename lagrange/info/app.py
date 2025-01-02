@@ -22,7 +22,7 @@ def _translate_appinfo(s: _T) -> _T:
         else:
             k = re.sub(
                 r'([A-Z])([^A-Z]+)',
-                '_\g<0>',
+                '_\0',
                 k
             ).lstrip("_").lower()
             out[k] = v
