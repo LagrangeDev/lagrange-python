@@ -5,7 +5,7 @@ from typing import TypedDict, TypeVar, Union
 from .serialize import JsonSerializer
 
 
-_T = TypeVar('_T', bound=dict[str, Union[int, str]])
+_T = TypeVar("_T", bound=dict[str, Union[int, str]])
 _trans_map = {
     "SsoVersion": "pt_os_version",
     "WtLoginSdk": "wtlogin_sdk",
@@ -21,8 +21,8 @@ def _translate_appinfo(s: _T) -> _T:
             out[_trans_map[k]] = v
         else:
             k = re.sub(
-                r'([A-Z])([^A-Z]+)',
-                '_\0',
+                r"([A-Z])([^A-Z]+)",
+                r"_\1\2",
                 k
             ).lstrip("_").lower()
             out[k] = v
