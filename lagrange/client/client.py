@@ -22,6 +22,8 @@ from lagrange.pb.service.comm import (
     GetCookieRsp,
     SendGrpBotHD,
     SendNudge,
+    TabOpReq,
+    TabOpRsp,
 )
 from lagrange.pb.service.friend import (
     GetFriendListRsp,
@@ -613,3 +615,10 @@ class Client(BaseClient):
         rsp = await self.send_oidb_svc(0x9067, 202, proto_encode(body), True)
         temp = proto_decode(rsp.data).into((4, 1), dict[int, list[bytes]])
         return temp[0][1].decode(), temp[1][1].decode()
+
+    async def get_marketface_key(self, face_id: int, face_md5: list[str]) -> list[str]:
+        rsp = await self.send_uni_packet(
+            "BQMallSvc.TabOpReq",
+            TabOpReq.build(face_id, face_md5).encode()
+        )
+        return TabOpRsp.decode(rsp.data).keys()
