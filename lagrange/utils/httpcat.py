@@ -228,6 +228,7 @@ class HttpCat:
         body: Optional[bytes] = None,
         cookies: Optional[dict[str, str]] = None,
         follow_redirect=True,
+        max_redirect=10,
         conn_timeout=0,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> HttpResponse:
@@ -242,9 +243,9 @@ class HttpCat:
             address[0], reader, writer, method, path, header, body, cookies, True, loop
         )
         _logger.debug(f"request({method})[{resp.code}]: {url}")
-        if resp.code // 100 == 3 and follow_redirect:
+        if resp.code // 100 == 3 and follow_redirect and max_redirect > 0:
             return await cls.request(
-                method, resp.header["Location"], header, body, cookies
+                method, resp.header["Location"], header, body, cookies, follow_redirect, max_redirect - 1
             )
         else:
             return resp
