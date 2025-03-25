@@ -129,7 +129,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 pkg.response_head.to_uin,
                 pb.info.to_uid,
                 pb.info.verify,
-                pb.info.source,
+                pb.info.source or pb.info.source_new,
             )
         elif sub_typ == 138:  # friend recall
             pb = PBFriendRecall.decode(pkg.message.buf2)
