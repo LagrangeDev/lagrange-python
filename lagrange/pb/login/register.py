@@ -119,3 +119,72 @@ class PBSsoInfoSyncResponse(ProtoStruct):
     reg_rsp: PBRegisterResponse = proto_field(7)
     # f9: int = proto_field(9)
 
+
+# trpc.msg.register_proxy.RegisterProxy.InfoSyncPush: From Server
+class InfoSyncPushGrpInfo(ProtoStruct):
+    grp_id: int = proto_field(1)
+    last_msg_seq: int = proto_field(2)
+    last_msg_seq_read: int = proto_field(3)  # bot最后一次标记已读
+    f4: int = proto_field(4)  # 1
+    last_msg_timestamp: int = proto_field(8, default=0)
+    grp_name: str = proto_field(9)
+    last_msg_seq_sent: int = proto_field(10, default=0)  # bot最后一次发信 TODO: 可能不太对？确认下
+    f10: int = proto_field(10, default=None)  # u32, unknown
+    f12: int = proto_field(12, default=None)  # 1
+    f13: int = proto_field(13, default=None)  # 1
+    f14: int = proto_field(14, default=None)  # u16?
+    f15: int = proto_field(15, default=None)  # 1
+    f16: int = proto_field(16, default=None)  # u16?
+
+
+class InnerGrpMsg(ProtoStruct):
+    grp_id: int = proto_field(3)
+    start_seq: int = proto_field(4)
+    end_seq: int = proto_field(5)
+    msgs: list[MsgPushBody] = proto_field(6)  # last 30 msgs
+    last_msg_time: int = proto_field(8)
+
+
+class InfoSyncGrpMsgs(ProtoStruct):
+    inner: list[InnerGrpMsg] = proto_field(3)
+
+
+class InnerSysEvt(ProtoStruct):
+    grp_id: int = proto_field(1)
+    grp_id_str: str = proto_field(2)
+    last_evt_time: int = proto_field(5)
+    events: list[MsgPushBody] = proto_field(8)  # TODO: parse event (like MsgPush?)
+
+
+# with FriendMessage
+class InfoSyncSysEvents(ProtoStruct):
+    # f3: dict = proto_field(3)  # {1: LAST_EVT_TIME}
+    inner: list[InnerSysEvt] = proto_field(4)
+    # f5: dict = proto_field(5)  # {1: LAST_EVT_TIME}
+
+
+class PBSsoInfoSyncPush(ProtoStruct):
+    cmd_type: int = proto_field(3)  # 5: GrpInfo(f6), 2: HUGE msg push block(f7&f8), 1&4: unknown(empty)
+    f4: int = proto_field(4)  # 393
+    grp_info: list[InfoSyncPushGrpInfo] = proto_field(6, default=None)
+    grp_msgs: InfoSyncGrpMsgs = proto_field(7, default=None)
+    sys_events: InfoSyncSysEvents = proto_field(8, default=None)
+
+
+# trpc.msg.register_proxy.RegisterProxy.PushParams
+class PPOnlineDevices(ProtoStruct):
+    sub_id: int = proto_field(1)
+    # f2: int = proto_field(2)  # 2
+    # f3: int = proto_field(3)  # 1
+    # f4: int = proto_field(4)  # 109
+    os_name: str = proto_field(5)
+    # f6:int = proto_field(6)
+    device_name: str = proto_field(7)
+
+
+class PBServerPushParams(ProtoStruct):
+    online_devices: list[PPOnlineDevices] = proto_field(4, default_factory=list)
+    # f6: dict = proto_field(6)  # {2: 9}
+    # f7: str = proto_field(7)  # value: ""(empty)
+    # f8: list[int] = proto_field(8)  # multi long int
+    # f9: int = proto_field(9)  # 8640000, 100days
