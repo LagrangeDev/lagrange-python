@@ -120,57 +120,75 @@ files = [
 
 [[package]]
 name = "ftea"
-version = "0.1.8"
+version = "0.1.9"
 requires_python = ">=3.6"
 summary = "tea encrypt and decrypt"
 groups = ["faster"]
 files = [
-    {file = "ftea-0.1.8-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:68da541af8d77e75b618dee9ee686a7e7712edc5c752cbb0f4e3ba2d4ca2812f"},
-    {file = "ftea-0.1.8-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e9dd4ff99c21f8ea4eed18404304dcae624894dd577f7fa8a4d9ba96cd0dbea0"},
-    {file = "ftea-0.1.8-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b8e257ab4281385498c7f3196bb0147289b9310099454d168354e8cb4a4d80bb"},
-    {file = "ftea-0.1.8-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7754eefe4ff788ede5d333da3c0d8d2f7e7c6e31adbaf8c6eac9380ecd255651"},
-    {file = "ftea-0.1.8-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bce154fc832c3fb1f7c1a5cfda41a3b4cbe07c8fa974f3ada2a1b829d44e55cf"},
-    {file = "ftea-0.1.8-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:a4fa9cdd5062ff4e36cc9a6529bec13a0ee6a4610e4b5f0c331f623777ffcdc7"},
-    {file = "ftea-0.1.8-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:a6b33c5d9309aadce9cadd9b868c4406912ea1f9fd1410da5625c31c91825d90"},
-    {file = "ftea-0.1.8-cp310-cp310-win32.whl", hash = "sha256:2333dda8900de9fff73f53cd579a6e0f84453550278054f2aad4294f47a4cf88"},
-    {file = "ftea-0.1.8-cp310-cp310-win_amd64.whl", hash = "sha256:ffb55930b3e684687d008a981d73938fc69e589109db9582c63c4e386bd3e48b"},
-    {file = "ftea-0.1.8-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:60f4701be6ab9b21ff796418a9db2c9add727d757ff58b8f7e1fb4f743793d71"},
-    {file = "ftea-0.1.8-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:b65a952d8938fc9a1fc0ed896da20c5ca7b99e6d2199c287cce78d1dceb4b419"},
-    {file = "ftea-0.1.8-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:6c6476c6bf1466a01499ef4b9755da277ac92963690261d70a2f643ed7ee533f"},
-    {file = "ftea-0.1.8-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:664105fe511ca5fdeaf4a0f7c4e8f41a1c0ab846f242c058c3e96ea6261e398e"},
-    {file = "ftea-0.1.8-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:721d0eca4f714a8f9e57c214e33238f91526fb6da02be4ec76e9f107abf07ed7"},
-    {file = "ftea-0.1.8-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:dd4850dd15e126c963ba45d54e842984934bbe4ca30fc779663eb84ab371fa11"},
-    {file = "ftea-0.1.8-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:f7f94d0cee94af5eb4f9239b4d05975348f5acbe08a95160bd015e073a19c255"},
-    {file = "ftea-0.1.8-cp311-cp311-win32.whl", hash = "sha256:19f9db0b8f788ab70f9c2bc1483985da7ce838d2c900c41f5944ad2bcbaf3669"},
-    {file = "ftea-0.1.8-cp311-cp311-win_amd64.whl", hash = "sha256:7692536861399982e62ff258fdbf61b252521137209978e3bcc23b5cb1a7c1f2"},
-    {file = "ftea-0.1.8-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:6d04146e38d547e9e0cc15a7f1aef40f3adfb4bb1c6438c458c9082970429035"},
-    {file = "ftea-0.1.8-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:aa319f60dc867555a3814085b5eebc084e19bd5ff569e18bf91b3f0ed59b3981"},
-    {file = "ftea-0.1.8-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:2dd920b4686db4652d9c961f87a0e164f8debca398e6c8fde5ad1b9d42423254"},
-    {file = "ftea-0.1.8-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aad5b49b97c20883068ed461f6de6244d8b9b8f3db0ac6a942227bea864523c2"},
-    {file = "ftea-0.1.8-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:74cd39dffc1abebd8b1600ecd8b4eae5dd6426e7c9e84d61f3081ed4dc42ce0a"},
-    {file = "ftea-0.1.8-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:73d901069e7aeb4b687d441450dcf4f4d666f5b4b5acd7bb2e3f07cc9f9da7e8"},
-    {file = "ftea-0.1.8-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:a0ac102da0a8ceef373fda8f680fe83c3a9fa0ddd05dc79ca4add6d7284aca48"},
-    {file = "ftea-0.1.8-cp312-cp312-win32.whl", hash = "sha256:0ba42ff90d6b6c8dad0ab42b9cb87645ce992a1fdfe726e8d512bab98680d475"},
-    {file = "ftea-0.1.8-cp312-cp312-win_amd64.whl", hash = "sha256:405735c1b978f98ecf87402da922196a5edf7e383c485e7c558ddc562bbe026c"},
-    {file = "ftea-0.1.8-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:6968bcdfa381f0dfc9bc4e412acc9fac3ce0864c9100487aa16383e4a4b25405"},
-    {file = "ftea-0.1.8-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:7713eb30c0395358de1b153e38b6bf401a6336f74d744a02248dc1469bccd36b"},
-    {file = "ftea-0.1.8-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:dfdbc9a014b62f777fde84734c245ac7ed22474ed4fe449c93d0bcf83d215b55"},
-    {file = "ftea-0.1.8-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:427d445653a458d52e639f74c9c7758a99ba60a86fc801127e82cc5309767291"},
-    {file = "ftea-0.1.8-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:95c2a5422043c63bd63ab7a87cfa931797fca99bae3e47671ff73be872fe8f06"},
-    {file = "ftea-0.1.8-cp39-cp39-musllinux_1_1_aarch64.whl", hash = "sha256:d37a51192ebe21382616bf0735657bfe4cbe9c7d90e4764ed86687209c7ae2a8"},
-    {file = "ftea-0.1.8-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:760d4f6f0b016ad31f52a52135bf23d2831bb6ec9d0dee3568179c1e2059e8c9"},
-    {file = "ftea-0.1.8-cp39-cp39-win32.whl", hash = "sha256:f141b17abd46b28824e427320893a1de73236422e384d0e80cc5259911b23a9f"},
-    {file = "ftea-0.1.8-cp39-cp39-win_amd64.whl", hash = "sha256:5b4df574818da69ecce50f22293415a597bb62fd462824e0cc6dd35094316904"},
-    {file = "ftea-0.1.8-pp310-pypy310_pp73-macosx_10_9_x86_64.whl", hash = "sha256:d1f56f3f7e3fb11fe65ad51443b45d11823ca8c8de6f98b4b44adc4a84326edc"},
-    {file = "ftea-0.1.8-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:549bc312dba0ffca5746f59b0b9d6ef429e352e3b3e9f03e19f32bc0f3695af8"},
-    {file = "ftea-0.1.8-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:38ca38c436e2a745f818604eb345ca0fe73a17ebaed4e1968b9ec598fc94857a"},
-    {file = "ftea-0.1.8-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c4c8905eeac08ca4f008ec23276b7e763660655cf1ae99b867ca9a1129959caf"},
-    {file = "ftea-0.1.8-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:d7acea55995a8a60d4f4fa34648ec5a2051a5e8b72492e23fd14b943eb4c08df"},
-    {file = "ftea-0.1.8-pp39-pypy39_pp73-macosx_10_9_x86_64.whl", hash = "sha256:345a559888d6b3c83bebc8b89bb61b24053b182ee11ea09ca89e27ae0bcb59b2"},
-    {file = "ftea-0.1.8-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:5fd022b58920c75c7f26929d774e3538ebd0a784e16cdf46d086dd1ba924a05c"},
-    {file = "ftea-0.1.8-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b8d5a7fa04907ded382103629c8ba7f5c199e6a1f07fe5018f6c0978a9ca732b"},
-    {file = "ftea-0.1.8-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bbe17b29cdd04fdd1d112db314eed5e142f7495f65d6771f9c814f67f630ea6b"},
-    {file = "ftea-0.1.8-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:2a2e7831f7755493ffa4c1050214054058ae513559aac6abd645f23d5ee94096"},
+    {file = "ftea-0.1.9-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:2fd3ec91c400323a37ed7928d6947cbf52526de70c0b45ba1396426b8d184d71"},
+    {file = "ftea-0.1.9-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:c5b58b15b93c78729cd123d11734fd0e70ada26ba005636565121bcd7759982d"},
+    {file = "ftea-0.1.9-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:279d6219d84b348f2fbea42655c2fd023b90f7bf8d77bf26938d0c1652bd5bbb"},
+    {file = "ftea-0.1.9-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8c59d3d93d656a2ff4f5a0c39c97f7c9991bcd86ec0ea6061f74660785acdc0b"},
+    {file = "ftea-0.1.9-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:089e382c274ee7c21f950c672c0c350e60144aa17c66bad3d44cb7ef16bc3b4f"},
+    {file = "ftea-0.1.9-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:b8b7b7fd5cee8aec5cdeb76767de352ea620a5581042b63636298e5b4f38fb5b"},
+    {file = "ftea-0.1.9-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:4f1ae9540179b78913426c1780cbfa5e7220d7fae83618292f9d597a1addc26b"},
+    {file = "ftea-0.1.9-cp310-cp310-win32.whl", hash = "sha256:029b6c38ee1b56718ba79e246abf1348c27d348226ccc2392d35c87ff6bda07e"},
+    {file = "ftea-0.1.9-cp310-cp310-win_amd64.whl", hash = "sha256:ff8ac1428317391856c5a5b6209f74c5021db76865febd2a4eb2190889ed7ac6"},
+    {file = "ftea-0.1.9-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:fd73d104a8282bdfd897ef0db9192b2d4d625e6e70e3d3e9ef5d069ba72f9fe5"},
+    {file = "ftea-0.1.9-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:477ce13b7b0d2ffd9911b74c46c35f8f4eb37d46db8d3d561fd6a28196f26bfc"},
+    {file = "ftea-0.1.9-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:f4cba5fcd6aec57891b48917f5b846ba9508dbc3421ae92cbe0250973d76ba78"},
+    {file = "ftea-0.1.9-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:eb253ccb1d9e8b7ea2751ce059086f3e1a3638b6d843918f9c19139b50cbdb60"},
+    {file = "ftea-0.1.9-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:17f63f764480fb84699bf039d903a429d153feb4a49bcf8606ce495cd09196dd"},
+    {file = "ftea-0.1.9-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:c110c63c6ad907b6a6b035dfef33ba6658d04ca5311c47bb1f11d82dbe8cbecf"},
+    {file = "ftea-0.1.9-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:63102d9fd7d06b39478afe036e6e45e1c940e17464b6d7bd668fbeb50bdab9b4"},
+    {file = "ftea-0.1.9-cp311-cp311-win32.whl", hash = "sha256:18b5d176193b2bae50d97c0269caf271da1c4c787b9948174570716207f3881b"},
+    {file = "ftea-0.1.9-cp311-cp311-win_amd64.whl", hash = "sha256:0710fc46fafc293def0ef4c5f621290ff2afea454baccd8d75c907d155ac348e"},
+    {file = "ftea-0.1.9-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:62909fef16e3989e4ee8fb1239ce628a283482571607194100146db0cbefff69"},
+    {file = "ftea-0.1.9-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:e83233d81f41f171c5b0aea3dd83bafb8d6d9d047b57a1ccfb1eb2fe4b1f7945"},
+    {file = "ftea-0.1.9-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:c2556da4542aebaf2529e0ae626d47bc3ecb57d3e7496fce8c6352b13ae6ba56"},
+    {file = "ftea-0.1.9-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8b622e34ecdb3bd4c4dd409185f92bdeef3b54081c4d902725ab980420189fc8"},
+    {file = "ftea-0.1.9-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:aa0121308d77668ddd26f0e93d23b866eecc3389f8f5b3c1ace9961fa621b4e1"},
+    {file = "ftea-0.1.9-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:dd6e49253b7adc4f059bc15232ce145d5bd12c8e1d162c600310b8c0926c4e9a"},
+    {file = "ftea-0.1.9-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:7acdd0e8d089afcfbdcfa88e9202cff849a8a38764ea71277568b4f677d3e9ca"},
+    {file = "ftea-0.1.9-cp312-cp312-win32.whl", hash = "sha256:0309e85b1c35220cecb3dc6cfdd881e28ece69e929f4cb1d0dc46c7bded8c5db"},
+    {file = "ftea-0.1.9-cp312-cp312-win_amd64.whl", hash = "sha256:7120cb5822479a798b75ef292760b644f6f7e506de902ea9ffc6efdeebfe1573"},
+    {file = "ftea-0.1.9-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:d7a31532d608c5581b3911f05e35308e8a9242c3a1146fd1cc39407f2a9231b7"},
+    {file = "ftea-0.1.9-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:ae2a4f7bee4b56d48ae00d01bb3c539b6935abd40e220992c075a75c69cd7a9d"},
+    {file = "ftea-0.1.9-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:8bba61650466c44c4144702cc7e28e9df3bb1f1586362ea339b93077ef15ce2c"},
+    {file = "ftea-0.1.9-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2c74e80ee246c459c1184b9dec12ddf63fc181e126c9cb1cb3570f06d2d3978d"},
+    {file = "ftea-0.1.9-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a4f2361b93940b716e98c976e7c02c44436a9b80ecb7324e5ea7109e84cf9e38"},
+    {file = "ftea-0.1.9-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:3a024e648b1888cf0e79a1031fed6ceafd46c2e8fd84c3bef561f20ee58ad91f"},
+    {file = "ftea-0.1.9-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:1d0598c623f128f62020c4c6f766025a011fbcd834c218c5d856185d8271aff4"},
+    {file = "ftea-0.1.9-cp313-cp313-win32.whl", hash = "sha256:8705825ff572188fbd710f6009d751f553e2a91e16425d2be6fed79db5f78b27"},
+    {file = "ftea-0.1.9-cp313-cp313-win_amd64.whl", hash = "sha256:bb8e78b4c481cdf7435ccdaa731f496e6141e2fec8289318213242f8826012eb"},
+    {file = "ftea-0.1.9-cp313-cp313t-macosx_10_13_universal2.whl", hash = "sha256:e1998070ece54cf9af2f6ce42891b70b46467917c1bc9753d89215b2861870c0"},
+    {file = "ftea-0.1.9-cp313-cp313t-macosx_10_13_x86_64.whl", hash = "sha256:2d3c5495d7254f3657fda9af316eb4b8cbfd2142626e3f176016d1892efed5f3"},
+    {file = "ftea-0.1.9-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:c327797cd86b812070890b47d9d63b165ab4cf094f481bfedabf0be3954c573e"},
+    {file = "ftea-0.1.9-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:13ba674daf1fdaefdc57e0069d97d0d5adbe2125a1f92f0ba7c10e15151f0604"},
+    {file = "ftea-0.1.9-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b740ad35450c14498225e44fac7b44edc61587f7884393635070e0f5172ce917"},
+    {file = "ftea-0.1.9-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:c843b420b2aec7347bfaa2197b9c55f68eaab538a0eda6e1f2b486ede5db0433"},
+    {file = "ftea-0.1.9-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:7a731bb9a7c8715fe9708c94ddbd3513d85c51e43e1da769eb78da9bb6ae7104"},
+    {file = "ftea-0.1.9-cp313-cp313t-win32.whl", hash = "sha256:9141e30c4f45c0bdbd158ca0c9de7d1cda1b1987bb1420365677c070015d2c2b"},
+    {file = "ftea-0.1.9-cp313-cp313t-win_amd64.whl", hash = "sha256:064767ec5698e913062986c3a9546f010da7493ae16b33b41f6e9405230ccddf"},
+    {file = "ftea-0.1.9-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:233a9266c26157b709042c0f82e0d16db95d14c85bc85e2b7de7b384ef942b60"},
+    {file = "ftea-0.1.9-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:5552d5b4e336f33be2ad7dceddcc617f83d90571d86dd04415f3529601ddb0a0"},
+    {file = "ftea-0.1.9-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:898d5737d53c8063d7306a76b30e36ffbc7b58579d2e9bf3bc1e6de4d042695b"},
+    {file = "ftea-0.1.9-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a962c28ee7f97749fcda0a2be20058a096176f14f7156e5d0156f488b1c5fa1a"},
+    {file = "ftea-0.1.9-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b864c30bb4cd28262c84e417aacfd55d7b9584e04bbdeafe7214a5a65a8d59b8"},
+    {file = "ftea-0.1.9-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:8a10d81a3f4fd6c0357372b8d62fafb2b3f9aaf3837de2656168b5ff4820eff5"},
+    {file = "ftea-0.1.9-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:2357e7bb474e17b61bd182ece7ec6e575a609a900fdffc03ef87f7124e500c42"},
+    {file = "ftea-0.1.9-cp39-cp39-win32.whl", hash = "sha256:f3f7ac5a7a7c0476c13a2d89a3efba1864af78eff9dc97f63cf49a4b9fa0dcb6"},
+    {file = "ftea-0.1.9-cp39-cp39-win_amd64.whl", hash = "sha256:10369e5b2d6c90b5f42e074e55711743011fdf6c3d218fda70e0d91eead4c85e"},
+    {file = "ftea-0.1.9-pp310-pypy310_pp73-macosx_10_15_x86_64.whl", hash = "sha256:63dfe077ed25f769a32a4c5ecf1ea658c428b4b08bbae771965fa18db702d9f5"},
+    {file = "ftea-0.1.9-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:279473c82045b7904270871e1a4739377a5aa7e8b5372dce7212f50f08e3af7e"},
+    {file = "ftea-0.1.9-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:06b0fa52b03769bf0d8e9d90d783f07ad6c51fa8c6adc67d8e9b9518449c25ff"},
+    {file = "ftea-0.1.9-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e7f883698ca63ff52bf05cf86a57f98def2428fafae2799cd71962171181126d"},
+    {file = "ftea-0.1.9-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:363fdc547fb44e8bbd9429c657b28e6a1dc28136c2817c6f1f98efa9a448f248"},
+    {file = "ftea-0.1.9-pp39-pypy39_pp73-macosx_10_15_x86_64.whl", hash = "sha256:bc6dbdc45a1a20f1563b5f9c8ba7fbb958182f28fd0205dd453af962b795557e"},
+    {file = "ftea-0.1.9-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:3f7b895ece6bebca3d21f312eac64a475bb6db5754cbefe22537060c96727340"},
+    {file = "ftea-0.1.9-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:41806a245a042007768cdd5010e33bedc401ea84189dcfe4479151238c985c5a"},
+    {file = "ftea-0.1.9-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0f774c250ebe70d75b2e629aee9ad040494452f1094570d1673c52901da17238"},
+    {file = "ftea-0.1.9-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:3ff72f3788fd79a886b8e087a4f504bf9dc86b0079528e21d8cdfa8e3e334e5a"},
 ]
 
 [[package]]
@@ -203,7 +221,7 @@ files = [
 
 [[package]]
 name = "qrcode"
-version = "8.0"
+version = "8.1"
 requires_python = "<4.0,>=3.9"
 summary = "QR Code image generator"
 groups = ["default"]
@@ -211,19 +229,19 @@ dependencies = [
     "colorama; sys_platform == \"win32\"",
 ]
 files = [
-    {file = "qrcode-8.0-py3-none-any.whl", hash = "sha256:9fc05f03305ad27a709eb742cf3097fa19e6f6f93bb9e2f039c0979190f6f1b1"},
-    {file = "qrcode-8.0.tar.gz", hash = "sha256:025ce2b150f7fe4296d116ee9bad455a6643ab4f6e7dce541613a4758cbce347"},
+    {file = "qrcode-8.1-py3-none-any.whl", hash = "sha256:9beba317d793ab8b3838c52af72e603b8ad2599c4e9bbd5c3da37c7dcc13c5cf"},
+    {file = "qrcode-8.1.tar.gz", hash = "sha256:e8df73caf72c3bace3e93d9fa0af5aa78267d4f3f5bc7ab1b208f271605a5e48"},
 ]
 
 [[package]]
 name = "typing-extensions"
-version = "4.12.2"
+version = "4.13.2"
 requires_python = ">=3.8"
 summary = "Backported and Experimental Type Hints for Python 3.8+"
 groups = ["default"]
 files = [
-    {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
-    {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
+    {file = "typing_extensions-4.13.2-py3-none-any.whl", hash = "sha256:a439e7c04b49fec3e5d3e2beaa21755cadbbdc391694e28ccdd36ca4a1408f8c"},
+    {file = "typing_extensions-4.13.2.tar.gz", hash = "sha256:e6c81219bd689f51865d9e372991c540bda33a0379d5573cddb9a3a23f7caaef"},
 ]
 
 [[package]]
