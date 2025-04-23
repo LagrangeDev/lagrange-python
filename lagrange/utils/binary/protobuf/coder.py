@@ -139,7 +139,7 @@ def proto_decode(data: bytes, max_layer=-1) -> ProtoDecoded:
         elif wire_type == 2:
             value = reader.read_length_delimited()
 
-            if max_layer > 0 or max_layer < 0 and len(value) > 1:
+            if max_layer != 0 and len(value) > 1:
                 try:  # serialize nested
                     value = proto_decode(value, max_layer - 1).proto
                 except Exception:
