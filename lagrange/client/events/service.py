@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 
 from . import BaseEvent
 
@@ -17,3 +18,14 @@ class ClientOnline(BaseEvent):
 class ServerKick(BaseEvent):
     tips: str
     title: str
+
+
+@dataclass
+class OtherClientInfo(BaseEvent):
+    @dataclass
+    class ClientOnline(BaseEvent):
+        sub_id: int
+        os_name: str
+        device_name: str
+
+    clients: List[ClientOnline]

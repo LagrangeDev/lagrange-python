@@ -4,7 +4,7 @@ import datetime
 from lagrange.pb.status.kick import KickNT
 from lagrange.pb.login.register import PBSsoInfoSyncPush, PBServerPushParams
 
-from ..events.service import ServerKick
+from ..events.service import ServerKick, OtherClientInfo
 from ..wtlogin.sso import SSOPacket
 
 DBG_EN = bool(os.environ.get("PUSH_DEBUG", False))
@@ -50,13 +50,11 @@ async def server_info_sync_handler(_, sso: SSOPacket):
 
 
 async def server_push_param_handler(_, sso: SSOPacket):
-    if not DBG_EN:
-        return
-    print("Server Push Params:")
     ev = PBServerPushParams.decode(sso.data)
-    for dev in ev.online_devices:
-        print(f"Device:{dev.device_name} on {dev.os_name} Platform, sub_id: {dev.sub_id}")
-    print("end")
+    return OtherClientInfo([
+        OtherClientInfo.ClientOnline(i.sub_id, i.os_name, i.device_name)
+        for i in ev.online_devices
+    ])
 
 
 async def server_push_req_handler(_, sso: SSOPacket):
