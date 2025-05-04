@@ -178,6 +178,8 @@ class HighWaySession:
             await self._get_bdh_session()
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
         info = decoder_img.decode(file)
+        self.logger.debug(f"image type: {info.pic_type.name}({info.width}*{info.height})")
+
         ret = NTV2RichMediaResp.decode(
             (
                 await self._client.send_oidb_svc(
