@@ -1,3 +1,4 @@
+import inspect
 import sys
 from dataclasses import MISSING
 from types import GenericAlias
@@ -116,8 +117,15 @@ def _decode(typ: type[_ProtoTypes], raw):
             f"ForwardRef '{typ}' not resolved. "
             f"Please call ProtoStruct.update_forwardref({{'{typ}': {typ}}}) before decoding"
         )
-    if issubclass(typ, ProtoStruct):
-        return typ.decode(raw)
+    if isinstance(typ, GenericAlias) and get_origin(typ) is list:
+        real_typ = get_args(typ)[0]
+        ret = []
+        if isinstance(raw, list):
+            for v in raw:
+                ret.append(_decode(real_typ, v))
+        else:
+            ret.append(_decode(real_typ, raw))
+        return ret
     elif typ is str:
         return raw.decode(errors="ignore")
     elif typ is dict:
@@ -128,15 +136,8 @@ def _decode(typ: type[_ProtoTypes], raw):
         if not isinstance(raw, list):
             return [raw]
         return raw
-    elif isinstance(typ, GenericAlias) and get_origin(typ) is list:
-        real_typ = get_args(typ)[0]
-        ret = []
-        if isinstance(raw, list):
-            for v in raw:
-                ret.append(_decode(real_typ, v))
-        else:
-            ret.append(_decode(real_typ, raw))
-        return ret
+    elif isinstance(typ, type) and issubclass(typ, ProtoStruct):
+        return typ.decode(raw)
     elif isinstance(raw, typ):
         return raw
     else:
@@ -208,7 +209,7 @@ class ProtoStruct:
                 for f in base_fields.values():
                     fields[f.name] = f
 
-        cls_annotations = cls.__dict__.get('__annotations__', {})
+        cls_annotations = inspect.get_annotations(cls, eval_str=False)
         cls_fields: list[ProtoField] = []
         for name, typ in cls_annotations.items():
             field = getattr(cls, name, MISSING)
