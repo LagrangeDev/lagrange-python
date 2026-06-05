@@ -30,7 +30,8 @@ class Lagrange:
     ):
         self.im = InfoManager(uin, device_info_path, signinfo_path)
         self.uin = uin
-        self.sign = sign_provider(sign_url) if sign_url else None
+        self._sign_url = sign_url
+        self.sign = None
         self.events = {}
         self.log = log
         self._protocol = protocol
@@ -58,6 +59,13 @@ class Lagrange:
         log.root.info(f"AppInfo: platform={app_info.os}, ver={app_info.build_version}({app_info.sub_app_id})")
 
         with self.im as im:
+            if self._sign_url:
+                self.sign = sign_provider(
+                    self._sign_url,
+                    self.uin,
+                    im.device.guid,
+                    app_info.qua,
+                )
             self.client = Client(
                 self.uin,
                 app_info,
