@@ -8,7 +8,7 @@ authors = [
 ]
 dependencies = [
     "typing-extensions>=4.7.0",
-    "cryptography>=40.0.0",
+    "cryptography>=46.0.7",
     "qrcode>=7.4.2",
 ]
 keywords = ["QQ", "Tencent", "NTQQ", "Framework", "Bot", "asyncio"]
@@ -24,7 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [project.optional-dependencies]
 faster = ["ftea>=0.1.8"]
