@@ -1,5 +1,6 @@
 import time
 import json
+import asyncio
 from urllib import parse
 
 from .httpcat import HttpCat
@@ -74,27 +75,37 @@ def sign_provider(upstream_url: str, uin: int, guid: str, qua: str):
         if token:
             headers["Authorization"] = f"Bearer {token}"
 
-        for _ in range(3):
+        max_retries = 3
+        for attempt in range(max_retries):
             try:
                 start_time = time.time()
                 ret = await HttpCat.request("POST", url, body=body, header=headers)
                 if ret.code != 200:
                     raise ConnectionError(ret.code, ret.body)
+
+                data = ret.json()
+                code = data.get("code", 0)
+                if code != 0:
+                    _logger.error(f"Sign server returned error: ({code}) {data.get('message')}")
+                    if attempt < max_retries - 1:
+                        backoff = 2 ** attempt
+                        _logger.warning(f"重试签名请求 ({attempt + 1}/{max_retries})，{backoff}s 后重试...")
+                        await asyncio.sleep(backoff)
+                        continue
+                    return {}
+
                 _logger.debug(
                     f"signed for [{cmd}:{seq}]({(time.time() - start_time) * 1000:.2f}ms)"
                 )
+                break
             except Exception:
-                _logger.exception("Unexpected error on sign request:")
-                continue
-            break
-        else:
-            raise ConnectionError("Max retries exceeded")
-
-        data = ret.json()
-        code = data.get("code", 0)
-        if code != 0:
-            _logger.error(f"Sign server returned error: ({code}) {data.get('message')}")
-            return {}
+                if attempt < max_retries - 1:
+                    backoff = 2 ** attempt
+                    _logger.exception(f"签名请求失败 ({attempt + 1}/{max_retries})，{backoff}s 后重试:")
+                    await asyncio.sleep(backoff)
+                else:
+                    _logger.exception("Unexpected error on sign request:")
+                    raise ConnectionError("Max retries exceeded")
 
         value = data["value"]
         return {
