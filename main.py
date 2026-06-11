@@ -3,9 +3,10 @@ import os
 
 from lagrange import Lagrange, install_loguru
 from lagrange.client.client import Client
+from lagrange.client.events.friend import FriendMessage
 from lagrange.client.events.group import GroupMessage, GroupSign, GroupReaction
 from lagrange.client.events.service import ServerKick
-from lagrange.client.message.elems import At, Text, Quote, Emoji
+from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text
 
 
 async def msg_handler(client: Client, event: GroupMessage):
@@ -25,7 +26,82 @@ async def msg_handler(client: Client, event: GroupMessage):
             ],
             event.grp_id,
         )
+    elif event.msg.startswith("forward_send"):
+        forward_msg = MulitMsg(
+            messages=[
+                ForwardNode(
+                    content=[Text("群合并转发测试节点 1")],
+                    sender_uin=client.uin,
+                    sender_nick="Lagrange Bot",
+                ),
+                ForwardNode(
+                    content=[Text(f"群合并转发测试节点 2，触发者：{event.nickname or event.uin}")],
+                    sender_uin=event.uin,
+                    sender_nick=event.nickname or str(event.uin),
+                ),
+            ]
+        )
+        seq = await client.send_grp_forward_msg(forward_msg, event.grp_id)
+        print(f"group forward send ok: seq={seq}, resid={forward_msg.resid}")
+    elif event.msg.startswith("forward_get"):
+        resid = event.msg.removeprefix("forward_get").strip()
+        if not resid:
+            await client.send_grp_msg([Text("用法：forward_get <resid>")], event.grp_id)
+        else:
+            forward_msg = await client.get_forward_msg(resid, is_group=True)
+            print(f"group forward get ok: resid={resid}, nodes={len(forward_msg.messages)}")
+            for idx, node in enumerate(forward_msg.messages, 1):
+                text = "".join(elem.display for elem in node.content)
+                print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
+
+    for elem in event.msg_chain:
+        if isinstance(elem, MulitMsg) and elem.resid:
+            forward_msg = await client.get_forward_msg(elem.resid, is_group=True)
+            print(f"group forward received: file={elem.file_name}, resid={elem.resid}, nodes={len(forward_msg.messages)}")
+            for idx, node in enumerate(forward_msg.messages, 1):
+                text = "".join(item.display for item in node.content)
+                print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
     print(f"{event.nickname}({event.grp_name}): {event.msg}")
+
+
+async def friend_msg_handler(client: Client, event: FriendMessage):
+    if event.msg.startswith("forward_send"):
+        forward_msg = MulitMsg(
+            messages=[
+                ForwardNode(
+                    content=[Text("好友合并转发测试节点 1")],
+                    sender_uin=client.uin,
+                    sender_nick="Lagrange Bot",
+                ),
+                ForwardNode(
+                    content=[Text(f"好友合并转发测试节点 2，触发者：{event.from_uin}")],
+                    sender_uin=event.from_uin,
+                    sender_nick=str(event.from_uin),
+                ),
+            ]
+        )
+        seq = await client.send_friend_forward_msg(forward_msg, event.from_uid)
+        print(f"friend forward send ok: seq={seq}, resid={forward_msg.resid}")
+    elif event.msg.startswith("forward_get"):
+        resid = event.msg.removeprefix("forward_get").strip()
+        if not resid:
+            await client.send_friend_msg([Text("用法：forward_get <resid>")], event.from_uid)
+        else:
+            forward_msg = await client.get_forward_msg(resid, is_group=False)
+            print(f"friend forward get ok: resid={resid}, nodes={len(forward_msg.messages)}")
+            for idx, node in enumerate(forward_msg.messages, 1):
+                text = "".join(elem.display for elem in node.content)
+                print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
+
+    for elem in event.msg_chain:
+        if isinstance(elem, MulitMsg) and elem.resid:
+            forward_msg = await client.get_forward_msg(elem.resid, is_group=False)
+            print(f"friend forward received: file={elem.file_name}, resid={elem.resid}, nodes={len(forward_msg.messages)}")
+            for idx, node in enumerate(forward_msg.messages, 1):
+                text = "".join(item.display for item in node.content)
+                print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
+
+    print(f"friend {event.from_uin}: {event.msg}")
 
 
 async def handle_kick(client: "Client", event: "ServerKick"):
