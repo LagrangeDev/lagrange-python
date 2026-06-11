@@ -20,6 +20,7 @@ if TYPE_CHECKING:
         File,
         Markdown,
         Keyboard,
+        MulitMsg,
     )
 
 # T = TypeVar(
@@ -54,4 +55,5 @@ Element: TypeAlias = Union[
     "File",
     "Markdown",
     "Keyboard",
+    "MulitMsg",
 ]

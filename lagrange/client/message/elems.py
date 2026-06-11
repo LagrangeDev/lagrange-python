@@ -1,9 +1,13 @@
 import json
 from dataclasses import dataclass, field
-from typing import Optional
+import time
+from typing import TYPE_CHECKING, Optional
 
 from lagrange.client.events.group import GroupMessage
 from lagrange.info.serialize import JsonSerializer
+
+if TYPE_CHECKING:
+    from .types import Element
 
 
 @dataclass
@@ -15,6 +19,10 @@ class BaseElem(JsonSerializer):
     @property
     def type(self) -> str:
         return self.__class__.__name__.lower()
+
+    @property
+    def raw_text(self) -> str:
+        return ""
 
 
 @dataclass
@@ -46,6 +54,10 @@ class Text(BaseElem):
 
     @property
     def display(self) -> str:
+        return self.text
+
+    @property
+    def raw_text(self) -> str:
         return self.text
 
 
@@ -101,6 +113,10 @@ class AtAll(BaseElem):
     def display(self) -> str:
         return self.text
 
+    @property
+    def raw_text(self) -> str:
+        return self.text
+
 
 @dataclass
 class At(BaseElem):
@@ -112,6 +128,14 @@ class At(BaseElem):
     def build(cls, ev: GroupMessage) -> "At":
         return cls(uin=ev.uin, uid=ev.uid, text=f"@{ev.nickname or ev.uin}")
 
+    @property
+    def display(self) -> str:
+        return self.text
+
+    @property
+    def raw_text(self) -> str:
+        return self.text
+
 
 @dataclass
 class Image(CompatibleText, MediaInfo):
@@ -119,6 +143,10 @@ class Image(CompatibleText, MediaInfo):
     height: int
     is_emoji: bool
     display_name: str
+
+    @property
+    def raw_text(self) -> str:
+        return "[图片]"
 
     @property
     def display(self) -> str:
@@ -133,6 +161,10 @@ class Video(CompatibleText, MediaInfo):
     file_key: str = field(repr=True)
 
     @property
+    def raw_text(self) -> str:
+        return "[视频]"
+
+    @property
     def display(self) -> str:
         return f"[video:{self.width}x{self.height},{self.time}s]"
 
@@ -141,6 +173,10 @@ class Video(CompatibleText, MediaInfo):
 class Audio(CompatibleText, MediaInfo):
     time: int
     file_key: str = field(repr=True)
+
+    @property
+    def raw_text(self) -> str:
+        return "[语音]"
 
     @property
     def display(self) -> str:
@@ -201,6 +237,10 @@ class MarketFace(CompatibleText):
     def display(self) -> str:
         return f"[marketface:{self.name}]"
 
+    @property
+    def raw_text(self) -> str:
+        return "[动画表情]"
+
 
 @dataclass
 class File(CompatibleText):
@@ -215,6 +255,10 @@ class File(CompatibleText):
     @property
     def display(self) -> str:
         return f"[file:{self.file_name}]"
+
+    @property
+    def raw_text(self) -> str:
+        return "[文件]"
 
     @classmethod
     def _paste_build(
@@ -268,6 +312,10 @@ class Markdown(BaseElem):
     def display(self) -> str:
         return f"[markdown:{self.content}]"
 
+    @property
+    def raw_text(self) -> str:
+        return "[Markdown]"
+
 
 class Permission:
     type: int
@@ -315,3 +363,29 @@ class Keyboard(BaseElem):
     @property
     def display(self) -> str:
         return f"[keyboard:{self.bot_appid}]"
+
+
+@dataclass
+class ForwardNode(BaseElem):
+    content: list["Element"]
+
+    sender_uin: int
+    sender_nick: str = ""
+    sender_avatar_url: str = ""
+
+    timestamp: int = field(default_factory=lambda: int(time.time()))
+
+
+@dataclass
+class MulitMsg(BaseElem):
+    messages: list[ForwardNode] = field(default_factory=list)
+    resid: Optional[str] = None
+    file_name: str = ""
+
+    @property
+    def display(self) -> str:
+        return f"[forward:{self.file_name or self.resid}]"
+
+    @property
+    def raw_text(self) -> str:
+        return "[聊天记录]"

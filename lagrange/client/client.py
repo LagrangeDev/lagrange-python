@@ -1,3 +1,4 @@
+import gzip
 import os
 import struct
 import asyncio
@@ -15,6 +16,7 @@ from typing import (
 from collections.abc import Coroutine
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
+from lagrange.pb.message.longmsg import PbMultiMsgTransmit, RecvLongMsgReq, RecvLongMsgRsp
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.send import SendMsgRsp
 from lagrange.pb.service.comm import (
@@ -72,9 +74,9 @@ from .event import Events
 from .events.group import GroupMessage
 from .events.service import ClientOnline, ClientOffline
 from .highway import HighWaySession
-from .message.decoder import parse_grp_msg
-from .message.elems import Audio, Image
-from .message.encoder import build_message
+from .message.decoder import parse_grp_msg, parse_msg_new
+from .message.elems import Audio, ForwardNode, Image, MulitMsg
+from .message.encoder import _get_mulitmsg_resid, build_message
 from .message.types import Element
 from .models import UserInfo, BotFriend
 from .server_push import PushDeliver, bind_services
@@ -212,13 +214,27 @@ class Client(BaseClient):
         return SendMsgRsp.decode(packet.data)
 
     async def send_grp_msg(self, msg_chain: list[Element], grp_id: int) -> int:
-        result = await self._send_msg_raw({1: build_message(msg_chain).encode()}, grp_id=grp_id)
+        result = await self._send_msg_raw({1: (await build_message(msg_chain)).encode()}, grp_id=grp_id)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
 
     async def send_friend_msg(self, msg_chain: list[Element], uid: str) -> int:
-        result = await self._send_msg_raw({1: build_message(msg_chain).encode()}, uid=uid)
+        result = await self._send_msg_raw({1: (await build_message(msg_chain)).encode()}, uid=uid)
+        if result.ret_code:
+            raise AssertionError(result.ret_code, result.err_msg)
+        return result.seq
+
+    async def send_grp_forward_msg(self, forward_msg: MulitMsg, grp_id: int):
+        forward_msg.resid = await _get_mulitmsg_resid(self, forward_msg, grp_id=grp_id)
+        result = await self._send_msg_raw({1: (await build_message([forward_msg])).encode()}, grp_id=grp_id)
+        if result.ret_code:
+            raise AssertionError(result.ret_code, result.err_msg)
+        return result.seq
+
+    async def send_friend_forward_msg(self, forward_msg: MulitMsg, uid: str):
+        forward_msg.resid = await _get_mulitmsg_resid(self, forward_msg, target=uid)
+        result = await self._send_msg_raw({1: (await build_message([forward_msg])).encode()}, uid=uid)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
@@ -495,17 +511,13 @@ class Client(BaseClient):
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo:
-        ...
+    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo: ...
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]:
-        ...
+    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]: ...
 
     async def get_user_info(
-        self,
-        uid_or_uin: Union[str, int, list[str], list[int]],
-        /
+        self, uid_or_uin: Union[str, int, list[str], list[int]], /
     ) -> Union[UserInfo, list[UserInfo]]:
         if isinstance(uid_or_uin, list):
             assert uid_or_uin, "empty uid or uin"
@@ -622,3 +634,35 @@ class Client(BaseClient):
             TabOpReq.build(face_id, face_md5).encode()
         )
         return TabOpRsp.decode(rsp.data).keys()
+
+    async def get_forward_msg(self, res_id: str, *, is_group=True) -> MulitMsg:
+        """
+        res_id: from MultiMsg
+        """
+        nodes: list[ForwardNode] = []
+        rsp = RecvLongMsgRsp.decode(
+            (
+                await self.send_uni_packet(
+                    "trpc.group.long_msg_interface.MsgService.SsoRecvLongMsg",
+                    RecvLongMsgReq.build(self.uid, res_id, msg_type=1 if is_group else 3).encode(),
+                )
+            ).data
+        )
+        payload = gzip.decompress(rsp.result.payload)
+        forward_payload = PbMultiMsgTransmit.decode(payload)
+        for item in forward_payload.items:
+            if item.file_name != "MultiMsg":
+                continue
+            for elem in item.buffer.msg:
+                rsp_grp = elem.response_head.rsp_grp
+                forward = elem.content_head.forward
+                nodes.append(
+                    ForwardNode(
+                        content=list(await parse_msg_new(self, elem)),
+                        sender_uin=elem.response_head.from_uin or 0,
+                        sender_nick=rsp_grp.sender_name if rsp_grp else "",
+                        sender_avatar_url=forward.avatar_url if forward else "",
+                        timestamp=elem.content_head.timestamp,
+                    )
+                )
+        return MulitMsg(messages=nodes, resid=res_id)

@@ -1,4 +1,5 @@
 import json
+from xml.dom import minidom
 import zlib
 from typing import TYPE_CHECKING, cast, Literal, Union
 from collections.abc import Sequence
@@ -218,7 +219,19 @@ async def parse_msg_new(
                     content = zlib.decompress(jr[1:])
                 else:
                     content = jr[1:]
-                msg_chain.append(elems.Service(id=sid, raw=content))
+                if sid == 35:
+                    # msg_chain.append(elems.MultiMsg(res_id=service))
+                    root: minidom.Document = minidom.parseString(content)
+                    msg_elem: minidom.Element = root.getElementsByTagName("msg")[0]
+                    return [
+                        elems.MulitMsg(
+                            messages=[],
+                            resid=msg_elem.getAttribute("m_resid"),
+                            file_name=msg_elem.getAttribute("m_fileName"),
+                        )
+                    ]
+                else:
+                    msg_chain.append(elems.Service(id=sid, raw=content))
             ignore_next = True
         elif raw.open_data:
             msg_chain.append(elems.Raw(data=raw.open_data.data))
@@ -299,7 +312,7 @@ async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
     from_uin, from_uid, to_uin, to_uid = parse_friend_info(pkg)
 
     seq = pkg.content_head.seq
-    msg_id = pkg.content_head.msg_id
+    msg_id = pkg.content_head.random
     timestamp = pkg.content_head.timestamp
     parsed_msg = await parse_msg_new(client, pkg, fri_id=from_uid, grp_id=None)
     msg_text = "".join([getattr(msg, "display", "") for msg in parsed_msg])

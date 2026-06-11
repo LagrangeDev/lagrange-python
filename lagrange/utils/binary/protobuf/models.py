@@ -126,6 +126,8 @@ def _decode(typ: type[_ProtoTypes], raw):
         else:
             ret.append(_decode(real_typ, raw))
         return ret
+    elif isinstance(typ, type) and issubclass(typ, ProtoStruct):
+        return typ.decode(raw)
     elif typ is str:
         return raw.decode(errors="ignore")
     elif typ is dict:
@@ -136,8 +138,6 @@ def _decode(typ: type[_ProtoTypes], raw):
         if not isinstance(raw, list):
             return [raw]
         return raw
-    elif isinstance(typ, type) and issubclass(typ, ProtoStruct):
-        return typ.decode(raw)
     elif isinstance(raw, typ):
         return raw
     else:

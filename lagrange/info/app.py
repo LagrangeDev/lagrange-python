@@ -49,7 +49,7 @@ class AppInfo(JsonSerializer):
     main_sigmap: int
     sub_sigmap: int
     nt_login_type: int
-    qua: str
+    qua: str = ""
 
     @property
     def build_version(self) -> int:
