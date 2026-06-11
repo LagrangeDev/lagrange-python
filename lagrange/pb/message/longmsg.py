@@ -4,10 +4,10 @@ from lagrange.utils.binary.protobuf.models import ProtoStruct, proto_field
 
 
 class LongMsgCfg(ProtoStruct):
-    f1: int = proto_field(1)
-    f2: int = proto_field(2)
-    f3: int = proto_field(3)
-    f4: Optional[int] = proto_field(4, default=None)
+    sub_cmd: int = proto_field(1)
+    client_type: int = proto_field(2, default=0)
+    platform: int = proto_field(3, default=0)
+    proxy_type: Optional[int] = proto_field(4, default=None)
 
 
 class LongMsgRespResult(ProtoStruct):
@@ -44,13 +44,27 @@ class LongMsgRsp(ProtoStruct):
 
     @classmethod
     def build(cls, msg_content: bytes, target: str = "", grp_id: Optional[int] = None):
-        cfg = LongMsgCfg(f1=4, f2=1, f3=7, f4=0)
+        cfg = LongMsgCfg(sub_cmd=4, client_type=1, platform=7, proxy_type=0)
         if grp_id:
             return cls(msg_info=LongMsgBody.build_group(grp_id, msg_content), cfg=cfg)
         elif target:
             return cls(msg_info=LongMsgBody.build_friend(target, msg_content), cfg=cfg)
         else:
             raise ValueError("Must have target or grp_id")
+
+
+class PbMultiMsgNew(ProtoStruct):
+    msg: list[MsgPushBody] = proto_field(1)
+
+
+class PbMultiMsgItem(ProtoStruct):
+    file_name: str = proto_field(1)
+    buffer: PbMultiMsgNew = proto_field(2)
+
+
+class PbMultiMsgTransmit(ProtoStruct):
+    messages: list[MsgPushBody] = proto_field(1, default_factory=list)
+    items: list[PbMultiMsgItem] = proto_field(2)
 
 
 class LongMsgActionBody(ProtoStruct):
@@ -69,7 +83,7 @@ class LongMsgResult(ProtoStruct):
 class RecvLongMsgInfo(ProtoStruct):
     uid: MulitMsgProperty = proto_field(1)
     res_id: str = proto_field(2)
-    acquire: bool = proto_field(3, default=True)
+    msg_type: int = proto_field(3, default=1)
 
 
 class RecvLongMsgReq(ProtoStruct):
@@ -80,7 +94,7 @@ class RecvLongMsgReq(ProtoStruct):
     def build(cls, uid: str, res_id: str):
         return cls(
             info=RecvLongMsgInfo(uid=MulitMsgProperty(value=uid), res_id=res_id),
-            settings=LongMsgCfg(f1=2, f2=0, f3=0, f4=0),
+            settings=LongMsgCfg(sub_cmd=2, client_type=0, platform=0, proxy_type=0),
         )
 
 

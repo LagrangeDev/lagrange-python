@@ -9,10 +9,10 @@ from collections.abc import Coroutine
 
 from lagrange.pb.message.heads import ContentHead, Forward, Grp, ResponseHead
 from lagrange.pb.message.longmsg import (
-    LongMsgAction,
-    LongMsgActionBody,
     LongMsgResp,
-    LongMsgResult,
+    PbMultiMsgItem,
+    PbMultiMsgNew,
+    PbMultiMsgTransmit,
     LongMsgRsp,
 )
 from lagrange.pb.message.msg import Message
@@ -256,33 +256,32 @@ async def build_message(
 
 async def build_forward_msg(
     forword_msg: MulitMsg, forward_func: Callable[..., Coroutine[Any, Any, str]]
-) -> LongMsgResult:
+) -> PbMultiMsgTransmit:
     start_seq = random.randint(1000000, 9999999)
-    return LongMsgResult(
-        action=[
-            LongMsgAction(
-                action_command="MultiMsg",
-                action_data=LongMsgActionBody(
-                    action_list=[
-                        MsgPushBody(
-                            response_head=ResponseHead(
-                                from_uin=node.sender_uin, rsp_grp=Grp(sender_name=node.sender_nick, f5=2)
-                            ),
-                            content_head=ContentHead(
-                                type=82,
-                                random=random.randint(100000000, 2147483647),
-                                seq=seq,
-                                timestamp=node.timestamp,
-                                forward=Forward(
-                                    custom_flag=b"666" if node.sender_nick or node.sender_avatar_url else b"",
-                                    avatar_url=node.sender_avatar_url,
-                                ),
-                            ),
-                            message=Message(body=await build_message(node.content, forward_func=forward_func)),
-                        )
-                        for seq, node in enumerate(forword_msg.messages, start_seq)
-                    ]
+    messages = [
+        MsgPushBody(
+            response_head=ResponseHead(
+                from_uin=node.sender_uin, rsp_grp=Grp(sender_name=node.sender_nick, f5=2)
+            ),
+            content_head=ContentHead(
+                type=82,
+                random=random.randint(100000000, 2147483647),
+                seq=seq,
+                timestamp=node.timestamp,
+                forward=Forward(
+                    custom_flag=b"666" if node.sender_nick or node.sender_avatar_url else b"",
+                    avatar_url=node.sender_avatar_url,
                 ),
+            ),
+            message=Message(body=await build_message(node.content, forward_func=forward_func)),
+        )
+        for seq, node in enumerate(forword_msg.messages, start_seq)
+    ]
+    return PbMultiMsgTransmit(
+        items=[
+            PbMultiMsgItem(
+                file_name="MultiMsg",
+                buffer=PbMultiMsgNew(msg=messages),
             )
         ]
     )

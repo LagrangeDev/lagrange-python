@@ -16,7 +16,7 @@ from typing import (
 from collections.abc import Coroutine
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
-from lagrange.pb.message.longmsg import LongMsgResult, RecvLongMsgReq, RecvLongMsgRsp
+from lagrange.pb.message.longmsg import PbMultiMsgTransmit, RecvLongMsgReq, RecvLongMsgRsp
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.pb.message.send import SendMsgRsp
 from lagrange.pb.service.comm import (
@@ -636,9 +636,11 @@ class Client(BaseClient):
             ).data
         )
         payload = gzip.decompress(rsp.result.payload)
-        awa = LongMsgResult.decode(payload)
-        for msg in awa.action:
-            for elem in msg.action_data.action_list:
+        forward_payload = PbMultiMsgTransmit.decode(payload)
+        for item in forward_payload.items:
+            if item.file_name != "MultiMsg":
+                continue
+            for elem in item.buffer.msg:
                 rsp_grp = elem.response_head.rsp_grp
                 forward = elem.content_head.forward
                 nodes.append(
