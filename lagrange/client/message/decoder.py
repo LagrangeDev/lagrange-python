@@ -225,8 +225,9 @@ async def parse_msg_new(
                     msg_elem: minidom.Element = root.getElementsByTagName("msg")[0]
                     return [
                         elems.MulitMsg(
-                            msg_elem.getAttribute("m_fileName"),
+                            messages=[],
                             resid=msg_elem.getAttribute("m_resid"),
+                            file_name=msg_elem.getAttribute("m_fileName"),
                         )
                     ]
                 else:

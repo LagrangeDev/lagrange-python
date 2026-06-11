@@ -378,12 +378,13 @@ class ForwardNode(BaseElem):
 
 @dataclass
 class MulitMsg(BaseElem):
-    messages: list[ForwardNode]
+    messages: list[ForwardNode] = field(default_factory=list)
     resid: Optional[str] = None
+    file_name: str = ""
 
     @property
     def display(self) -> str:
-        return f"[forward:{self.resid}]"
+        return f"[forward:{self.file_name or self.resid}]"
 
     @property
     def raw_text(self) -> str:

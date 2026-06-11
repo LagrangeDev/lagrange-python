@@ -26,7 +26,8 @@ class Lagrange:
         self.im = InfoManager(uin, device_info_path, signinfo_path)
         self.uin = uin
         self.info = app_list[protocol]
-        self.sign = sign_provider(sign_url) if sign_url else None
+        self._sign_url = sign_url
+        self.sign = None
         self.events = {}
         self.log = log
 
@@ -43,6 +44,13 @@ class Lagrange:
 
     async def run(self):
         with self.im as im:
+            if self._sign_url:
+                self.sign = sign_provider(
+                    self._sign_url,
+                    self.uin,
+                    im.device.guid,
+                    self.info.qua,
+                )
             self.client = Client(
                 self.uin,
                 self.info,

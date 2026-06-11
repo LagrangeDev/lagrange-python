@@ -8,7 +8,7 @@ class Forward(ProtoStruct):
     f2: int = proto_field(2, default=0)
     f3: int = proto_field(3, default=0)
     custom_flag: bytes = proto_field(4, default=b"")#好弱智，不设置不显示自定义名字和头像
-    avatar_url: str = proto_field(5, default=b"")#input costom url
+    avatar_url: str = proto_field(5, default="")#input costom url
 
 
 class ContentHead(ProtoStruct):

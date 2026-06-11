@@ -73,7 +73,7 @@ from .events.group import GroupMessage
 from .events.service import ClientOnline, ClientOffline
 from .highway import HighWaySession
 from .message.decoder import parse_grp_msg, parse_msg_new
-from .message.elems import Audio, Image, MulitMsg
+from .message.elems import Audio, ForwardNode, Image, MulitMsg
 from .message.encoder import _get_mulitmsg_resid, build_message
 from .message.types import Element
 from .models import UserInfo, BotFriend
@@ -231,11 +231,7 @@ class Client(BaseClient):
         return result.seq
 
     async def send_friend_forward_msg(self, forward_msg: MulitMsg, uid: str):
-        forward_msg.resid = await _get_mulitmsg_resid(self, forward_msg, target=uid)
-        result = await self._send_msg_raw({1: (await build_message([forward_msg])).encode()}, uid=uid)
-        if result.ret_code:
-            raise AssertionError(result.ret_code, result.err_msg)
-        return result.seq
+        raise NotImplementedError("friend forward message is not supported yet")
 
     async def upload_grp_image(self, image: BinaryIO, grp_id: int, is_emoji=False) -> Image:
         img = await self._highway.upload_image(image, gid=grp_id)
@@ -626,11 +622,11 @@ class Client(BaseClient):
         temp = proto_decode(rsp.data).into((4, 1), dict[int, list[bytes]])
         return temp[0][1].decode(), temp[1][1].decode()
 
-    async def get_forward_msg(self, res_id: str) -> list[list[Element]]:
+    async def get_forward_msg(self, res_id: str) -> MulitMsg:
         """
         res_id: from MultiMsg
         """
-        ret: list[list[Element]] = []
+        nodes: list[ForwardNode] = []
         rsp = RecvLongMsgRsp.decode(
             (
                 await self.send_uni_packet(
@@ -643,7 +639,15 @@ class Client(BaseClient):
         awa = LongMsgResult.decode(payload)
         for msg in awa.action:
             for elem in msg.action_data.action_list:
-                ret.append(list(await parse_msg_new(self, elem)))
-                # 对，但是不是很对的解析
-                # 顺序对了，但是顺序不对
-        return ret  # TODO: retrun MulitMsg
+                rsp_grp = elem.response_head.rsp_grp
+                forward = elem.content_head.forward
+                nodes.append(
+                    ForwardNode(
+                        content=list(await parse_msg_new(self, elem)),
+                        sender_uin=elem.response_head.from_uin or 0,
+                        sender_nick=rsp_grp.sender_name if rsp_grp else "",
+                        sender_avatar_url=forward.avatar_url if forward else "",
+                        timestamp=elem.content_head.timestamp,
+                    )
+                )
+        return MulitMsg(messages=nodes, resid=res_id)
