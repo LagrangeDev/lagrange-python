@@ -231,7 +231,11 @@ class Client(BaseClient):
         return result.seq
 
     async def send_friend_forward_msg(self, forward_msg: MulitMsg, uid: str):
-        raise NotImplementedError("friend forward message is not supported yet")
+        forward_msg.resid = await _get_mulitmsg_resid(self, forward_msg, target=uid)
+        result = await self._send_msg_raw({1: (await build_message([forward_msg])).encode()}, uid=uid)
+        if result.ret_code:
+            raise AssertionError(result.ret_code, result.err_msg)
+        return result.seq
 
     async def upload_grp_image(self, image: BinaryIO, grp_id: int, is_emoji=False) -> Image:
         img = await self._highway.upload_image(image, gid=grp_id)
@@ -622,7 +626,7 @@ class Client(BaseClient):
         temp = proto_decode(rsp.data).into((4, 1), dict[int, list[bytes]])
         return temp[0][1].decode(), temp[1][1].decode()
 
-    async def get_forward_msg(self, res_id: str) -> MulitMsg:
+    async def get_forward_msg(self, res_id: str, *, is_group=True) -> MulitMsg:
         """
         res_id: from MultiMsg
         """
@@ -631,7 +635,7 @@ class Client(BaseClient):
             (
                 await self.send_uni_packet(
                     "trpc.group.long_msg_interface.MsgService.SsoRecvLongMsg",
-                    RecvLongMsgReq.build(self.uid, res_id).encode(),
+                    RecvLongMsgReq.build(self.uid, res_id, msg_type=1 if is_group else 3).encode(),
                 )
             ).data
         )

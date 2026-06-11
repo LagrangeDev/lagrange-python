@@ -91,9 +91,9 @@ class RecvLongMsgReq(ProtoStruct):
     settings: LongMsgCfg = proto_field(15)
 
     @classmethod
-    def build(cls, uid: str, res_id: str):
+    def build(cls, uid: str, res_id: str, msg_type: int = 1):
         return cls(
-            info=RecvLongMsgInfo(uid=MulitMsgProperty(value=uid), res_id=res_id),
+            info=RecvLongMsgInfo(uid=MulitMsgProperty(value=uid), res_id=res_id, msg_type=msg_type),
             settings=LongMsgCfg(sub_cmd=2, client_type=0, platform=0, proxy_type=0),
         )
 

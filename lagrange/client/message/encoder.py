@@ -255,16 +255,21 @@ async def build_message(
 
 
 async def build_forward_msg(
-    forword_msg: MulitMsg, forward_func: Callable[..., Coroutine[Any, Any, str]]
+    forword_msg: MulitMsg,
+    forward_func: Callable[..., Coroutine[Any, Any, str]],
+    *,
+    is_group: bool,
 ) -> PbMultiMsgTransmit:
     start_seq = random.randint(1000000, 9999999)
     messages = [
         MsgPushBody(
-            response_head=ResponseHead(
-                from_uin=node.sender_uin, rsp_grp=Grp(sender_name=node.sender_nick, f5=2)
+            response_head=(
+                ResponseHead(from_uin=node.sender_uin, rsp_grp=Grp(sender_name=node.sender_nick, f5=2))
+                if is_group
+                else ResponseHead(from_uin=node.sender_uin)
             ),
             content_head=ContentHead(
-                type=82,
+                type=82 if is_group else 166,
                 random=random.randint(100000000, 2147483647),
                 seq=seq,
                 timestamp=node.timestamp,
@@ -291,7 +296,11 @@ async def build_forward_msg(
 async def _get_mulitmsg_resid(
     client: "Client", forword_msg: MulitMsg, target: str = "", grp_id: Optional[int] = None
 ) -> str:
-    body = await build_forward_msg(forword_msg, get_resid_func(client, target, grp_id))
+    body = await build_forward_msg(
+        forword_msg,
+        get_resid_func(client, target, grp_id),
+        is_group=grp_id is not None,
+    )
 
     packet = await client.send_uni_packet(
         "trpc.group.long_msg_interface.MsgService.SsoSendLongMsg",

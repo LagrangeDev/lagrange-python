@@ -23,8 +23,6 @@ SIGN_PKG_LIST = [
     "trpc.login.ecdh.EcdhService.SsoNTLoginPasswordLoginUnusualDevice",
     "trpc.login.ecdh.EcdhService.SsoNTLoginRefreshTicket",
     "trpc.login.ecdh.EcdhService.SsoNTLoginRefreshA2",
-    "trpc.group.long_msg_interface.MsgService.SsoSendLongMsg",
-    "trpc.group.long_msg_interface.MsgService.SsoRecvLongMsg",
     "OidbSvcTrpcTcp.0x11ec_1",
     "OidbSvcTrpcTcp.0x758_1",
     "OidbSvcTrpcTcp.0x7c1_1",
