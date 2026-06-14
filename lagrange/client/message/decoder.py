@@ -20,6 +20,42 @@ if TYPE_CHECKING:
     from lagrange.client.client import Client
 
 
+def _parse_multimsg_json(content: bytes) -> Union[elems.MulitMsg, None]:
+    try:
+        data = json.loads(content)
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError):
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    if data.get("app") != "com.tencent.multimsg":
+        return None
+
+    meta = data.get("meta", {})
+    if not isinstance(meta, dict):
+        return None
+
+    detail = meta.get("detail", {})
+    if not isinstance(detail, dict):
+        return None
+
+    resid = detail.get("resid")
+    if not resid:
+        return None
+
+    file_name = ""
+    extra = data.get("extra")
+    if isinstance(extra, str) and extra.strip():
+        try:
+            extra_data = json.loads(extra)
+        except json.JSONDecodeError:
+            extra_data = {}
+        file_name = extra_data.get("filename", "") if isinstance(extra_data, dict) else ""
+
+    return elems.MulitMsg(messages=[], resid=resid, file_name=file_name)
+
+
 def parse_msg_info(pb: MsgPushBody) -> tuple[int, str, int, int, int]:
     user_id = pb.response_head.from_uin
     uid = pb.response_head.from_uid
@@ -263,7 +299,11 @@ async def parse_msg_new(
                 content = zlib.decompress(service[1:])
             else:
                 content = service[1:]
-            msg_chain.append(elems.Json(raw=content))
+
+            if multi_msg := _parse_multimsg_json(content):
+                msg_chain.append(multi_msg)
+            else:
+                msg_chain.append(elems.Json(raw=content))
             ignore_next = True
         # elif 53 in raw:  # q emoji
         #     qe = raw[53]
