@@ -136,6 +136,8 @@ def proto_decode(data: bytes, max_layer=-1) -> ProtoDecoded:
 
         if wire_type == 0:
             value = reader.read_varint()
+        elif wire_type == 1:
+            value = reader.read_u64()
         elif wire_type == 2:
             value = reader.read_length_delimited()
 
