@@ -12,6 +12,7 @@ from lagrange.pb.status.group import (
     MemberGotTitleBody,
     MemberInviteRequest,
     MemberJoinRequest,
+    GroupAdmin,
     MemberRecallMsg,
     GroupSub20Head,
     PBBotGrayTip,
@@ -33,6 +34,7 @@ from ..events.group import (
     GroupMemberGotSpecialTitle,
     GroupMemberJoined,
     GroupMemberJoinRequest,
+    GroupAdminChange,
     GroupMemberQuit,
     GroupMuteMember,
     GroupNameChanged,
@@ -122,6 +124,17 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         if pb.cmd == 87:
             inn = pb.info.inner
             return GroupMemberJoinRequest(grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid)
+    elif typ == 44:  # group admin ?
+        pb = GroupAdmin.decode(pkg.message.buf2)
+        if pb.is_set:
+            uid = pb.body.extra_enable.uid
+        else:
+            uid = pb.body.extra_disable.uid
+        return GroupAdminChange(
+            grp_id=pb.grp_id,
+            is_set=pb.is_set,
+            uid=uid
+        )
     elif typ == 0x210:  # friend event, 528 / group file upload notice event
         if sub_typ == 35:  # friend request
             pb = PBFriendRequest.decode(pkg.message.buf2)

@@ -45,6 +45,23 @@ class MemberInviteRequest(ProtoStruct):
     info: InviteInfo = proto_field(2)
 
 
+class GroupAdminExtra(ProtoStruct):
+    uid: str = proto_field(1)
+    is_set: bool = proto_field(2)
+
+
+class GroupAdminBody(ProtoStruct):
+    extra_disable: Optional[GroupAdminExtra] = proto_field(1, default=None)
+    extra_enable: Optional[GroupAdminExtra] = proto_field(2, default=None)
+
+
+class GroupAdmin(ProtoStruct):
+    grp_id: int = proto_field(1)
+    flag: int = proto_field(2)
+    is_set: bool = proto_field(3)
+    body: GroupAdminBody = proto_field(4)
+
+
 class MemberGotTitleBody(ProtoStruct):
     string: str = proto_field(2)
     f3: int = proto_field(3)

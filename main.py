@@ -4,7 +4,7 @@ import os
 from lagrange import Lagrange, install_loguru
 from lagrange.client.client import Client
 from lagrange.client.events.friend import FriendMessage
-from lagrange.client.events.group import GroupMessage, GroupSign, GroupReaction
+from lagrange.client.events.group import GroupMessage, GroupSign, GroupReaction, GroupAdminChange
 from lagrange.client.events.service import ServerKick
 from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text
 
@@ -148,6 +148,14 @@ async def handle_group_reaction(client: "Client", event: "GroupReaction"):
     )
 
 
+async def handle_group_admin(client: Client, event: GroupAdminChange):
+    user_info = await client.get_user_info(event.uid)
+    if event.is_set:
+        print(f"{user_info.name} is now an admin")
+    else:
+        print(f"{user_info.name} is no longer an admin")
+
+
 lag = Lagrange(
     int(os.environ.get("LAGRANGE_UIN", "0")),
     "linux",
@@ -160,6 +168,7 @@ lag.subscribe(GroupMessage, msg_handler)
 lag.subscribe(ServerKick, handle_kick)
 lag.subscribe(GroupSign, handle_grp_sign)
 lag.subscribe(GroupReaction, handle_group_reaction)
+lag.subscribe(GroupAdminChange, handle_group_admin)
 
 
 lag.launch()
