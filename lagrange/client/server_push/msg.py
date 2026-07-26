@@ -47,7 +47,7 @@ from ..events.group import (
     GroupAlbumUpdate,
     GroupMemberJoinedByInvite,
 )
-from ..events.friend import FriendRecall, FriendRequest
+from ..events.friend import FriendRecall, FriendRequest, FriendRequestFinished, FriendAddNotify
 from ..wtlogin.sso import SSOPacket
 from .log import logger
 
@@ -138,14 +138,35 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     elif typ == 0x210:  # friend event, 528 / group file upload notice event
         if sub_typ == 35:  # friend request
             pb = PBFriendRequest.decode(pkg.message.buf2)
-            return FriendRequest(
-                pkg.response_head.from_uin,
-                pb.info.from_uid,
-                pkg.response_head.to_uin,
-                pb.info.to_uid,
-                pb.info.verify,
-                pb.info.source or pb.info.source_new,
-            )
+            if pb.info:
+                return FriendRequest(
+                    pkg.response_head.from_uin,
+                    pb.info.from_uid,
+                    pkg.response_head.to_uin,
+                    pb.info.to_uid,
+                    pb.info.verify,
+                    pb.info.source or pb.info.source_new,
+                )
+            elif pb.result:
+                return FriendRequestFinished(
+                    pkg.response_head.from_uin,
+                    pkg.response_head.from_uid,
+                    pkg.response_head.to_uin,
+                    pkg.response_head.to_uid,
+                    pb.result.result_code
+                )
+            elif pb.notify:
+                return FriendAddNotify(
+                    pkg.response_head.from_uin,
+                    pkg.response_head.from_uid,
+                    pkg.response_head.to_uin,
+                    pkg.response_head.to_uid,
+                    pb.notify.status,
+                    pb.notify.timestamp,
+                    pb.notify.source
+                )
+            else:
+                logger.debug(f"unhandled friend request: {pkg}")
         elif sub_typ == 138:  # friend recall
             pb = PBFriendRecall.decode(pkg.message.buf2)
             return FriendRecall(
