@@ -3,7 +3,7 @@ import os
 
 from lagrange import Lagrange, install_loguru
 from lagrange.client.client import Client
-from lagrange.client.events.friend import FriendMessage
+from lagrange.client.events.friend import FriendMessage, FriendRequest
 from lagrange.client.events.group import GroupMessage, GroupSign, GroupReaction, GroupAdminChange
 from lagrange.client.events.service import ServerKick
 from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text
@@ -156,6 +156,10 @@ async def handle_group_admin(client: Client, event: GroupAdminChange):
         print(f"{user_info.name} is no longer an admin")
 
 
+# async def handle_friend_req(client: Client, event: FriendRequest):
+#     print("加好友？和我吗？")
+#     await client.set_friend_request(target_uid=event.from_uid, accept=True)
+
 lag = Lagrange(
     int(os.environ.get("LAGRANGE_UIN", "0")),
     "linux",
@@ -169,6 +173,7 @@ lag.subscribe(ServerKick, handle_kick)
 lag.subscribe(GroupSign, handle_grp_sign)
 lag.subscribe(GroupReaction, handle_group_reaction)
 lag.subscribe(GroupAdminChange, handle_group_admin)
+# lag.subscribe(FriendRequest, handle_friend_req)
 
 
 lag.launch()
