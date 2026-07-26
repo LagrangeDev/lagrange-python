@@ -12,6 +12,7 @@ from lagrange.pb.status.group import (
     MemberGotTitleBody,
     MemberInviteRequest,
     MemberJoinRequest,
+    GroupAdmin,
     MemberRecallMsg,
     GroupSub20Head,
     PBBotGrayTip,
@@ -33,6 +34,7 @@ from ..events.group import (
     GroupMemberGotSpecialTitle,
     GroupMemberJoined,
     GroupMemberJoinRequest,
+    GroupAdminChange,
     GroupMemberQuit,
     GroupMuteMember,
     GroupNameChanged,
@@ -45,7 +47,7 @@ from ..events.group import (
     GroupAlbumUpdate,
     GroupMemberJoinedByInvite,
 )
-from ..events.friend import FriendRecall, FriendRequest
+from ..events.friend import FriendRecall, FriendRequest, FriendRequestFinished, FriendAddNotify
 from ..wtlogin.sso import SSOPacket
 from .log import logger
 
@@ -122,17 +124,49 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         if pb.cmd == 87:
             inn = pb.info.inner
             return GroupMemberJoinRequest(grp_id=inn.grp_id, uid=inn.uid, invitor_uid=inn.invitor_uid)
+    elif typ == 44:  # group admin ?
+        pb = GroupAdmin.decode(pkg.message.buf2)
+        if pb.is_set:
+            uid = pb.body.extra_enable.uid
+        else:
+            uid = pb.body.extra_disable.uid
+        return GroupAdminChange(
+            grp_id=pb.grp_id,
+            is_set=pb.is_set,
+            uid=uid
+        )
     elif typ == 0x210:  # friend event, 528 / group file upload notice event
         if sub_typ == 35:  # friend request
             pb = PBFriendRequest.decode(pkg.message.buf2)
-            return FriendRequest(
-                pkg.response_head.from_uin,
-                pb.info.from_uid,
-                pkg.response_head.to_uin,
-                pb.info.to_uid,
-                pb.info.verify,
-                pb.info.source or pb.info.source_new,
-            )
+            if pb.info:
+                return FriendRequest(
+                    pkg.response_head.from_uin,
+                    pb.info.from_uid,
+                    pkg.response_head.to_uin,
+                    pb.info.to_uid,
+                    pb.info.verify,
+                    pb.info.source or pb.info.source_new,
+                )
+            elif pb.result:
+                return FriendRequestFinished(
+                    pkg.response_head.from_uin,
+                    pkg.response_head.from_uid,
+                    pkg.response_head.to_uin,
+                    pkg.response_head.to_uid,
+                    pb.result.result_code
+                )
+            elif pb.notify:
+                return FriendAddNotify(
+                    pkg.response_head.from_uin,
+                    pkg.response_head.from_uid,
+                    pkg.response_head.to_uin,
+                    pkg.response_head.to_uid,
+                    pb.notify.status,
+                    pb.notify.timestamp,
+                    pb.notify.source
+                )
+            else:
+                logger.debug(f"unhandled friend request: {pkg}")
         elif sub_typ == 138:  # friend recall
             pb = PBFriendRecall.decode(pkg.message.buf2)
             return FriendRecall(

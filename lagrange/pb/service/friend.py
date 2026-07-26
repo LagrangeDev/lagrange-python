@@ -69,5 +69,16 @@ class GetFriendListRsp(ProtoStruct):
     friend_list: list[FriendInfo] = proto_field(101)
 
 
+class FriendLikeReq(ProtoStruct):
+    uid: str = proto_field(11)
+    field12: int = proto_field(12)  # 71
+    count: int = proto_field(13)
+
+
+class FriendLikeResp(ProtoStruct):
+    added: int = proto_field(13)
+    total: int = proto_field(14)
+
+
 def propertys(properties: list[FriendProperty]):
     return {prop.code: prop.value for prop in properties}

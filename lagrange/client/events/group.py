@@ -80,6 +80,12 @@ class GroupMemberJoinRequest(GroupEvent):
 
 
 @dataclass
+class GroupAdminChange(GroupEvent):
+    is_set: bool
+    uid: str
+
+
+@dataclass
 class GroupMemberJoined(GroupEvent):
     # uin: int //it cant get
     uid: str

@@ -37,3 +37,14 @@ class FriendRequest(FriendEvent):
     to_uid: str
     message: str
     source: str
+
+@dataclass
+class FriendRequestFinished(FriendEvent):
+    result: int  # 0 表示成功 / 已添加
+
+
+@dataclass
+class FriendAddNotify(FriendEvent):
+    status: int
+    timestamp: int
+    source: str
