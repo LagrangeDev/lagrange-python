@@ -54,6 +54,10 @@ async def msg_handler(client: Client, event: GroupMessage):
                 text = "".join(elem.display for elem in node.content)
                 print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
 
+    elif event.msg.startswith("like_me"):
+        resp = await client.friend_like(event.uid, 2)
+        print(resp)
+
     for elem in event.msg_chain:
         if isinstance(elem, MulitMsg) and elem.resid:
             forward_msg = await client.get_forward_msg(elem.resid, is_group=True)

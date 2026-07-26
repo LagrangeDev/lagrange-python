@@ -31,6 +31,8 @@ from lagrange.pb.service.friend import (
     GetFriendListRsp,
     GetFriendListUin,
     PBGetFriendListRequest,
+    FriendLikeReq,
+    FriendLikeResp,
     propertys,
 )
 from lagrange.pb.service.group import (
@@ -58,7 +60,8 @@ from lagrange.pb.service.group import (
     PBGetInfoFromUidReq,
     PBGetGrpLastSeq,
     GetGrpLastSeqRsp,
-    PBGetInfoFromUinReq, PBHandleFriendRequest,
+    PBGetInfoFromUinReq,
+    PBHandleFriendRequest
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.pb.highway.comm import IndexNode
@@ -453,6 +456,16 @@ class Client(BaseClient):
                 ).encode(),
             )
         ).ret_code
+
+    async def friend_like(self, uid: str, count: int) -> FriendLikeResp:
+        rsp = await self.send_oidb_svc(
+            0x7E5,
+            104,
+            FriendLikeReq(uid=uid, field12=71, count=count).encode()
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
+        return FriendLikeResp.decode(rsp.data)
 
     async def set_essence(self, grp_id: int, seq: int, rand: int, is_remove=False):
         rsp = SetEssenceRsp.decode(
