@@ -89,13 +89,13 @@ from .wtlogin.sso import SSOPacket
 
 class Client(BaseClient):
     def __init__(
-            self,
-            uin: int,
-            app_info: AppInfo,
-            device_info: DeviceInfo,
-            sig_info: SigInfo,
-            sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
-            use_ipv6=True,
+        self,
+        uin: int,
+        app_info: AppInfo,
+        device_info: DeviceInfo,
+        sig_info: SigInfo,
+        sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
+        use_ipv6=True,
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
 
@@ -334,7 +334,7 @@ class Client(BaseClient):
         ).body
 
         assert (
-                payload.grp_id == grp_id and payload.start_seq == start and payload.end_seq == end
+            payload.grp_id == grp_id and payload.start_seq == start and payload.end_seq == end
         ), "return args not matched"
 
         rsp = list(await asyncio.gather(*[parse_grp_msg(self, MsgPushBody.decode(i)) for i in payload.elems]))
@@ -555,15 +555,13 @@ class Client(BaseClient):
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo:
-        ...
+    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo: ...
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]:
-        ...
+    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]: ...
 
     async def get_user_info(
-            self, uid_or_uin: Union[str, int, list[str], list[int]], /
+        self, uid_or_uin: Union[str, int, list[str], list[int]], /
     ) -> Union[UserInfo, list[UserInfo]]:
         if isinstance(uid_or_uin, list):
             assert uid_or_uin, "empty uid or uin"
