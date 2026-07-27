@@ -82,3 +82,8 @@ class FriendLikeRsp(ProtoStruct):
 
 def propertys(properties: list[FriendProperty]):
     return {prop.code: prop.value for prop in properties}
+
+
+class PBHandleFriendRequest(ProtoStruct):
+    action: int = proto_field(1)
+    target_uid: str = proto_field(2)

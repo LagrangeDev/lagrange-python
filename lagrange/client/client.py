@@ -33,7 +33,8 @@ from lagrange.pb.service.friend import (
     PBGetFriendListRequest,
     FriendLikeReq,
     FriendLikeRsp,
-    propertys,
+    PBHandleFriendRequest,
+    propertys
 )
 from lagrange.pb.service.group import (
     FetchGroupResponse,
@@ -61,8 +62,7 @@ from lagrange.pb.service.group import (
     PBGetInfoFromUidReq,
     PBGetGrpLastSeq,
     GetGrpLastSeqRsp,
-    PBGetInfoFromUinReq,
-    PBHandleFriendRequest
+    PBGetInfoFromUinReq
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.pb.highway.comm import IndexNode
@@ -410,12 +410,21 @@ class Client(BaseClient):
     async def rename_grp_name(self, grp_id: int, name: str) -> int:  # not test
         return (await self.send_oidb_svc(0x89A, 15, PBGroupRenameRequest.build(grp_id, name).encode())).ret_code
 
-    async def rename_grp_member(self, grp_id: int, target_uid: str, name: str):  # fixme
+    async def rename_grp_member(self, grp_id: int, target_uid: str, name: str):
         rsp = await self.send_oidb_svc(
             0x8FC,
             3,
-            PBRenameMemberRequest.build(grp_id, target_uid, name).encode(),
-            True,
+            PBRenameMemberRequest.build(grp_id, target_uid, name).encode()
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
+
+    async def set_grp_special_title(self, grp_id: int, target_uid: str, title: str):
+        """works better for those who already has one?"""
+        rsp = await self.send_oidb_svc(
+            0x8FC,
+            2,
+            PBRenameMemberRequest.build_for_title(grp_id, target_uid, title).encode()
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
