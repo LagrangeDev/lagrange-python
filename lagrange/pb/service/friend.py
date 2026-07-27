@@ -75,7 +75,7 @@ class FriendLikeReq(ProtoStruct):
     count: int = proto_field(13)
 
 
-class FriendLikeResp(ProtoStruct):
+class FriendLikeRsp(ProtoStruct):
     added: int = proto_field(13)
     total: int = proto_field(14)
 

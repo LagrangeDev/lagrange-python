@@ -15,7 +15,7 @@ class PBGetGrpMsgRequest(ProtoStruct):
 
     @classmethod
     def build(
-        cls, grp_id: int, start_seq: int, end_seq: int, direction=True
+            cls, grp_id: int, start_seq: int, end_seq: int, direction=True
     ) -> "PBGetGrpMsgRequest":
         return cls(
             body=GetGrpMsgReqBody(grp_id=grp_id, start_seq=start_seq, end_seq=end_seq),
@@ -88,6 +88,12 @@ class GetGrpMsgRsp(ProtoStruct):
     body: GetGrpMsgRspBody = proto_field(3)
 
 
+class PBSetAdmin(ProtoStruct):
+    grp_id: int = proto_field(1)
+    uid: str = proto_field(2)
+    is_set: bool = proto_field(3)
+
+
 class PBSetEssence(ProtoStruct):
     grp_id: int = proto_field(1)
     seq: int = proto_field(2)
@@ -156,7 +162,7 @@ class PBHandleGroupRequest(ProtoStruct):
 
     @classmethod
     def build(
-        cls, action: int, seq: int, event_type: int, grp_id: int, message: str
+            cls, action: int, seq: int, event_type: int, grp_id: int, message: str
     ) -> "PBHandleGroupRequest":
         return cls(
             action=action,
@@ -181,7 +187,7 @@ class PBSendGrpReactionReq(ProtoStruct):
 
     @classmethod
     def build(
-        cls, grp_id: int, seq: int, content: Union[str, int]
+            cls, grp_id: int, seq: int, content: Union[str, int]
     ) -> "PBSendGrpReactionReq":
         return cls(
             grp_id=grp_id,
@@ -237,7 +243,7 @@ class PBGroupKickMemberRequest(ProtoStruct):
 
     @classmethod
     def build(
-        cls, grp_id: int, uin: int, permanent: bool
+            cls, grp_id: int, uin: int, permanent: bool
     ) -> "PBGroupKickMemberRequest":
         return cls(
             grp_id=grp_id, body=GroupKickMemberReqBody(uin=uin, permanent=permanent)
@@ -293,7 +299,7 @@ class PBGetGrpMemberInfoReq(ProtoStruct):
 
     @classmethod
     def build(
-        cls, grp_id: int, uid="", next_key: Optional[str] = None
+            cls, grp_id: int, uid="", next_key: Optional[str] = None
     ) -> "PBGetGrpMemberInfoReq":
         assert not (uid and next_key), "invalid arguments"
         if uid:
@@ -412,6 +418,7 @@ class _GetInfoCfg(ProtoStruct):
             "0108ab9c0108b49c0108b59c0108ba9c0108bf9c0108c59c011802"
         ),
     )
+
 
 class PBGetInfoFromUidReq(_GetInfoCfg):
     uid: list[str] = proto_field(1)

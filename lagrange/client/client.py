@@ -32,7 +32,7 @@ from lagrange.pb.service.friend import (
     GetFriendListUin,
     PBGetFriendListRequest,
     FriendLikeReq,
-    FriendLikeResp,
+    FriendLikeRsp,
     propertys,
 )
 from lagrange.pb.service.group import (
@@ -48,6 +48,7 @@ from lagrange.pb.service.group import (
     PBRenameMemberRequest,
     PBSendGrpReactionReq,
     PBSetEssence,
+    PBSetAdmin,
     PBGroupKickMemberRequest,
     # PBGetMemberCardReq,
     # GetMemberCardRsp,
@@ -88,13 +89,13 @@ from .wtlogin.sso import SSOPacket
 
 class Client(BaseClient):
     def __init__(
-        self,
-        uin: int,
-        app_info: AppInfo,
-        device_info: DeviceInfo,
-        sig_info: SigInfo,
-        sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
-        use_ipv6=True,
+            self,
+            uin: int,
+            app_info: AppInfo,
+            device_info: DeviceInfo,
+            sig_info: SigInfo,
+            sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
+            use_ipv6=True,
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6)
 
@@ -333,7 +334,7 @@ class Client(BaseClient):
         ).body
 
         assert (
-            payload.grp_id == grp_id and payload.start_seq == start and payload.end_seq == end
+                payload.grp_id == grp_id and payload.start_seq == start and payload.end_seq == end
         ), "return args not matched"
 
         rsp = list(await asyncio.gather(*[parse_grp_msg(self, MsgPushBody.decode(i)) for i in payload.elems]))
@@ -457,7 +458,7 @@ class Client(BaseClient):
             )
         ).ret_code
 
-    async def friend_like(self, uid: str, count: int) -> FriendLikeResp:
+    async def friend_like(self, uid: str, count: int) -> FriendLikeRsp:
         rsp = await self.send_oidb_svc(
             0x7E5,
             104,
@@ -465,7 +466,7 @@ class Client(BaseClient):
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
-        return FriendLikeResp.decode(rsp.data)
+        return FriendLikeRsp.decode(rsp.data)
 
     async def set_essence(self, grp_id: int, seq: int, rand: int, is_remove=False):
         rsp = SetEssenceRsp.decode(
@@ -479,6 +480,15 @@ class Client(BaseClient):
         )
         if rsp:
             raise AssertionError(rsp.code, rsp.msg)
+
+    async def set_grp_admin(self, grp_id: int, uid: str, is_set: bool):
+        rsp = await self.send_oidb_svc(
+            0x1096,
+            1,
+            PBSetAdmin(grp_id=grp_id, uid=uid, is_set=is_set).encode()
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     async def set_mute_grp(self, grp_id: int, enable: bool):
         rsp = await self.send_oidb_svc(
@@ -536,13 +546,15 @@ class Client(BaseClient):
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo: ...
+    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo:
+        ...
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]: ...
+    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]:
+        ...
 
     async def get_user_info(
-        self, uid_or_uin: Union[str, int, list[str], list[int]], /
+            self, uid_or_uin: Union[str, int, list[str], list[int]], /
     ) -> Union[UserInfo, list[UserInfo]]:
         if isinstance(uid_or_uin, list):
             assert uid_or_uin, "empty uid or uin"
