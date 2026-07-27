@@ -55,7 +55,8 @@ class PBGroupRenameRequest(ProtoStruct):
 
 class RenameMemberRequestF3(ProtoStruct):
     uid: str = proto_field(1)
-    name: str = proto_field(8)
+    name: str = proto_field(8, default="")
+    special_title: str = proto_field(5, default="")
 
 
 class PBRenameMemberRequest(ProtoStruct):
@@ -66,6 +67,12 @@ class PBRenameMemberRequest(ProtoStruct):
     def build(cls, grp_id: int, target_uid: str, name: str) -> "PBRenameMemberRequest":
         return cls(
             grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, name=name)
+        )
+
+    @classmethod
+    def build_for_title(cls, grp_id: int, target_uid: str, title: str) -> "PBRenameMemberRequest":
+        return cls(
+            grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, special_title=title)
         )
 
 
@@ -86,6 +93,12 @@ class GetGrpMsgRspBody(ProtoStruct):
 
 class GetGrpMsgRsp(ProtoStruct):
     body: GetGrpMsgRspBody = proto_field(3)
+
+
+class PBSetAdmin(ProtoStruct):
+    grp_id: int = proto_field(1)
+    uid: str = proto_field(2)
+    is_set: bool = proto_field(3)
 
 
 class PBSetEssence(ProtoStruct):
@@ -164,11 +177,6 @@ class PBHandleGroupRequest(ProtoStruct):
                 seq=seq, event_type=event_type, grp_id=grp_id, message=message
             ),
         )
-
-
-class PBHandleFriendRequest(ProtoStruct):
-    action: int = proto_field(1)
-    target_uid: str = proto_field(2)
 
 
 class PBSendGrpReactionReq(ProtoStruct):
@@ -412,6 +420,7 @@ class _GetInfoCfg(ProtoStruct):
             "0108ab9c0108b49c0108b59c0108ba9c0108bf9c0108c59c011802"
         ),
     )
+
 
 class PBGetInfoFromUidReq(_GetInfoCfg):
     uid: list[str] = proto_field(1)

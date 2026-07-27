@@ -75,10 +75,15 @@ class FriendLikeReq(ProtoStruct):
     count: int = proto_field(13)
 
 
-class FriendLikeResp(ProtoStruct):
+class FriendLikeRsp(ProtoStruct):
     added: int = proto_field(13)
     total: int = proto_field(14)
 
+
+class PBHandleFriendRequest(ProtoStruct):
+    action: int = proto_field(1)
+    target_uid: str = proto_field(2)
+    
 
 def propertys(properties: list[FriendProperty]):
     return {prop.code: prop.value for prop in properties}

@@ -32,8 +32,9 @@ from lagrange.pb.service.friend import (
     GetFriendListUin,
     PBGetFriendListRequest,
     FriendLikeReq,
-    FriendLikeResp,
-    propertys,
+    FriendLikeRsp,
+    PBHandleFriendRequest,
+    propertys
 )
 from lagrange.pb.service.group import (
     FetchGroupResponse,
@@ -48,6 +49,7 @@ from lagrange.pb.service.group import (
     PBRenameMemberRequest,
     PBSendGrpReactionReq,
     PBSetEssence,
+    PBSetAdmin,
     PBGroupKickMemberRequest,
     # PBGetMemberCardReq,
     # GetMemberCardRsp,
@@ -60,8 +62,7 @@ from lagrange.pb.service.group import (
     PBGetInfoFromUidReq,
     PBGetGrpLastSeq,
     GetGrpLastSeqRsp,
-    PBGetInfoFromUinReq,
-    PBHandleFriendRequest
+    PBGetInfoFromUinReq
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.pb.highway.comm import IndexNode
@@ -409,12 +410,21 @@ class Client(BaseClient):
     async def rename_grp_name(self, grp_id: int, name: str) -> int:  # not test
         return (await self.send_oidb_svc(0x89A, 15, PBGroupRenameRequest.build(grp_id, name).encode())).ret_code
 
-    async def rename_grp_member(self, grp_id: int, target_uid: str, name: str):  # fixme
+    async def rename_grp_member(self, grp_id: int, target_uid: str, name: str):
         rsp = await self.send_oidb_svc(
             0x8FC,
             3,
-            PBRenameMemberRequest.build(grp_id, target_uid, name).encode(),
-            True,
+            PBRenameMemberRequest.build(grp_id, target_uid, name).encode()
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
+
+    async def set_grp_special_title(self, grp_id: int, target_uid: str, title: str):
+        """works better for those who already has one?"""
+        rsp = await self.send_oidb_svc(
+            0x8FC,
+            2,
+            PBRenameMemberRequest.build_for_title(grp_id, target_uid, title).encode()
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
@@ -457,7 +467,7 @@ class Client(BaseClient):
             )
         ).ret_code
 
-    async def friend_like(self, uid: str, count: int) -> FriendLikeResp:
+    async def friend_like(self, uid: str, count: int) -> FriendLikeRsp:
         rsp = await self.send_oidb_svc(
             0x7E5,
             104,
@@ -465,7 +475,7 @@ class Client(BaseClient):
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
-        return FriendLikeResp.decode(rsp.data)
+        return FriendLikeRsp.decode(rsp.data)
 
     async def set_essence(self, grp_id: int, seq: int, rand: int, is_remove=False):
         rsp = SetEssenceRsp.decode(
@@ -479,6 +489,15 @@ class Client(BaseClient):
         )
         if rsp:
             raise AssertionError(rsp.code, rsp.msg)
+
+    async def set_grp_admin(self, grp_id: int, uid: str, is_set: bool):
+        rsp = await self.send_oidb_svc(
+            0x1096,
+            1,
+            PBSetAdmin(grp_id=grp_id, uid=uid, is_set=is_set).encode()
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     async def set_mute_grp(self, grp_id: int, enable: bool):
         rsp = await self.send_oidb_svc(

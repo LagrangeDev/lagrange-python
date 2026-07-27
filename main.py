@@ -57,6 +57,16 @@ async def msg_handler(client: Client, event: GroupMessage):
     elif event.msg.startswith("like_me"):
         resp = await client.friend_like(event.uid, 2)
         print(resp)
+    elif event.msg.startswith("我要当管理"):
+        await client.set_grp_admin(grp_id=event.grp_id, uid=event.uid, is_set=True)
+    elif event.msg.startswith("我不要管理了"):
+        await client.set_grp_admin(grp_id=event.grp_id, uid=event.uid, is_set=False)
+    elif event.msg.startswith("叫我"):
+        name = event.msg.removeprefix("叫我")
+        await client.rename_grp_member(grp_id=event.grp_id, target_uid=event.uid, name=name)
+    elif event.msg.startswith("头衔"):
+        title = event.msg.removeprefix("头衔")
+        await client.set_grp_special_title(grp_id=event.grp_id, target_uid=event.uid, title=title)
 
     for elem in event.msg_chain:
         if isinstance(elem, MulitMsg) and elem.resid:
