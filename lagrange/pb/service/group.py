@@ -180,6 +180,11 @@ class PBHandleGroupRequest(ProtoStruct):
         )
 
 
+class PBHandleFriendRequest(ProtoStruct):
+    action: int = proto_field(1)
+    target_uid: str = proto_field(2)
+
+
 class PBSendGrpReactionReq(ProtoStruct):
     grp_id: int = proto_field(2)
     seq: int = proto_field(3)
