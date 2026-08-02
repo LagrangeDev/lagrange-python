@@ -12,18 +12,12 @@ from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quot
 async def msg_handler(client: Client, event: GroupMessage):
     # print(event)
     if event.msg.startswith("114514"):
-        msg_seq = await client.send_grp_msg(
-            [At.build(event), Text("1919810")], event.grp_id
-        )
+        msg_seq = await client.send_grp_msg([At.build(event), Text("1919810")], event.grp_id)
         await asyncio.sleep(5)
         await client.recall_grp_msg(event.grp_id, msg_seq)
     elif event.msg.startswith("imgs"):
         await client.send_grp_msg(
-            [
-                await client.upload_grp_image(
-                    open("98416427_p0.jpg", "rb"), event.grp_id
-                )
-            ],
+            [await client.upload_grp_image(open("98416427_p0.jpg", "rb"), event.grp_id)],
             event.grp_id,
         )
     elif event.msg.startswith("forward_send"):
@@ -71,7 +65,9 @@ async def msg_handler(client: Client, event: GroupMessage):
     for elem in event.msg_chain:
         if isinstance(elem, MulitMsg) and elem.resid:
             forward_msg = await client.get_forward_msg(elem.resid, is_group=True)
-            print(f"group forward received: file={elem.file_name}, resid={elem.resid}, nodes={len(forward_msg.messages)}")
+            print(
+                f"group forward received: file={elem.file_name}, resid={elem.resid}, nodes={len(forward_msg.messages)}"
+            )
             for idx, node in enumerate(forward_msg.messages, 1):
                 text = "".join(item.display for item in node.content)
                 print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
@@ -106,11 +102,17 @@ async def friend_msg_handler(client: Client, event: FriendMessage):
             for idx, node in enumerate(forward_msg.messages, 1):
                 text = "".join(elem.display for elem in node.content)
                 print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
+    elif event.msg.startswith("get"):
+        seq = await client.get_friend_latest_seq(event.from_uid)
+        info = await client.get_friend_msg(event.from_uid, seq)
+        print(info)
 
     for elem in event.msg_chain:
         if isinstance(elem, MulitMsg) and elem.resid:
             forward_msg = await client.get_forward_msg(elem.resid, is_group=False)
-            print(f"friend forward received: file={elem.file_name}, resid={elem.resid}, nodes={len(forward_msg.messages)}")
+            print(
+                f"friend forward received: file={elem.file_name}, resid={elem.resid}, nodes={len(forward_msg.messages)}"
+            )
             for idx, node in enumerate(forward_msg.messages, 1):
                 text = "".join(item.display for item in node.content)
                 print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
@@ -140,9 +142,7 @@ async def handle_grp_sign(client: "Client", event: "GroupSign"):
         else:
             raise ValueError(f"cannot find member: {event.uin}")
 
-    await client.send_grp_msg(
-        [At(f"@{event.nickname} ", event.uin, uid), Text(a)], event.grp_id
-    )
+    await client.send_grp_msg([At(f"@{event.nickname} ", event.uin, uid), Text(a)], event.grp_id)
 
 
 async def handle_group_reaction(client: "Client", event: "GroupReaction"):
@@ -174,15 +174,12 @@ async def handle_group_admin(client: Client, event: GroupAdminChange):
 #     print("加好友？和我吗？")
 #     await client.set_friend_request(target_uid=event.from_uid, accept=True)
 
-lag = Lagrange(
-    int(os.environ.get("LAGRANGE_UIN", "0")),
-    "linux",
-    os.environ.get("LAGRANGE_SIGN_URL", "")
-)
+lag = Lagrange(int(os.environ.get("LAGRANGE_UIN", "0")), "linux", os.environ.get("LAGRANGE_SIGN_URL", ""))
 install_loguru()  # optional, for better logging
 lag.log.set_level("DEBUG")
 
 lag.subscribe(GroupMessage, msg_handler)
+lag.subscribe(FriendMessage, friend_msg_handler)
 lag.subscribe(ServerKick, handle_kick)
 lag.subscribe(GroupSign, handle_grp_sign)
 lag.subscribe(GroupReaction, handle_group_reaction)

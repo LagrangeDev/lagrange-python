@@ -1,5 +1,6 @@
 from typing import Optional
 
+from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.utils.binary.protobuf import ProtoStruct, proto_field
 
 
@@ -83,7 +84,51 @@ class FriendLikeRsp(ProtoStruct):
 class PBHandleFriendRequest(ProtoStruct):
     action: int = proto_field(1)
     target_uid: str = proto_field(2)
-    
+
+
+class FriendRecallMsgInfo(ProtoStruct):
+    client_seq: int = proto_field(1)  # 发送方自造的 clientSequence（PbSendMsg 时提交，server 原样转发）
+    rand: int = proto_field(2)
+    msg_id: int = proto_field(3)
+    time: int = proto_field(4)
+    field5: int = proto_field(5, default=0)
+    c2c_seq: int = proto_field(6)  # 服务器分配的 c2cMsgSeq（收到：content_head f11 / 发出：PbSendMsgResp f14）
+
+
+class FriendRecallMsgSettings(ProtoStruct):
+    field1: bool = proto_field(1, default=False)
+    field2: bool = proto_field(2, default=False)
+
+
+class RecallFriendMsgRequest(ProtoStruct):
+    typs: int = proto_field(1, default=1)
+    uid: str = proto_field(3)
+    info: FriendRecallMsgInfo = proto_field(4)
+    settings: FriendRecallMsgSettings = proto_field(5, default_factory=FriendRecallMsgSettings)
+    field6: bool = proto_field(6, default=False)
+
+    @classmethod
+    def build(cls, uid: str, client_seq: int, c2c_seq: int, rand: int, timestamp: int) -> "RecallFriendMsgRequest":
+        return cls(
+            uid=uid,
+            info=FriendRecallMsgInfo(
+                client_seq=client_seq, rand=rand, msg_id=(0x01000000 << 32) | rand, time=timestamp, c2c_seq=c2c_seq
+            ),
+        )
+
+
+class GetFriendMsgRequest(ProtoStruct):
+    uid: Optional[str] = proto_field(2)
+    start: int = proto_field(3)
+    end: int = proto_field(4)
+
+
+class GetFriendMsgRsp(ProtoStruct):
+    ret_code: Optional[int] = proto_field(1, default=None)
+    msg: Optional[str] = proto_field(2, default=None)
+    uid: Optional[str] = proto_field(4, default=None)
+    messages: list[MsgPushBody] = proto_field(7, default_factory=list)
+
 
 def propertys(properties: list[FriendProperty]):
     return {prop.code: prop.value for prop in properties}

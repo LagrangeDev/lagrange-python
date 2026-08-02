@@ -34,7 +34,10 @@ from lagrange.pb.service.friend import (
     FriendLikeReq,
     FriendLikeRsp,
     PBHandleFriendRequest,
-    propertys
+    GetFriendMsgRequest,
+    GetFriendMsgRsp,
+    RecallFriendMsgRequest,
+    propertys,
 )
 from lagrange.pb.service.group import (
     FetchGroupResponse,
@@ -62,7 +65,7 @@ from lagrange.pb.service.group import (
     PBGetInfoFromUidReq,
     PBGetGrpLastSeq,
     GetGrpLastSeqRsp,
-    PBGetInfoFromUinReq
+    PBGetInfoFromUinReq,
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
 from lagrange.pb.highway.comm import IndexNode
@@ -76,9 +79,10 @@ from qrcode.main import QRCode
 from .base import BaseClient
 from .event import Events
 from .events.group import GroupMessage
+from .events.friend import FriendMessage
 from .events.service import ClientOnline, ClientOffline
 from .highway import HighWaySession
-from .message.decoder import parse_grp_msg, parse_msg_new
+from .message.decoder import parse_friend_msg, parse_grp_msg, parse_msg_new
 from .message.elems import Audio, ForwardNode, Image, MulitMsg
 from .message.encoder import _get_mulitmsg_resid, build_message
 from .message.types import Element
@@ -333,14 +337,39 @@ class Client(BaseClient):
             ).data
         ).body
 
-        assert (
-            payload.grp_id == grp_id and payload.start_seq == start and payload.end_seq == end
-        ), "return args not matched"
+        assert payload.grp_id == grp_id and payload.start_seq == start and payload.end_seq == end, (
+            "return args not matched"
+        )
 
         rsp = list(await asyncio.gather(*[parse_grp_msg(self, MsgPushBody.decode(i)) for i in payload.elems]))
         if filter_deleted_msg:
             return [*filter(lambda msg: msg.rand != -1, rsp)]
         return rsp
+
+    async def get_friend_msg(self, uid: str, start: int, end: int = 0) -> list[FriendMessage]:
+        if not end:
+            end = start
+        rsp = GetFriendMsgRsp.decode(
+            (
+                await self.send_uni_packet(
+                    "trpc.msg.register_proxy.RegisterProxy.SsoGetC2cMsg",
+                    GetFriendMsgRequest(uid=uid, start=start, end=end).encode(),
+                )
+            ).data
+        )
+        assert rsp.ret_code in (None, 0), f"get_friend_msg failed: {rsp.ret_code} {rsp.msg}"
+        return list(await asyncio.gather(*[parse_friend_msg(self, msg) for msg in rsp.messages]))
+
+    async def get_friend_latest_seq(self, uid: str) -> int:
+        rsp = proto_decode(
+            (
+                await self.send_uni_packet(
+                    "trpc.msg.msg_svc.MsgService.SsoGetPeerSeq",
+                    proto_encode({1: uid}),
+                )
+            ).data
+        )
+        return max(rsp.into(3, int), rsp.into(4, int))
 
     async def get_friend_list(self) -> list[BotFriend]:
         nextuin_cache: list[GetFriendListUin] = []
@@ -407,24 +436,27 @@ class Client(BaseClient):
         if result.into(2, bytes) != b"Success":
             raise AssertionError(result)
 
+    async def recall_friend_msg(self, uid: str, client_seq: int, c2c_seq: int, rand: int, time: int):
+        payload = await self.send_uni_packet(
+            "trpc.msg.msg_svc.MsgService.SsoC2CRecallMsg",
+            RecallFriendMsgRequest.build(
+                uid=uid, client_seq=client_seq, c2c_seq=c2c_seq, rand=rand, timestamp=time
+            ).encode(),
+        )
+        return proto_decode(payload.data)
+
     async def rename_grp_name(self, grp_id: int, name: str) -> int:  # not test
         return (await self.send_oidb_svc(0x89A, 15, PBGroupRenameRequest.build(grp_id, name).encode())).ret_code
 
     async def rename_grp_member(self, grp_id: int, target_uid: str, name: str):
-        rsp = await self.send_oidb_svc(
-            0x8FC,
-            3,
-            PBRenameMemberRequest.build(grp_id, target_uid, name).encode()
-        )
+        rsp = await self.send_oidb_svc(0x8FC, 3, PBRenameMemberRequest.build(grp_id, target_uid, name).encode())
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     async def set_grp_special_title(self, grp_id: int, target_uid: str, title: str):
         """works better for those who already has one?"""
         rsp = await self.send_oidb_svc(
-            0x8FC,
-            2,
-            PBRenameMemberRequest.build_for_title(grp_id, target_uid, title).encode()
+            0x8FC, 2, PBRenameMemberRequest.build_for_title(grp_id, target_uid, title).encode()
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
@@ -468,11 +500,7 @@ class Client(BaseClient):
         ).ret_code
 
     async def friend_like(self, uid: str, count: int) -> FriendLikeRsp:
-        rsp = await self.send_oidb_svc(
-            0x7E5,
-            104,
-            FriendLikeReq(uid=uid, field12=71, count=count).encode()
-        )
+        rsp = await self.send_oidb_svc(0x7E5, 104, FriendLikeReq(uid=uid, field12=71, count=count).encode())
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
         return FriendLikeRsp.decode(rsp.data)
@@ -491,11 +519,7 @@ class Client(BaseClient):
             raise AssertionError(rsp.code, rsp.msg)
 
     async def set_grp_admin(self, grp_id: int, uid: str, is_set: bool):
-        rsp = await self.send_oidb_svc(
-            0x1096,
-            1,
-            PBSetAdmin(grp_id=grp_id, uid=uid, is_set=is_set).encode()
-        )
+        rsp = await self.send_oidb_svc(0x1096, 1, PBSetAdmin(grp_id=grp_id, uid=uid, is_set=is_set).encode())
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
@@ -547,9 +571,7 @@ class Client(BaseClient):
         accept -> action: 3 for accept, 5 for reject
         """
         rsp = await self.send_oidb_svc(
-            0xB5D,
-            44,
-            PBHandleFriendRequest(action=3 if accept else 5, target_uid=target_uid).encode()
+            0xB5D, 44, PBHandleFriendRequest(action=3 if accept else 5, target_uid=target_uid).encode()
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
@@ -673,10 +695,7 @@ class Client(BaseClient):
         return temp[0][1].decode(), temp[1][1].decode()
 
     async def get_marketface_key(self, face_id: int, face_md5: list[str]) -> list[str]:
-        rsp = await self.send_uni_packet(
-            "BQMallSvc.TabOpReq",
-            TabOpReq.build(face_id, face_md5).encode()
-        )
+        rsp = await self.send_uni_packet("BQMallSvc.TabOpReq", TabOpReq.build(face_id, face_md5).encode())
         return TabOpRsp.decode(rsp.data).keys()
 
     async def get_forward_msg(self, res_id: str, *, is_group=True) -> MulitMsg:

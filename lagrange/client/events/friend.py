@@ -18,7 +18,7 @@ class FriendEvent(BaseEvent):
 
 @dataclass
 class FriendMessage(FriendEvent):
-    seq: int
+    seq: int  # 服务器分配的 c2cMsgSeq (content_head f11)，查询/撤回用
     msg_id: int
     timestamp: int
     msg: str
@@ -31,12 +31,14 @@ class FriendRecall(FriendEvent):
     msg_id: int
     timestamp: int
 
+
 @dataclass
 class FriendRequest(FriendEvent):
     from_uid: str
     to_uid: str
     message: str
     source: str
+
 
 @dataclass
 class FriendRequestFinished(FriendEvent):
