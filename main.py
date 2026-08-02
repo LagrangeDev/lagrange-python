@@ -103,9 +103,13 @@ async def friend_msg_handler(client: Client, event: FriendMessage):
                 text = "".join(elem.display for elem in node.content)
                 print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
     elif event.msg.startswith("get"):
-        seq = await client.get_friend_latest_seq(event.from_uid)
-        info = await client.get_friend_msg(event.from_uid, seq)
-        print(info)
+        info = await client.get_friend_msg(event.from_uid, event.seq)
+        await client.send_friend_msg([Text(repr(info))], event.from_uid)
+    elif event.msg.startswith("recall"):
+        seq = await client.send_friend_msg([Text("114514")], event.from_uid)
+        await asyncio.sleep(3)
+        await client.recall_friend_msg(event.from_uid, seq)
+        print(f"[recall] ok seq={seq}")
 
     for elem in event.msg_chain:
         if isinstance(elem, MulitMsg) and elem.resid:

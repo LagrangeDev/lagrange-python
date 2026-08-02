@@ -87,12 +87,12 @@ class PBHandleFriendRequest(ProtoStruct):
 
 
 class FriendRecallMsgInfo(ProtoStruct):
-    client_seq: int = proto_field(1)  # 发送方自造的 clientSequence（PbSendMsg 时提交，server 原样转发）
+    client_seq: int = proto_field(1)
     rand: int = proto_field(2)
     msg_id: int = proto_field(3)
     time: int = proto_field(4)
     field5: int = proto_field(5, default=0)
-    c2c_seq: int = proto_field(6)  # 服务器分配的 c2cMsgSeq（收到：content_head f11 / 发出：PbSendMsgResp f14）
+    c2c_seq: int = proto_field(6)
 
 
 class FriendRecallMsgSettings(ProtoStruct):
@@ -128,6 +128,28 @@ class GetFriendMsgRsp(ProtoStruct):
     msg: Optional[str] = proto_field(2, default=None)
     uid: Optional[str] = proto_field(4, default=None)
     messages: list[MsgPushBody] = proto_field(7, default_factory=list)
+
+
+class GetFriendPeerSeqReq(ProtoStruct):
+    uid: str = proto_field(1)
+
+
+class GetFriendPeerSeqRsp(ProtoStruct):
+    seq1: int = proto_field(3, default=0)
+    seq2: int = proto_field(4, default=0)
+    latest_msg_time: int = proto_field(5, default=0)
+
+
+class RecallFriendMsgEcho(ProtoStruct):
+    info: FriendRecallMsgInfo = proto_field(3)
+
+
+class RecallFriendMsgRsp(ProtoStruct):
+    ret_code: Optional[int] = proto_field(1, default=None)
+    err_msg: Optional[str] = proto_field(2, default=None)
+    field3: int = proto_field(3, default=0)
+    echo: Optional[RecallFriendMsgEcho] = proto_field(5, default=None)
+    field6: bytes = proto_field(6, default=b"")
 
 
 def propertys(properties: list[FriendProperty]):

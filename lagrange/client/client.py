@@ -36,7 +36,10 @@ from lagrange.pb.service.friend import (
     PBHandleFriendRequest,
     GetFriendMsgRequest,
     GetFriendMsgRsp,
+    GetFriendPeerSeqReq,
+    GetFriendPeerSeqRsp,
     RecallFriendMsgRequest,
+    RecallFriendMsgRsp,
     propertys,
 )
 from lagrange.pb.service.group import (
@@ -213,7 +216,7 @@ class Client(BaseClient):
             2: {1: 1, 2: 0, 3: 0},
             3: pb,
             4: seq,
-            5: int.from_bytes(os.urandom(4), byteorder="big", signed=False),
+            5: int.from_bytes(os.urandom(4), byteorder="big", signed=False),  # rand
         }
         if not grp_id:
             body[6] = {1: timestamp()}
@@ -361,15 +364,15 @@ class Client(BaseClient):
         return list(await asyncio.gather(*[parse_friend_msg(self, msg) for msg in rsp.messages]))
 
     async def get_friend_latest_seq(self, uid: str) -> int:
-        rsp = proto_decode(
+        rsp = GetFriendPeerSeqRsp.decode(
             (
                 await self.send_uni_packet(
                     "trpc.msg.msg_svc.MsgService.SsoGetPeerSeq",
-                    proto_encode({1: uid}),
+                    GetFriendPeerSeqReq(uid=uid).encode(),
                 )
             ).data
         )
-        return max(rsp.into(3, int), rsp.into(4, int))
+        return max(rsp.seq1, rsp.seq2)
 
     async def get_friend_list(self) -> list[BotFriend]:
         nextuin_cache: list[GetFriendListUin] = []
@@ -436,14 +439,23 @@ class Client(BaseClient):
         if result.into(2, bytes) != b"Success":
             raise AssertionError(result)
 
-    async def recall_friend_msg(self, uid: str, client_seq: int, c2c_seq: int, rand: int, time: int):
-        payload = await self.send_uni_packet(
-            "trpc.msg.msg_svc.MsgService.SsoC2CRecallMsg",
-            RecallFriendMsgRequest.build(
-                uid=uid, client_seq=client_seq, c2c_seq=c2c_seq, rand=rand, timestamp=time
-            ).encode(),
+    async def recall_friend_msg(self, uid: str, seq: int):
+        msgs = await self.get_friend_msg(uid, seq)
+        if not msgs:
+            raise AssertionError(f"message not found: uid={uid} seq={seq}")
+        msg = msgs[0]
+        rsp = RecallFriendMsgRsp.decode(
+            (
+                await self.send_uni_packet(
+                    "trpc.msg.msg_svc.MsgService.SsoC2CRecallMsg",
+                    RecallFriendMsgRequest.build(
+                        uid=uid, client_seq=msg.client_seq, c2c_seq=msg.seq, rand=msg.msg_id, timestamp=msg.timestamp
+                    ).encode(),
+                )
+            ).data
         )
-        return proto_decode(payload.data)
+        if rsp.ret_code is not None or rsp.err_msg is not None or (rsp.echo and rsp.echo.info.c2c_seq != seq):
+            raise AssertionError(rsp)
 
     async def rename_grp_name(self, grp_id: int, name: str) -> int:  # not test
         return (await self.send_oidb_svc(0x89A, 15, PBGroupRenameRequest.build(grp_id, name).encode())).ret_code
