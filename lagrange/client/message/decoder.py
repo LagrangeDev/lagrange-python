@@ -351,7 +351,8 @@ async def parse_msg_new(
 async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
     from_uin, from_uid, to_uin, to_uid = parse_friend_info(pkg)
 
-    seq = pkg.content_head.seq
+    seq = pkg.content_head.c2c_seq or 0
+    client_seq = pkg.content_head.seq
     msg_id = pkg.content_head.random
     timestamp = pkg.content_head.timestamp
     parsed_msg = await parse_msg_new(client, pkg, fri_id=from_uid, grp_id=None)
@@ -363,6 +364,7 @@ async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
         to_uin=to_uin,
         to_uid=to_uid,
         seq=seq,
+        client_seq=client_seq,
         msg_id=msg_id,
         timestamp=timestamp,
         msg=msg_text,

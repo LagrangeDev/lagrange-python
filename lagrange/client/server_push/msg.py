@@ -1,6 +1,7 @@
 import json
 import re
 from urllib.parse import parse_qsl
+import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING, TypeVar, Union
 
 from lagrange.client.message.decoder import parse_grp_msg, parse_friend_msg
@@ -211,7 +212,9 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 if pb.body.type == 1:
                     if "invitor" in attrs:
                         # reserve: attrs["msg_nums"]
-                        return GroupMemberJoinedByInvite(grp_id, attrs["invitor"], attrs["invitee"])
+                        return GroupMemberJoinedByInvite(
+                            grp_id, attrs["invitor"], attrs.get("invitee") or int(ET.fromstring(attrs["invitees_dynamic"]).attrib["uin"])
+                        )
                     elif "user" in attrs and "uin" in attrs:
                         # todo: 群代办
                         pass
