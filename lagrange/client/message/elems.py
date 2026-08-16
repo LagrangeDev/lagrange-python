@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Optional
 
 from lagrange.client.events.group import GroupMessage
 from lagrange.info.serialize import JsonSerializer
+from lagrange.pb.highway.comm import MsgInfo
+from lagrange.pb.message.rich_text.elems import VideoFile
 
 if TYPE_CHECKING:
     from .types import Element
@@ -159,6 +161,8 @@ class Video(CompatibleText, MediaInfo):
     height: int
     time: int
     file_key: str = field(repr=True)
+    msg_info: Optional[MsgInfo] = field(default=None, repr=False)
+    compat: Optional[VideoFile] = field(default=None, repr=False)
 
     @property
     def raw_text(self) -> str:

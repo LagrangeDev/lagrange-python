@@ -35,6 +35,7 @@ from lagrange.pb.message.rich_text.elems import (
     GeneralFlags,
 )
 from lagrange.pb.message.rich_text.elems import Text as PBText
+from lagrange.utils.binary.protobuf import proto_decode
 
 from .elems import (
     At,
@@ -52,6 +53,7 @@ from .elems import (
     Poke,
     MarketFace,
     GreyTips,
+    Video,
 )
 from .types import Element
 
@@ -137,6 +139,21 @@ async def build_message(
                     )
                 else:
                     msg_pb.append(Elems(not_online_image=NotOnlineImage.decode(msg.qmsg)))
+            elif isinstance(msg, Video):
+                if not msg.msg_info:
+                    raise ValueError("Video msg_info not set, upload first")
+                to_scene = msg.msg_info.biz_info.video.to_scene if msg.msg_info.biz_info.video else None
+                msg_pb.append(
+                    Elems(
+                        common_elem=CommonElem(
+                            service_type=48,
+                            pb_elem=proto_decode(msg.msg_info.encode(), 0).proto,
+                            bus_type=21 if to_scene == 2 else 11,
+                        )
+                    )
+                )
+                if msg.compat:
+                    msg_pb.append(Elems(video_file=msg.compat))
             elif isinstance(msg, Service):
                 msg_pb.append(Elems(rich_msg=RichMsg(template=b"\x01" + zlib.compress(msg.raw), service_id=msg.id)))
             elif isinstance(msg, Raw):

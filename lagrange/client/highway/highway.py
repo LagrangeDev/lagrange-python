@@ -4,25 +4,50 @@ from hashlib import md5
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO, Optional, Union
 
-from lagrange.client.message.elems import Audio, Image
+from lagrange.client.message.elems import Audio, File, Image, Video
 from lagrange.pb.highway.comm import IndexNode
 from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
+from lagrange.pb.highway.file_ext import (
+    ExcitingBusiInfo,
+    ExcitingClientInfo,
+    ExcitingFileEntry,
+    ExcitingFileNameInfo,
+    ExcitingHostConfig,
+    ExcitingHostInfo,
+    ExcitingUrlInfo,
+    FileUploadEntry,
+    FileUploadExt,
+)
 from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
-from lagrange.pb.highway.rsp import NTV2RichMediaResp, DownloadRsp
+from lagrange.pb.highway.rsp import DownloadRsp, NTV2RichMediaResp
+from lagrange.pb.message.rich_text.elems import VideoFile
+from lagrange.pb.service.file import (
+    D6Download,
+    D6Req,
+    D6Rsp,
+    D6Upload,
+    D9SendFileReq,
+    E37DownloadReq,
+    E37DownloadRsp,
+    E37UploadReq,
+    E37UploadRsp,
+)
+from lagrange.utils.audio import decoder as decoder_audio
 from lagrange.utils.binary.protobuf import proto_decode
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
 from lagrange.utils.image import decoder as decoder_img
-from lagrange.utils.audio import decoder as decoder_audio
 from lagrange.utils.log import log
 
+from .constant import _DEFAULT_VIDEO_THUMBNAIL
 from .encoders import (
-    encode_audio_upload_req,
-    encode_highway_head,
-    encode_upload_img_req,
     encode_audio_down_req,
+    encode_audio_upload_req,
     encode_grp_img_download_req,
+    encode_highway_head,
     encode_pri_img_download_req,
+    encode_upload_img_req,
+    encode_video_upload_req,
 )
 from .frame import read_frame, write_frame
 from .utils import calc_file_hash_and_length, timeit
@@ -374,6 +399,261 @@ class HighWaySession:
 
         return BytesIO(http.decompressed_body)
 
+    async def upload_video(self, file: BinaryIO, gid=0, uid="", thumb: Optional[BinaryIO] = None) -> Video:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        if thumb is None:
+            thumb = BytesIO(_DEFAULT_VIDEO_THUMBNAIL)
+        fmd5, fsha1, fl = calc_file_hash_and_length(file)
+        tmd5, tsha1, tl = calc_file_hash_and_length(thumb)
+        self.logger.debug(f"video info: {fl}B, thumb: {tl}B")
+
+        ret = NTV2RichMediaResp.decode(
+            (
+                await self._client.send_oidb_svc(
+                    0x11EA if gid else 0x11E9,
+                    100,
+                    encode_video_upload_req(gid, uid, fmd5, fsha1, fl, tmd5, tsha1, tl, 0).encode(),
+                    True,
+                )
+            ).data
+        )
+        if ret.rsp_head.ret_code != 0:
+            raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
+        if not ret.upload:
+            raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
+
+        index = ret.upload.msg_info.body[0].index
+        if ret.upload.ukey:
+            self.logger.debug("video not found, uploading...")
+            ext = NTV2RichMediaHighwayExt.build(
+                index.file_uuid,
+                ret.upload.ukey,
+                ret.upload.v4_addrs,
+                ret.upload.msg_info.body,
+                1048576,
+                fsha1,
+            ).encode()
+            if not self._session_sig:
+                raise ConnectionError("session sig not found, try again later")
+            await self.upload_controller(
+                file,
+                cmd_id=1005 if gid else 1001,
+                ticket=self._session_sig,
+                ext=ext,
+                addrs=self._session_addr_list,
+                bs=1048576,
+            )
+
+        if ret.upload.sub_file_info:
+            sub = ret.upload.sub_file_info[0]
+            thumb_index = ret.upload.msg_info.body[1].index
+            if sub.ukey:
+                self.logger.debug("thumb not found, uploading...")
+                ext = NTV2RichMediaHighwayExt.build(
+                    thumb_index.file_uuid,
+                    sub.ukey,
+                    sub.v4_addrs,
+                    ret.upload.msg_info.body,
+                    1048576,
+                    tsha1,
+                ).encode()
+                await self.upload_controller(
+                    thumb,
+                    cmd_id=1006 if gid else 1002,
+                    ticket=self._session_sig,
+                    ext=ext,
+                    addrs=self._session_addr_list,
+                    bs=1048576,
+                )
+
+        compat = VideoFile.decode(ret.upload.compat_qmsg) if ret.upload.compat_qmsg else None
+        return Video(
+            name=index.info.name,
+            size=index.info.size,
+            url="",
+            id=0,
+            md5=bytes.fromhex(index.info.hash),
+            qmsg=None,
+            width=index.info.width,
+            height=index.info.height,
+            time=index.info.time,
+            file_key=index.file_uuid,
+            msg_info=ret.upload.msg_info,
+            compat=compat,
+        )
+
+    async def get_video_url(self, node: IndexNode, gid: int = 0, uid: str = "") -> str:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        if gid:
+            ret = NTV2RichMediaResp.decode(
+                (
+                    await self._client.send_oidb_svc(0x11C4, 200, encode_grp_img_download_req(gid, node).encode(), True)
+                ).data
+            )
+        else:
+            ret = NTV2RichMediaResp.decode(
+                (
+                    await self._client.send_oidb_svc(0x11C5, 200, encode_pri_img_download_req(uid, node).encode(), True)
+                ).data
+            )
+        if not (ret and ret.download):
+            raise ConnectionError("Internal error, check log for more detail")
+        return self._down_url(ret.download)
+
+    async def upload_private_file(self, file: BinaryIO, uid: str, file_name: str = "") -> File:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        if not file_name:
+            file_name = getattr(file, "name", "") or ""
+            import os
+            file_name = os.path.basename(file_name)
+        fmd5, fsha1, fl = calc_file_hash_and_length(file)
+        file.seek(0)
+        md5_10m = md5(file.read(min(fl, 10 * 1024 * 1024))).digest()
+        file.seek(0)
+
+        req = E37UploadReq.build(self._client.uid, uid, fl, file_name, md5_10m, fsha1, fmd5)
+        rsp = E37UploadRsp.decode(
+            (await self._client.send_oidb_svc(0xE37, 1700, req.encode(), False)).data
+        )
+        upload = rsp.upload
+        if upload.ret_code:
+            raise ConnectionError(upload.ret_code, upload.ret_msg)
+
+        if not upload.bool_file_exist:
+            ext = FileUploadExt(
+                unknown200=1,
+                entry=FileUploadEntry(
+                    busi_buff=ExcitingBusiInfo(sender_uin=self._client.uin),
+                    file_entry=ExcitingFileEntry(
+                        file_size=fl,
+                        md5=fmd5,
+                        check_key=fsha1,
+                        md5_s2=fmd5,
+                        file_id=upload.uuid,
+                        upload_key=upload.upload_key,
+                    ),
+                    client_info=ExcitingClientInfo(),
+                    file_name_info=ExcitingFileNameInfo(file_name=file_name),
+                    host=ExcitingHostConfig(
+                        hosts=[ExcitingHostInfo(url=ExcitingUrlInfo(host=upload.upload_ip), port=upload.upload_port)]
+                    ),
+                )
+            ).encode()
+            await self.upload_controller(
+                file,
+                cmd_id=95,
+                ticket=self._session_sig,
+                ext=ext,
+                addrs=self._session_addr_list,
+            )
+
+        return File(
+            file_size=fl,
+            file_name=file_name,
+            file_md5=fmd5,
+            file_url=None,
+            file_id=None,
+            file_uuid=upload.uuid,
+            file_hash=upload.file_addon,
+        )
+
+    async def upload_group_file(self, file: BinaryIO, grp_id: int, target_directory: str = "/", file_name: str = "") -> File:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        if not file_name:
+            file_name = getattr(file, "name", "") or ""
+            import os
+            file_name = os.path.basename(file_name)
+        fmd5, fsha1, fl = calc_file_hash_and_length(file)
+        file.seek(0)
+
+        req = D6Req(
+            file=D6Upload(
+                group_uin=grp_id,
+                target_directory=target_directory,
+                file_name=file_name,
+                local_directory=f"/{file_name}",
+                file_size=fl,
+                file_sha1=fsha1,
+                file_md5=fmd5,
+            )
+        )
+        rsp = D6Rsp.decode(
+            (await self._client.send_oidb_svc(0x6D6, 0, req.encode(), True)).data
+        )
+        upload = rsp.upload
+        if not upload or upload.ret_code:
+            raise ConnectionError(upload.ret_code if upload else -1, upload.ret_msg if upload else "no upload")
+
+        if not upload.bool_file_exist:
+            ext = FileUploadExt(
+                entry=FileUploadEntry(
+                    busi_buff=ExcitingBusiInfo(
+                        sender_uin=self._client.uin,
+                        receiver_uin=grp_id,
+                        group_code=grp_id,
+                    ),
+                    file_entry=ExcitingFileEntry(
+                        file_size=fl,
+                        md5=fmd5,
+                        check_key=upload.check_key,
+                        md5_s2=fmd5,
+                        file_id=upload.file_id,
+                        upload_key=upload.file_key,
+                    ),
+                    client_info=ExcitingClientInfo(),
+                    file_name_info=ExcitingFileNameInfo(file_name=file_name),
+                    host=ExcitingHostConfig(
+                        hosts=[ExcitingHostInfo(url=ExcitingUrlInfo(host=upload.upload_ip), port=upload.upload_port)]
+                    ),
+                )
+            ).encode()
+            await self.upload_controller(
+                file,
+                cmd_id=71,
+                ticket=self._session_sig,
+                ext=ext,
+                addrs=self._session_addr_list,
+            )
+
+        return File(
+            file_size=fl,
+            file_name=file_name,
+            file_md5=fmd5,
+            file_url=None,
+            file_id=upload.file_id,
+            file_uuid=None,
+            file_hash=None,
+        )
+
+    async def get_private_file_url(self, file_uuid: str, file_hash: str, uid: str) -> str:
+        req = E37DownloadReq.build(uid, file_uuid, file_hash)
+        rsp = E37DownloadRsp.decode(
+            (await self._client.send_oidb_svc(0xE37, 1200, req.encode(), False)).data
+        )
+        if not (rsp.body and rsp.body.result):
+            raise ConnectionError("Internal error, check log for more detail")
+        result = rsp.body.result
+        return f"http://{result.server}:{result.port}{result.url}&isthumb=0"
+
+    async def get_group_file_url(self, grp_id: int, file_id: str) -> str:
+        req = D6Req(download=D6Download(group_uin=grp_id, file_id=file_id))
+        rsp = D6Rsp.decode(
+            (await self._client.send_oidb_svc(0x6D6, 2, req.encode(), True)).data
+        )
+        download = rsp.download
+        if not download or download.ret_code:
+            raise ConnectionError(download.ret_code if download else -1, download.ret_msg if download else "no download")
+        return f"https://{download.download_dns}/ftn_handler/{download.download_url.hex()}/?fname="
+
+    async def send_group_file(self, grp_id: int, file_id: str):
+        req = D9SendFileReq.build(grp_id, file_id)
+        rsp = await self._client.send_oidb_svc(0x6D9, 4, req.encode(), False)
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     # async def upload_video(self, file: BinaryIO, thumb: BinaryIO, gid: int) -> VideoElement:
     #     thumb_md5, thumb_size = calc_file_md5_and_length(thumb)

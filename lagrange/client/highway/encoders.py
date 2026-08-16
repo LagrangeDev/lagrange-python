@@ -8,6 +8,7 @@ from lagrange.pb.highway.comm import (
     FileInfo,
     FileType,
     PicExtInfo,
+    VideoExtInfo,
     IndexNode,
 )
 from lagrange.pb.highway.head import (
@@ -25,6 +26,8 @@ from lagrange.pb.highway.req import (
     UploadInfo,
     UploadReq,
     DownloadReq,
+    DownloadExt,
+    DownloadVideoExt,
 )
 
 if TYPE_CHECKING:
@@ -252,6 +255,122 @@ def encode_pri_img_download_req(uid: str, node: IndexNode) -> NTV2RichMediaReq:
             )
         ),
         download=DownloadReq(node=node),
+    )
+
+
+def encode_video_upload_req(
+    grp_id: int,
+    uid: str,
+    md5: bytes,
+    sha1: bytes,
+    size: int,
+    thumb_md5: bytes,
+    thumb_sha1: bytes,
+    thumb_size: int,
+    time: int,
+) -> NTV2RichMediaReq:
+    assert not (grp_id and uid)
+    c2c_info = None
+    grp_info = None
+    if grp_id:
+        scene_type = 2
+        grp_info = GroupInfo(grp_id=grp_id)
+    else:
+        scene_type = 1
+        c2c_info = C2CUserInfo(uid=uid)
+    return NTV2RichMediaReq(
+        req_head=MultiMediaReqHead(
+            common=CommonHead(req_id=3, cmd=100),
+            scene=SceneInfo(
+                req_type=2,
+                bus_type=2,
+                scene_type=scene_type,
+                c2c=c2c_info,
+                grp=grp_info,
+            ),
+        ),
+        upload=UploadReq(
+            infos=[
+                UploadInfo(
+                    file_info=FileInfo(
+                        size=size,
+                        hash=md5.hex(),
+                        sha1=sha1.hex(),
+                        name="video.mp4",
+                        type=FileType(type=2, video_format=0),
+                        width=0,
+                        height=0,
+                        time=time,
+                        is_origin=False,
+                    ),
+                    sub_type=0,
+                ),
+                UploadInfo(
+                    file_info=FileInfo(
+                        size=thumb_size,
+                        hash=thumb_md5.hex(),
+                        sha1=thumb_sha1.hex(),
+                        name="video.jpg",
+                        type=FileType(type=1, pic_format=0),
+                        width=1920,
+                        height=1080,
+                        time=0,
+                        is_origin=False,
+                    ),
+                    sub_type=100,
+                ),
+            ],
+            try_fast_upload=True,
+            serve_sendmsg=False,
+            client_rand_id=int.from_bytes(os.urandom(4), "big"),
+            compat_stype=scene_type,
+            biz_info=ExtBizInfo(
+                pic=PicExtInfo(biz_type=0, summary=""),
+                video=VideoExtInfo(pb_reserved=b"\x80\x01\x00"),
+                audio=AudioExtInfo(
+                    bytes_reserved=b"",
+                    pb_reserved=b"",
+                    general_flags=b"",
+                ),
+            ),
+        ),
+    )
+
+
+def encode_video_down_req(node: IndexNode, grp_id: int, uid: str):
+    assert not (grp_id and uid)
+    c2c_info = None
+    grp_info = None
+    if grp_id:
+        scene_type = 2
+        grp_info = GroupInfo(grp_id=grp_id)
+    else:
+        scene_type = 1
+        c2c_info = C2CUserInfo(uid=uid)
+    download_node = IndexNode(
+        info=node.info,
+        file_uuid=node.file_uuid,
+        store_id=node.store_id if node.store_id is not None else 1,
+        upload_time=node.upload_time if node.upload_time is not None else 0,
+        ttl=node.ttl if node.ttl is not None else 0,
+        sub_type=node.sub_type if node.sub_type is not None else 0,
+    )
+    return NTV2RichMediaReq(
+        req_head=MultiMediaReqHead(
+            common=CommonHead(req_id=1, cmd=200),
+            scene=SceneInfo(
+                req_type=2,
+                bus_type=2,
+                field103=0,
+                scene_type=scene_type,
+                c2c=c2c_info,
+                grp=grp_info,
+            ),
+        ),
+        download=DownloadReq(
+            node=download_node,
+            ext=DownloadExt(video_ext=DownloadVideoExt(busi_type=0, scene_type=scene_type, sub_busi_type=0)),
+        ),
     )
 
 # def encode_video_upload_req(

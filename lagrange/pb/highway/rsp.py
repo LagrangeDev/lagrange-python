@@ -19,10 +19,10 @@ class RichMediaStorageTransInfo(ProtoStruct):
 
 class SubFileInfo(ProtoStruct):
     sub_type: int = proto_field(1)
-    ukey: str = proto_field(2)
+    ukey: Optional[str] = proto_field(2, default=None)
     ukey_ttl: int = proto_field(3)
-    v4_addrs: list[IPv4] = proto_field(4)
-    v6_addrs: list[IPv6] = proto_field(5)
+    v4_addrs: list[IPv4] = proto_field(4, default_factory=list)
+    v6_addrs: list[IPv6] = proto_field(5, default_factory=list)
 
 
 class UploadRsp(ProtoStruct):

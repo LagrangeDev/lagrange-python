@@ -82,15 +82,15 @@ async def parse_msg_new(
     if not pkg.message or not pkg.message.body:
         if pkg.content_head.sub_type == 4:
             data = FileExtra.decode(pkg.message.buf2)
-            return [
-                elems.File.pri_paste_build(
-                    file_size=data.file.file_size,
-                    file_name=data.file.file_name,
-                    file_md5=data.file.file_md5,
-                    file_uuid=data.file.file_uuid,
-                    file_hash=data.file.file_hash,
-                )
-            ]
+            f = elems.File.pri_paste_build(
+                file_size=data.file.file_size,
+                file_name=data.file.file_name,
+                file_md5=data.file.file_md5,
+                file_uuid=data.file.file_uuid,
+                file_hash=data.file.file_hash,
+            )
+            f.file_url = await client.fetch_friend_file_url(data.file.file_uuid, data.file.file_hash, client.uid)
+            return [f]
     rich: RichText = pkg.message.body
     if rich.ptt:
         ptt = rich.ptt
@@ -206,6 +206,27 @@ async def parse_msg_new(
             if common.service_type == 46:
                 kb = PBKeyboard.decode(proto_encode(common.pb_elem)).keyboard
                 msg_chain.append(elems.Keyboard(content=kb.content, bot_appid=kb.bot_appid))
+            if common.service_type == 48 and common.bus_type in (11, 21):
+                extra = MsgInfo.decode(proto_encode(common.pb_elem))
+                index = extra.body[0].index
+                if common.bus_type == 21:
+                    url = await client.fetch_video_url(index, gid=pkg.response_head.rsp_grp.gid)
+                else:
+                    url = await client.fetch_video_url(index, uid=client.uid)
+                msg_chain.append(
+                    elems.Video(
+                        name=index.info.name,
+                        size=index.info.size,
+                        id=0,
+                        md5=bytes.fromhex(index.info.hash),
+                        width=index.info.width,
+                        height=index.info.height,
+                        time=index.info.time,
+                        file_key=index.file_uuid,
+                        url=url,
+                        qmsg=None,
+                    )
+                )
             if common.bus_type in [10, 20]:  # 10: friend, 20: group
                 extra = MsgInfo.decode(proto_encode(raw.common_elem.pb_elem))
                 index = extra.body[0].index
@@ -238,14 +259,14 @@ async def parse_msg_new(
                 reader.read_bytes(1)
                 data = reader.read_bytes_with_length("u16", False)
                 file_extra = GroupFileExtra.decode(data)
-                msg_chain.append(
-                    elems.File.grp_paste_build(
-                        file_size=file_extra.inner.info.file_size,
-                        file_name=file_extra.inner.info.file_name,
-                        file_md5=file_extra.inner.info.file_md5,
-                        file_id=file_extra.inner.info.file_id,
-                    )
+                f = elems.File.grp_paste_build(
+                    file_size=file_extra.inner.info.file_size,
+                    file_name=file_extra.inner.info.file_name,
+                    file_md5=file_extra.inner.info.file_md5,
+                    file_id=file_extra.inner.info.file_id,
                 )
+                f.file_url = await client.fetch_grp_file_url(grp_id, file_extra.inner.info.file_id)
+                msg_chain.append(f)
         elif raw.rich_msg:
             service = raw.rich_msg
             if service.template:
