@@ -304,13 +304,13 @@ class Client(BaseClient):
     async def upload_friend_video(self, file: BinaryIO, uid: str, thumb: Optional[BinaryIO] = None) -> Video:
         return await self._highway.upload_video(file, uid=uid, thumb=thumb)
 
-    async def upload_grp_file(self, file: BinaryIO, grp_id: int, target_directory: str = "/") -> File:
-        f = await self._highway.upload_group_file(file, grp_id, target_directory)
+    async def upload_grp_file(self, file: BinaryIO, grp_id: int, target_directory: str = "/", file_name: Optional[str] = None) -> File:
+        f = await self._highway.upload_group_file(file, grp_id, target_directory, file_name or "")
         await self._highway.send_group_file(grp_id, f.file_id)
         return f
 
-    async def upload_friend_file(self, file: BinaryIO, uid: str) -> File:
-        f = await self._highway.upload_private_file(file, uid)
+    async def upload_friend_file(self, file: BinaryIO, uid: str, file_name: Optional[str] = None) -> File:
+        f = await self._highway.upload_private_file(file, uid, file_name or "")
         result = await self._send_file_msg_raw(f, uid)
         if result.ret_code:
             raise AssertionError(result.ret_code, result.err_msg)

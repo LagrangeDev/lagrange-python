@@ -20,6 +20,9 @@ async def msg_handler(client: Client, event: GroupMessage):
             [await client.upload_grp_image(open("98416427_p0.jpg", "rb"), event.grp_id)],
             event.grp_id,
         )
+    elif event.msg.startswith("file"):
+        f = await client.upload_grp_file(open("/home/harcic8042/Downloads/test.mp4", "rb"), event.grp_id, file_name="test_custom.mp4")
+        print(f"group file send ok: id={f.file_id}, name={f.file_name}, size={f.file_size}")
     elif event.msg.startswith("forward_send"):
         forward_msg = MulitMsg(
             messages=[
@@ -110,6 +113,9 @@ async def friend_msg_handler(client: Client, event: FriendMessage):
         await asyncio.sleep(3)
         await client.recall_friend_msg(event.from_uid, seq)
         print(f"[recall] ok seq={seq}")
+    elif event.msg.startswith("file"):
+        f = await client.upload_friend_file(open("/home/harcic8042/Downloads/test.mp4", "rb"), event.from_uid, file_name="test_custom.mp4")
+        print(f"friend file send ok: uuid={f.file_uuid}, hash={f.file_hash}, name={f.file_name}, size={f.file_size}")
 
     for elem in event.msg_chain:
         if isinstance(elem, MulitMsg) and elem.resid:
