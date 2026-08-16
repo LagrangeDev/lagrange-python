@@ -3,10 +3,10 @@ import os
 
 from lagrange import Lagrange, install_loguru
 from lagrange.client.client import Client
-from lagrange.client.events.friend import FriendMessage, FriendRequest
+from lagrange.client.events.friend import FriendMessage
 from lagrange.client.events.group import GroupMessage, GroupSign, GroupReaction, GroupAdminChange
 from lagrange.client.events.service import ServerKick
-from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text, Video
+from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text
 
 
 async def msg_handler(client: Client, event: GroupMessage):
