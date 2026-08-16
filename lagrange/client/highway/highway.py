@@ -4,12 +4,34 @@ from hashlib import md5
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO, Optional, Union
 
-from lagrange.client.message.elems import Audio, Image, Video
+from lagrange.client.message.elems import Audio, File, Image, Video
 from lagrange.pb.highway.comm import IndexNode
 from lagrange.pb.highway.ext import NTV2RichMediaHighwayExt
+from lagrange.pb.highway.file_ext import (
+    ExcitingBusiInfo,
+    ExcitingClientInfo,
+    ExcitingFileEntry,
+    ExcitingFileNameInfo,
+    ExcitingHostConfig,
+    ExcitingHostInfo,
+    ExcitingUrlInfo,
+    FileUploadEntry,
+    FileUploadExt,
+)
 from lagrange.pb.highway.httpconn import HttpConn0x6ffReq, HttpConn0x6ffRsp
 from lagrange.pb.highway.rsp import DownloadRsp, NTV2RichMediaResp
 from lagrange.pb.message.rich_text.elems import VideoFile
+from lagrange.pb.service.file import (
+    D6Download,
+    D6Req,
+    D6Rsp,
+    D6Upload,
+    D9SendFileReq,
+    E37DownloadReq,
+    E37DownloadRsp,
+    E37UploadReq,
+    E37UploadRsp,
+)
 from lagrange.utils.audio import decoder as decoder_audio
 from lagrange.utils.binary.protobuf import proto_decode
 from lagrange.utils.crypto.tea import qqtea_encrypt
@@ -479,6 +501,159 @@ class HighWaySession:
         if not (ret and ret.download):
             raise ConnectionError("Internal error, check log for more detail")
         return self._down_url(ret.download)
+
+    async def upload_private_file(self, file: BinaryIO, uid: str, file_name: str = "") -> File:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        if not file_name:
+            file_name = getattr(file, "name", "") or ""
+            import os
+            file_name = os.path.basename(file_name)
+        fmd5, fsha1, fl = calc_file_hash_and_length(file)
+        file.seek(0)
+        md5_10m = md5(file.read(min(fl, 10 * 1024 * 1024))).digest()
+        file.seek(0)
+
+        req = E37UploadReq.build(self._client.uid, uid, fl, file_name, md5_10m, fsha1, fmd5)
+        rsp = E37UploadRsp.decode(
+            (await self._client.send_oidb_svc(0xE37, 1700, req.encode(), False)).data
+        )
+        upload = rsp.upload
+        if upload.ret_code:
+            raise ConnectionError(upload.ret_code, upload.ret_msg)
+
+        if not upload.bool_file_exist:
+            ext = FileUploadExt(
+                unknown200=1,
+                entry=FileUploadEntry(
+                    busi_buff=ExcitingBusiInfo(sender_uin=self._client.uin),
+                    file_entry=ExcitingFileEntry(
+                        file_size=fl,
+                        md5=fmd5,
+                        check_key=fsha1,
+                        md5_s2=fmd5,
+                        file_id=upload.uuid,
+                        upload_key=upload.upload_key,
+                    ),
+                    client_info=ExcitingClientInfo(),
+                    file_name_info=ExcitingFileNameInfo(file_name=file_name),
+                    host=ExcitingHostConfig(
+                        hosts=[ExcitingHostInfo(url=ExcitingUrlInfo(host=upload.upload_ip), port=upload.upload_port)]
+                    ),
+                )
+            ).encode()
+            await self.upload_controller(
+                file,
+                cmd_id=95,
+                ticket=self._session_sig,
+                ext=ext,
+                addrs=self._session_addr_list,
+            )
+
+        return File(
+            file_size=fl,
+            file_name=file_name,
+            file_md5=fmd5,
+            file_url=None,
+            file_id=None,
+            file_uuid=upload.uuid,
+            file_hash=upload.file_addon,
+        )
+
+    async def upload_group_file(self, file: BinaryIO, grp_id: int, target_directory: str = "/", file_name: str = "") -> File:
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        if not file_name:
+            file_name = getattr(file, "name", "") or ""
+            import os
+            file_name = os.path.basename(file_name)
+        fmd5, fsha1, fl = calc_file_hash_and_length(file)
+        file.seek(0)
+
+        req = D6Req(
+            file=D6Upload(
+                group_uin=grp_id,
+                target_directory=target_directory,
+                file_name=file_name,
+                local_directory=f"/{file_name}",
+                file_size=fl,
+                file_sha1=fsha1,
+                file_md5=fmd5,
+            )
+        )
+        rsp = D6Rsp.decode(
+            (await self._client.send_oidb_svc(0x6D6, 0, req.encode(), True)).data
+        )
+        upload = rsp.upload
+        if not upload or upload.ret_code:
+            raise ConnectionError(upload.ret_code if upload else -1, upload.ret_msg if upload else "no upload")
+
+        if not upload.bool_file_exist:
+            ext = FileUploadExt(
+                entry=FileUploadEntry(
+                    busi_buff=ExcitingBusiInfo(
+                        sender_uin=self._client.uin,
+                        receiver_uin=grp_id,
+                        group_code=grp_id,
+                    ),
+                    file_entry=ExcitingFileEntry(
+                        file_size=fl,
+                        md5=fmd5,
+                        check_key=upload.check_key,
+                        md5_s2=fmd5,
+                        file_id=upload.file_id,
+                        upload_key=upload.file_key,
+                    ),
+                    client_info=ExcitingClientInfo(),
+                    file_name_info=ExcitingFileNameInfo(file_name=file_name),
+                    host=ExcitingHostConfig(
+                        hosts=[ExcitingHostInfo(url=ExcitingUrlInfo(host=upload.upload_ip), port=upload.upload_port)]
+                    ),
+                )
+            ).encode()
+            await self.upload_controller(
+                file,
+                cmd_id=71,
+                ticket=self._session_sig,
+                ext=ext,
+                addrs=self._session_addr_list,
+            )
+
+        return File(
+            file_size=fl,
+            file_name=file_name,
+            file_md5=fmd5,
+            file_url=None,
+            file_id=upload.file_id,
+            file_uuid=None,
+            file_hash=None,
+        )
+
+    async def get_private_file_url(self, file_uuid: str, file_hash: str, uid: str) -> str:
+        req = E37DownloadReq.build(uid, file_uuid, file_hash)
+        rsp = E37DownloadRsp.decode(
+            (await self._client.send_oidb_svc(0xE37, 1200, req.encode(), False)).data
+        )
+        if not (rsp.body and rsp.body.result):
+            raise ConnectionError("Internal error, check log for more detail")
+        result = rsp.body.result
+        return f"http://{result.server}:{result.port}{result.url}&isthumb=0"
+
+    async def get_group_file_url(self, grp_id: int, file_id: str) -> str:
+        req = D6Req(download=D6Download(group_uin=grp_id, file_id=file_id))
+        rsp = D6Rsp.decode(
+            (await self._client.send_oidb_svc(0x6D6, 2, req.encode(), True)).data
+        )
+        download = rsp.download
+        if not download or download.ret_code:
+            raise ConnectionError(download.ret_code if download else -1, download.ret_msg if download else "no download")
+        return f"https://{download.download_dns}/ftn_handler/{download.download_url.hex()}/?fname="
+
+    async def send_group_file(self, grp_id: int, file_id: str):
+        req = D9SendFileReq.build(grp_id, file_id)
+        rsp = await self._client.send_oidb_svc(0x6D9, 4, req.encode(), False)
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     # async def upload_video(self, file: BinaryIO, thumb: BinaryIO, gid: int) -> VideoElement:
     #     thumb_md5, thumb_size = calc_file_md5_and_length(thumb)

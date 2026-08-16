@@ -17,7 +17,9 @@ from collections.abc import Coroutine
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.pb.message.longmsg import PbMultiMsgTransmit, RecvLongMsgReq, RecvLongMsgRsp
+from lagrange.pb.message.msg import Message
 from lagrange.pb.message.msg_push import MsgPushBody
+from lagrange.pb.message.rich_text.elems import FileExtra, NotOnlineFile
 from lagrange.pb.message.send import SendMsgRsp
 from lagrange.pb.service.comm import (
     GetClientKeyRsp,
@@ -86,7 +88,7 @@ from .events.friend import FriendMessage
 from .events.service import ClientOnline, ClientOffline
 from .highway import HighWaySession
 from .message.decoder import parse_friend_msg, parse_grp_msg, parse_msg_new
-from .message.elems import Audio, ForwardNode, Image, MulitMsg, Video
+from .message.elems import Audio, File, ForwardNode, Image, MulitMsg, Video
 from .message.encoder import _get_mulitmsg_resid, build_message
 from .message.types import Element
 from .models import UserInfo, BotFriend
@@ -224,6 +226,34 @@ class Client(BaseClient):
         packet = await self.send_uni_packet("MessageSvc.PbSendMsg", proto_encode(body))
         return SendMsgRsp.decode(packet.data)
 
+    async def _send_file_msg_raw(self, file: File, uid: str) -> SendMsgRsp:
+        seq = self.seq + 1
+        extra = FileExtra(
+            file=NotOnlineFile(
+                file_type=0,
+                file_uuid=file.file_uuid,
+                file_md5=file.file_md5,
+                file_name=file.file_name,
+                file_size=file.file_size,
+                subcmd=1,
+                danger_evel=0,
+                expire_time=int(timestamp() + 7 * 24 * 3600),
+                pb_reserve=b"",
+                file_hash=file.file_hash,
+            )
+        )
+        msg = Message(buf2=extra.encode())
+        body = {
+            1: {15: {2: 4, 8: uid}},
+            2: {1: 1, 2: 0, 3: 0},
+            3: msg.encode(),
+            4: seq,
+            5: int.from_bytes(os.urandom(4), byteorder="big", signed=False),
+            6: {1: timestamp()},
+        }
+        packet = await self.send_uni_packet("MessageSvc.PbSendMsg", proto_encode(body))
+        return SendMsgRsp.decode(packet.data)
+
     async def send_grp_msg(self, msg_chain: list[Element], grp_id: int) -> int:
         result = await self._send_msg_raw({1: (await build_message(msg_chain)).encode()}, grp_id=grp_id)
         if result.ret_code:
@@ -273,6 +303,24 @@ class Client(BaseClient):
 
     async def upload_friend_video(self, file: BinaryIO, uid: str, thumb: Optional[BinaryIO] = None) -> Video:
         return await self._highway.upload_video(file, uid=uid, thumb=thumb)
+
+    async def upload_grp_file(self, file: BinaryIO, grp_id: int, target_directory: str = "/") -> File:
+        f = await self._highway.upload_group_file(file, grp_id, target_directory)
+        await self._highway.send_group_file(grp_id, f.file_id)
+        return f
+
+    async def upload_friend_file(self, file: BinaryIO, uid: str) -> File:
+        f = await self._highway.upload_private_file(file, uid)
+        result = await self._send_file_msg_raw(f, uid)
+        if result.ret_code:
+            raise AssertionError(result.ret_code, result.err_msg)
+        return f
+
+    async def fetch_grp_file_url(self, grp_id: int, file_id: str) -> str:
+        return await self._highway.get_group_file_url(grp_id, file_id)
+
+    async def fetch_friend_file_url(self, file_uuid: str, file_hash: str, uid: str) -> str:
+        return await self._highway.get_private_file_url(file_uuid, file_hash, uid)
 
     async def fetch_audio_url(self, file_key: str, gid: int = 0, uid: str = ""):
         return await self._highway.get_audio_down_url(file_key, uid=uid, gid=gid)
