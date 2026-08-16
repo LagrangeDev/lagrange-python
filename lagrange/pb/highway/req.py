@@ -21,6 +21,7 @@ class ClientMeta(ProtoStruct):
 class SceneInfo(ProtoStruct):
     req_type: int = proto_field(101)
     bus_type: int = proto_field(102)
+    field103: Optional[int] = proto_field(103, default=None)
     scene_type: int = proto_field(200)
     c2c: Optional[C2CUserInfo] = proto_field(201, default=None)
     grp: Optional[GroupInfo] = proto_field(202, default=None)
@@ -69,7 +70,7 @@ class DownloadExt(ProtoStruct):
 
 class DownloadReq(ProtoStruct):
     node: IndexNode = proto_field(1)
-    ext: DownloadExt = proto_field(2, default_factory=DownloadExt)
+    ext: Optional[DownloadExt] = proto_field(2, default=None)
 
 
 class NTV2RichMediaReq(ProtoStruct):

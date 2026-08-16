@@ -6,7 +6,7 @@ from lagrange.client.client import Client
 from lagrange.client.events.friend import FriendMessage, FriendRequest
 from lagrange.client.events.group import GroupMessage, GroupSign, GroupReaction, GroupAdminChange
 from lagrange.client.events.service import ServerKick
-from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text
+from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text, Video
 
 
 async def msg_handler(client: Client, event: GroupMessage):

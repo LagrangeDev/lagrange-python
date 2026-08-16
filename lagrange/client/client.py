@@ -86,7 +86,7 @@ from .events.friend import FriendMessage
 from .events.service import ClientOnline, ClientOffline
 from .highway import HighWaySession
 from .message.decoder import parse_friend_msg, parse_grp_msg, parse_msg_new
-from .message.elems import Audio, ForwardNode, Image, MulitMsg
+from .message.elems import Audio, ForwardNode, Image, MulitMsg, Video
 from .message.encoder import _get_mulitmsg_resid, build_message
 from .message.types import Element
 from .models import UserInfo, BotFriend
@@ -268,8 +268,17 @@ class Client(BaseClient):
     async def upload_friend_audio(self, voice: BinaryIO, uid: str) -> Audio:
         return await self._highway.upload_voice(voice, uid=uid)
 
+    async def upload_grp_video(self, file: BinaryIO, grp_id: int, thumb: Optional[BinaryIO] = None) -> Video:
+        return await self._highway.upload_video(file, gid=grp_id, thumb=thumb)
+
+    async def upload_friend_video(self, file: BinaryIO, uid: str, thumb: Optional[BinaryIO] = None) -> Video:
+        return await self._highway.upload_video(file, uid=uid, thumb=thumb)
+
     async def fetch_audio_url(self, file_key: str, gid: int = 0, uid: str = ""):
         return await self._highway.get_audio_down_url(file_key, uid=uid, gid=gid)
+
+    async def fetch_video_url(self, node: "IndexNode", gid: int = 0, uid: str = ""):
+        return await self._highway.get_video_url(node, uid=uid, gid=gid)
 
     async def down_grp_audio(self, audio: Audio, grp_id: int) -> BytesIO:
         return await self._highway.download_audio(audio, gid=grp_id)

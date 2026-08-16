@@ -206,6 +206,27 @@ async def parse_msg_new(
             if common.service_type == 46:
                 kb = PBKeyboard.decode(proto_encode(common.pb_elem)).keyboard
                 msg_chain.append(elems.Keyboard(content=kb.content, bot_appid=kb.bot_appid))
+            if common.service_type == 48 and common.bus_type in (11, 21):
+                extra = MsgInfo.decode(proto_encode(common.pb_elem))
+                index = extra.body[0].index
+                if common.bus_type == 21:
+                    url = await client.fetch_video_url(index, gid=pkg.response_head.rsp_grp.gid)
+                else:
+                    url = await client.fetch_video_url(index, uid=client.uid)
+                msg_chain.append(
+                    elems.Video(
+                        name=index.info.name,
+                        size=index.info.size,
+                        id=0,
+                        md5=bytes.fromhex(index.info.hash),
+                        width=index.info.width,
+                        height=index.info.height,
+                        time=index.info.time,
+                        file_key=index.file_uuid,
+                        url=url,
+                        qmsg=None,
+                    )
+                )
             if common.bus_type in [10, 20]:  # 10: friend, 20: group
                 extra = MsgInfo.decode(proto_encode(raw.common_elem.pb_elem))
                 index = extra.body[0].index
