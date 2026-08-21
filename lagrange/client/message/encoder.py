@@ -35,6 +35,7 @@ from lagrange.pb.message.rich_text.elems import (
     GeneralFlags,
 )
 from lagrange.pb.message.rich_text.elems import Text as PBText
+from lagrange.pb.highway.comm import PicExtInfo
 from lagrange.utils.binary.protobuf import proto_decode
 
 from .elems import (
@@ -117,7 +118,22 @@ async def build_message(
             elif isinstance(msg, Json):
                 msg_pb.append(Elems(mini_app=MiniApp(template=b"\x01" + zlib.compress(msg.raw))))
             elif isinstance(msg, Image):
-                if msg.id:  # customface
+                if msg.msg_info and msg.bus_type in (10, 20):
+                    # QQ upload response omits PicExtInfo.biz_type; stamp it explicitly
+                    # so receivers never see an absent field (None != 0 misjudged as emoji).
+                    if msg.msg_info.biz_info.pic is None:
+                        msg.msg_info.biz_info.pic = PicExtInfo()
+                    msg.msg_info.biz_info.pic.biz_type = 1 if msg.is_emoji else 0
+                    msg_pb.append(
+                        Elems(
+                            common_elem=CommonElem(
+                                service_type=48,
+                                pb_elem=proto_decode(msg.msg_info.encode(), 0).proto,
+                                bus_type=msg.bus_type,
+                            )
+                        )
+                    )
+                elif msg.id:  # customface
                     msg_pb.append(
                         Elems(
                             custom_face=CustomFace(

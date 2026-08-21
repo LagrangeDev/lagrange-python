@@ -145,6 +145,8 @@ class Image(CompatibleText, MediaInfo):
     height: int
     is_emoji: bool
     display_name: str
+    msg_info: Optional[MsgInfo] = field(default=None, repr=False)
+    bus_type: Optional[int] = field(default=None, repr=False)
 
     @property
     def raw_text(self) -> str:

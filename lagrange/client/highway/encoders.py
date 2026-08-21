@@ -81,6 +81,7 @@ def encode_upload_img_req(
     size: int,
     info: "ImageInfo",
     is_origin=True,
+    biz_type: int = 0,
 ) -> NTV2RichMediaReq:
     assert not (grp_id and uid)
     fn = f"{md5.hex().upper()}.{info.name or 'jpg'}"
@@ -131,7 +132,11 @@ def encode_upload_img_req(
             compat_stype=scene_type,
             client_rand_id=int.from_bytes(os.urandom(4), "big"),
             biz_info=ExtBizInfo(
-                pic=PicExtInfo(c2c_reserved=c2c_pb, troop_reserved=grp_pb)
+                pic=PicExtInfo(
+                    biz_type=biz_type,
+                    c2c_reserved=c2c_pb,
+                    troop_reserved=grp_pb,
+                )
             ),
         ),
     )
