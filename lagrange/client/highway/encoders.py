@@ -26,8 +26,6 @@ from lagrange.pb.highway.req import (
     UploadInfo,
     UploadReq,
     DownloadReq,
-    DownloadExt,
-    DownloadVideoExt,
 )
 
 if TYPE_CHECKING:
@@ -372,10 +370,7 @@ def encode_video_down_req(node: IndexNode, grp_id: int, uid: str):
                 grp=grp_info,
             ),
         ),
-        download=DownloadReq(
-            node=download_node,
-            ext=DownloadExt(video_ext=DownloadVideoExt(busi_type=0, scene_type=scene_type, sub_busi_type=0)),
-        ),
+        download=DownloadReq(node=download_node),
     )
 
 # def encode_video_upload_req(

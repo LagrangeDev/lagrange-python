@@ -133,6 +133,8 @@ async def friend_msg_handler(client: Client, event: FriendMessage):
             for idx, node in enumerate(forward_msg.messages, 1):
                 text = "".join(item.display for item in node.content)
                 print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
+        elif isinstance(elem, Video):
+            print(elem)
 
     print(f"friend {event.from_uin}: {event.msg}")
 

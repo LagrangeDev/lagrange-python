@@ -47,6 +47,7 @@ from .encoders import (
     encode_highway_head,
     encode_pri_img_download_req,
     encode_upload_img_req,
+    encode_video_down_req,
     encode_video_upload_req,
 )
 from .frame import read_frame, write_frame
@@ -492,18 +493,16 @@ class HighWaySession:
     async def get_video_url(self, node: IndexNode, gid: int = 0, uid: str = "") -> str:
         if not self._session_addr_list:
             await self._get_bdh_session()
-        if gid:
-            ret = NTV2RichMediaResp.decode(
-                (
-                    await self._client.send_oidb_svc(0x11C4, 200, encode_grp_img_download_req(gid, node).encode(), True)
-                ).data
-            )
-        else:
-            ret = NTV2RichMediaResp.decode(
-                (
-                    await self._client.send_oidb_svc(0x11C5, 200, encode_pri_img_download_req(uid, node).encode(), True)
-                ).data
-            )
+        ret = NTV2RichMediaResp.decode(
+            (
+                await self._client.send_oidb_svc(
+                    0x11EA if gid else 0x11E9,
+                    200,
+                    encode_video_down_req(node, gid, uid).encode(),
+                    True
+                )
+            ).data
+        )
         if not (ret and ret.download):
             raise ConnectionError("Internal error, check log for more detail")
         return self._down_url(ret.download)
