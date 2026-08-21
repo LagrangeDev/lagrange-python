@@ -6,7 +6,7 @@ from lagrange.client.client import Client
 from lagrange.client.events.friend import FriendMessage
 from lagrange.client.events.group import GroupMessage, GroupSign, GroupReaction, GroupAdminChange
 from lagrange.client.events.service import ServerKick
-from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text, Video, Image
+from lagrange.client.message.elems import At, Emoji, ForwardNode, MulitMsg, Quote, Text
 
 
 async def msg_handler(client: Client, event: GroupMessage):
@@ -74,8 +74,6 @@ async def msg_handler(client: Client, event: GroupMessage):
             for idx, node in enumerate(forward_msg.messages, 1):
                 text = "".join(item.display for item in node.content)
                 print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
-        elif isinstance(elem, Video) or isinstance(elem, Image):
-            print(elem)
     print(f"{event.nickname}({event.grp_name}): {event.msg}")
 
 
@@ -133,8 +131,6 @@ async def friend_msg_handler(client: Client, event: FriendMessage):
             for idx, node in enumerate(forward_msg.messages, 1):
                 text = "".join(item.display for item in node.content)
                 print(f"  node#{idx}: {node.sender_nick}({node.sender_uin}) {node.timestamp}: {text}")
-        elif isinstance(elem, Video):
-            print(elem)
 
     print(f"friend {event.from_uin}: {event.msg}")
 
