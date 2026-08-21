@@ -79,7 +79,7 @@ def encode_upload_img_req(
     size: int,
     info: "ImageInfo",
     is_origin=True,
-    biz_type: int = 0,
+    biz_type: int = 0,  # 1 for custom face, 0 for regular image
 ) -> NTV2RichMediaReq:
     assert not (grp_id and uid)
     fn = f"{md5.hex().upper()}.{info.name or 'jpg'}"
