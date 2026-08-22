@@ -47,6 +47,7 @@ from .encoders import (
     encode_highway_head,
     encode_pri_img_download_req,
     encode_upload_img_req,
+    encode_video_down_req,
     encode_video_upload_req,
 )
 from .frame import read_frame, write_frame
@@ -198,7 +199,7 @@ class HighWaySession:
 
                 bc += 1
 
-    async def upload_image(self, file: BinaryIO, gid=0, uid="") -> Image:
+    async def upload_image(self, file: BinaryIO, gid=0, uid="", biz_type=0) -> Image:
         if not self._session_addr_list:
             await self._get_bdh_session()
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
@@ -210,7 +211,7 @@ class HighWaySession:
                 await self._client.send_oidb_svc(
                     0x11C4 if gid else 0x11C5,
                     100,
-                    encode_upload_img_req(gid, uid, fmd5, fsha1, fl, info).encode(),
+                    encode_upload_img_req(gid, uid, fmd5, fsha1, fl, info, biz_type=biz_type).encode(),
                     True
                 )
             ).data
@@ -245,7 +246,11 @@ class HighWaySession:
         w, h = info.width, info.height
         if gid:
             fileid = proto_decode(ret.upload.compat_qmsg).into(7, int)
-            url = f"https://gchat.qpic.cn/gchatpic_new/{self._client.uin}/{gid}-{fileid}-{fmd5.hex().upper()}/0?term=2"
+            ret_body = ret.upload.msg_info.body
+            if ret_body and ret_body[0].pic:
+                url = "https://multimedia.nt.qq.com.cn" + ret_body[0].pic.url_path
+            else:
+                url = f"https://gchat.qpic.cn/gchatpic_new/{self._client.uin}/{gid}-{fileid}-{fmd5.hex().upper()}/0?term=2"
         else:
             path = proto_decode(ret.upload.compat_qmsg).into(29, dict[int, bytes])[30]
             fileid = 0
@@ -260,8 +265,10 @@ class HighWaySession:
             height=h,
             md5=fmd5,
             url=url,
-            is_emoji=info.pic_type.name == "gif",
+            is_emoji=biz_type == 1,
             qmsg=None if gid else ret.upload.compat_qmsg,
+            msg_info=ret.upload.msg_info,
+            bus_type=20 if gid else 10,
         )
 
     async def get_grp_img_url(self, grp_id: int, node: "IndexNode") -> str:
@@ -486,18 +493,16 @@ class HighWaySession:
     async def get_video_url(self, node: IndexNode, gid: int = 0, uid: str = "") -> str:
         if not self._session_addr_list:
             await self._get_bdh_session()
-        if gid:
-            ret = NTV2RichMediaResp.decode(
-                (
-                    await self._client.send_oidb_svc(0x11C4, 200, encode_grp_img_download_req(gid, node).encode(), True)
-                ).data
-            )
-        else:
-            ret = NTV2RichMediaResp.decode(
-                (
-                    await self._client.send_oidb_svc(0x11C5, 200, encode_pri_img_download_req(uid, node).encode(), True)
-                ).data
-            )
+        ret = NTV2RichMediaResp.decode(
+            (
+                await self._client.send_oidb_svc(
+                    0x11EA if gid else 0x11E9,
+                    200,
+                    encode_video_down_req(node, gid, uid).encode(),
+                    True
+                )
+            ).data
+        )
         if not (ret and ret.download):
             raise ConnectionError("Internal error, check log for more detail")
         return self._down_url(ret.download)

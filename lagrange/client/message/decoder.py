@@ -248,8 +248,10 @@ async def parse_msg_new(
                         width=index.info.width,
                         height=index.info.height,
                         url=url,
-                        is_emoji=extra.biz_info.pic.biz_type != 0,
+                        is_emoji=(extra.biz_info.pic.biz_type or 0) == 1,
                         qmsg=None,
+                        msg_info=extra,
+                        bus_type=common.bus_type,
                     )
                 )
         elif raw.trans_elem:

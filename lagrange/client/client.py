@@ -281,16 +281,10 @@ class Client(BaseClient):
         return result.seq
 
     async def upload_grp_image(self, image: BinaryIO, grp_id: int, is_emoji=False) -> Image:
-        img = await self._highway.upload_image(image, gid=grp_id)
-        if is_emoji:
-            img.is_emoji = True
-        return img
+        return await self._highway.upload_image(image, gid=grp_id, biz_type=1 if is_emoji else 0)
 
     async def upload_friend_image(self, image: BinaryIO, uid: str, is_emoji=False) -> Image:
-        img = await self._highway.upload_image(image, uid=uid)
-        if is_emoji:
-            img.is_emoji = True
-        return img
+        return await self._highway.upload_image(image, uid=uid, biz_type=1 if is_emoji else 0)
 
     async def upload_grp_audio(self, voice: BinaryIO, grp_id: int) -> Audio:
         return await self._highway.upload_voice(voice, gid=grp_id)

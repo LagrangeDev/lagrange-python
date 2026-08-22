@@ -26,8 +26,6 @@ from lagrange.pb.highway.req import (
     UploadInfo,
     UploadReq,
     DownloadReq,
-    DownloadExt,
-    DownloadVideoExt,
 )
 
 if TYPE_CHECKING:
@@ -81,6 +79,7 @@ def encode_upload_img_req(
     size: int,
     info: "ImageInfo",
     is_origin=True,
+    biz_type: int = 0,  # 1 for custom face, 0 for regular image
 ) -> NTV2RichMediaReq:
     assert not (grp_id and uid)
     fn = f"{md5.hex().upper()}.{info.name or 'jpg'}"
@@ -131,7 +130,11 @@ def encode_upload_img_req(
             compat_stype=scene_type,
             client_rand_id=int.from_bytes(os.urandom(4), "big"),
             biz_info=ExtBizInfo(
-                pic=PicExtInfo(c2c_reserved=c2c_pb, troop_reserved=grp_pb)
+                pic=PicExtInfo(
+                    biz_type=biz_type,
+                    c2c_reserved=c2c_pb,
+                    troop_reserved=grp_pb,
+                )
             ),
         ),
     )
@@ -367,10 +370,7 @@ def encode_video_down_req(node: IndexNode, grp_id: int, uid: str):
                 grp=grp_info,
             ),
         ),
-        download=DownloadReq(
-            node=download_node,
-            ext=DownloadExt(video_ext=DownloadVideoExt(busi_type=0, scene_type=scene_type, sub_busi_type=0)),
-        ),
+        download=DownloadReq(node=download_node),
     )
 
 # def encode_video_upload_req(
