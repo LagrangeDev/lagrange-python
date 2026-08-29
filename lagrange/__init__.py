@@ -28,6 +28,7 @@ class Lagrange:
         signinfo_path="./sig.bin",
         custom_protocol_path="./protocol.json",
     ):
+        self.scheduled_tasks = []  # 添加这行来存储计划任务
         self.im = InfoManager(uin, device_info_path, signinfo_path)
         self.uin = uin
         self._sign_url = sign_url
@@ -47,6 +48,9 @@ class Lagrange:
             return True
         else:
             return await client.login()
+    def schedule_task(self, task):
+        """添加计划任务"""
+        self.scheduled_tasks.append(task)
 
     async def run(self):
         if self._protocol == "custom":
@@ -80,6 +84,9 @@ class Lagrange:
         if not status:
             log.login.error("Login failed")
             return
+                    # 登录成功后执行计划任务
+        for task in self.scheduled_tasks:
+            asyncio.create_task(task(self.client))
         await self.client.wait_closed()
 
     def launch(self):
